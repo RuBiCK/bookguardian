@@ -10,6 +10,9 @@ RUN npm ci --only=production
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl1.1-compat
+
 # Copy package files and install all dependencies (including dev)
 COPY package*.json ./
 RUN npm ci
@@ -30,6 +33,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install OpenSSL for Prisma runtime
+RUN apk add --no-cache openssl1.1-compat
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
