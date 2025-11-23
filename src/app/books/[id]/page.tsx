@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Book, Lending } from '@prisma/client'
+import { Book, Lending, Tag } from '@prisma/client'
 import { ArrowLeft, Star, Calendar, User, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
 type BookWithLending = Book & {
     lendings: Lending[]
+    tags: Tag[]
 }
 
 export default function BookDetailsPage() {
