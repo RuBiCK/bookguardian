@@ -3,7 +3,11 @@
 import { useState, useEffect } from 'react'
 import { LayoutGrid, List as ListIcon, Search, BookOpen, Filter, X, Loader2, Star } from 'lucide-react'
 import BookCard from '@/components/BookCard'
-import { Book } from '@prisma/client'
+import { Book, Tag as PrismaTag } from '@prisma/client'
+
+type BookWithTags = Book & {
+    tags: PrismaTag[]
+}
 
 interface Library {
     id: string
@@ -17,7 +21,7 @@ interface Tag {
 
 export default function Home() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-    const [books, setBooks] = useState<Book[]>([])
+    const [books, setBooks] = useState<BookWithTags[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
 

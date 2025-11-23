@@ -1,10 +1,14 @@
 import Image from 'next/image'
-import { Book } from '@prisma/client'
+import { Book, Tag } from '@prisma/client'
 import { Star, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
+type BookWithTags = Book & {
+    tags: Tag[]
+}
+
 interface BookCardProps {
-    book: Book
+    book: BookWithTags
     viewMode: 'grid' | 'list'
 }
 
