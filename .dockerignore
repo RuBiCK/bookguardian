@@ -38,3 +38,4 @@ coverage
 README.md
 .prettierrc
 .eslintrc
+prisma.config.ts
