@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Library {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shelves   Shelf[]
+}
+
+model Shelf {
+  id        String   @id @default(uuid())
+  name      String
+  libraryId String
+  library   Library  @relation(fields: [libraryId], references: [id])
+  books     Book[]
+}
+
+model Book {
+  id          String   @id @default(uuid())
+  title       String
+  author      String
+  isbn        String?
+  coverUrl    String?
+  category    String?
+  year        Int?
+  publisher   String?
+  language    String?
+  rating      Int?     @default(0) // 0-5
+  comment     String?
+  readStatus  String   @default("WANT_TO_READ") // WANT_TO_READ, READING, READ
+  shelfId     String
+  shelf       Shelf    @relation(fields: [shelfId], references: [id])
+  lendings    Lending[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tags        Tag[]
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  books Book[]
+}
+
+model Lending {
+  id           String    @id @default(uuid())
+  bookId       String
+  book         Book      @relation(fields: [bookId], references: [id])
+  borrowerName String
+  lentDate     DateTime  @default(now())
+  returnDate   DateTime?
+  status       String    @default("LENT") // LENT, RETURNED
+}

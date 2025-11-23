@@ -1,36 +1,199 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 Book Guardian
 
-## Getting Started
+A beautiful, mobile-first web application to manage your personal book collection. Track your books, organize them into libraries and shelves, manage lending, and discover new titles using ISBN lookup.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=flat-square&logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Features
+
+- **📚 Library Management**: Organize your books into custom libraries and shelves
+- **🔍 Smart Book Entry**:
+  - **Manual Mode**: Full control with detailed form entry
+  - **ISBN Lookup**: Automatically fetch book details from Google Books API
+  - **Camera Mode**: Capture book covers for AI-powered analysis (requires OpenAI API key)
+- **🤝 Lending Tracker**: Keep track of who borrowed your books and when they're due back
+- **⭐ Ratings & Reviews**: Rate your books and add personal notes
+- **🔎 Advanced Filtering**: Filter by rating, reading status, library, and more
+- **📤 Export Options**: Export your collection in CSV, MARC21, or JSON formats
+- **📱 Mobile First**: Optimized for smartphones with a responsive design for desktop
+- **🎨 Modern UI**: Beautiful, intuitive interface built with Tailwind CSS
+
+## 🚀 Quick Start
+
+### Using Docker Compose (Recommended)
+
+The easiest way to run Book Guardian is using Docker Compose:
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/RuBiCK/bookguardian.git
+   cd bookguardian
+   ```
+
+2. **Configure environment variables**:
+   ```bash
+   cp .env.example .env
+   # Edit .env if needed (default values work for Docker Compose)
+   ```
+
+3. **Start the application**:
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Access the application**:
+   Open [http://localhost:3000](http://localhost:3000) in your browser
+
+The first startup will:
+- Build the Next.js application
+- Start PostgreSQL database
+- Run database migrations automatically
+
+### Manual Installation
+
+If you prefer to run without Docker:
+
+#### Prerequisites
+
+- Node.js 18 or higher
+- PostgreSQL 15 or higher (or use Docker for database only)
+
+#### Steps
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/RuBiCK/bookguardian.git
+   cd bookguardian
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Start the database** (if using Docker):
+   ```bash
+   docker compose up -d postgres
+   ```
+
+4. **Configure environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your database connection string
+   ```
+
+5. **Run database migrations**:
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+6. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+
+7. **Open the application**:
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## ⚙️ Configuration
+
+Book Guardian uses environment variables for configuration. Copy `.env.example` to `.env` and customize as needed.
+
+### Required Configuration
+
+```env
+# Database connection string
+DATABASE_URL="postgresql://user:password@host:port/database?schema=public"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Optional Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+# OpenAI API Key (for Camera feature)
+# Get your key from https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-actual-api-key-here
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Google Books API Key (for enhanced ISBN lookup)
+# Get your key from https://console.cloud.google.com/
+GOOGLE_BOOKS_API_KEY=your-google-books-api-key-here
+```
 
-## Learn More
+### Camera Feature Setup
 
-To learn more about Next.js, take a look at the following resources:
+The camera feature uses AI to extract book information from cover images. To enable it:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Sign up at [OpenAI Platform](https://platform.openai.com/)
+2. Create an API key
+3. Add it to your `.env` file as `OPENAI_API_KEY`
+4. The feature will automatically become functional
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **Note**: The camera feature is currently a demonstration skeleton. Full implementation requires integrating the OpenAI API in `src/components/AddBookCamera.tsx`.
 
-## Deploy on Vercel
+## 🛠️ Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript 5](https://www.typescriptlang.org/)
+- **Database**: [PostgreSQL 15](https://www.postgresql.org/)
+- **ORM**: [Prisma](https://www.prisma.io/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Deployment**: Docker & Docker Compose
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📦 Production Deployment
+
+### Docker Compose (Recommended)
+
+The included `docker-compose.yml` is production-ready and includes:
+
+- Multi-stage optimized Docker build
+- Health checks for both services
+- Automatic database migrations
+- Persistent data volumes
+- Restart policies
+
+Deploy to your server:
+
+```bash
+# Clone the repository
+git clone https://github.com/RuBiCK/bookguardian.git
+cd bookguardian
+
+# Configure production environment
+cp .env.example .env
+# Edit .env with production database credentials
+
+# Start in production mode
+docker compose up -d
+
+# View logs
+docker compose logs -f app
+```
+
+### Environment Variables for Production
+
+Make sure to set secure values for production:
+
+```env
+DATABASE_URL="postgresql://secure_user:secure_password@postgres:5432/personal_library?schema=public"
+NODE_ENV=production
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 🙏 Acknowledgments
+
+- Book data provided by [Google Books API](https://developers.google.com/books)
+- Icons by [Lucide](https://lucide.dev/)
+
+---
+
+Made with ❤️ for book lovers everywhere
