@@ -50,6 +50,9 @@ COPY --from=builder /app/prisma ./prisma
 # Copy all production dependencies (ensures prisma CLI works)
 COPY --from=deps /app/node_modules ./node_modules
 
+# Copy generated prisma client (overwrites pure js client with generated one)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
 
