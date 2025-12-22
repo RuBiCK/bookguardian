@@ -25,9 +25,10 @@ services:
       dockerfile: Dockerfile
     container_name: book-guardian-app
     restart: unless-stopped
-    # ports:
-    #   - "3002:3000"
+    ports:
+      - "3003:3000"
     environment:
+      #FIXME: add real credentials injecting ENV vars
       - DATABASE_URL=postgresql://library_user:library_password@postgres:5432/personal_library?schema=public
       - NODE_ENV=production
     depends_on:
