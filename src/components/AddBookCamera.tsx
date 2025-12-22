@@ -20,13 +20,25 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
     const startCamera = async () => {
         try {
             setIsCameraOpen(true)
+
+            // Check if mediaDevices API is available (undefined in non-secure contexts on iOS Safari)
+            if (!navigator.mediaDevices) {
+                throw new Error('HTTPS_REQUIRED')
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
             if (videoRef.current) {
                 videoRef.current.srcObject = stream
             }
         } catch (err) {
             console.error("Error accessing camera:", err)
-            alert("Could not access camera. Please ensure permissions are granted.")
+
+            // Provide specific guidance based on error type
+            if (err instanceof Error && err.message === 'HTTPS_REQUIRED') {
+                alert("Camera access requires HTTPS. Please access this site using https:// or use the 'Upload Photo' option instead.")
+            } else {
+                alert("Could not access camera. Please ensure permissions are granted.")
+            }
             setIsCameraOpen(false)
         }
     }
