@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.dokploy.com)",
+      "Bash(curl:*)",
+      "WebFetch(domain:bookguardian.marcote.net)",
+      "Bash(docker exec:*)",
+      "Bash(docker inspect:*)",
+      "Bash(python3 -m json.tool:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

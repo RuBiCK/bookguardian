@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Star } from 'lucide-react'
+import { Star, Search, Loader2 } from 'lucide-react'
 
 interface AddBookManualProps {
     initialData?: {
@@ -19,6 +19,8 @@ interface AddBookManualProps {
 export default function AddBookManual({ initialData }: AddBookManualProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
+    const [searching, setSearching] = useState(false)
+    const [searchError, setSearchError] = useState('')
     const [formData, setFormData] = useState({
         title: initialData?.title || '',
         author: initialData?.author || '',
@@ -53,6 +55,50 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
         setFormData({ ...formData, [e.target.name]: e.target.value })
     }
 
+    const handleSearch = async () => {
+        if (!formData.title) {
+            setSearchError('Please enter a title to search')
+            return
+        }
+
+        setSearching(true)
+        setSearchError('')
+
+        try {
+            // Build search query: title + author if provided
+            let query = `intitle:${formData.title}`
+            if (formData.author) {
+                query += `+inauthor:${formData.author}`
+            }
+
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`)
+            const data = await res.json()
+
+            if (data.totalItems > 0) {
+                const bookInfo = data.items[0].volumeInfo
+
+                // Update form with found data, preserving user input where it exists
+                setFormData(prev => ({
+                    ...prev,
+                    title: bookInfo.title || prev.title,
+                    author: bookInfo.authors ? bookInfo.authors.join(', ') : prev.author,
+                    isbn: bookInfo.industryIdentifiers?.[0]?.identifier || prev.isbn,
+                    category: bookInfo.categories ? bookInfo.categories[0] : prev.category,
+                    publisher: bookInfo.publisher || prev.publisher,
+                    year: bookInfo.publishedDate ? bookInfo.publishedDate.substring(0, 4) : prev.year,
+                    language: bookInfo.language || prev.language,
+                }))
+            } else {
+                setSearchError('No results found. Try a different search.')
+            }
+        } catch (err) {
+            console.error(err)
+            setSearchError('Error searching for book.')
+        } finally {
+            setSearching(false)
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
@@ -85,7 +131,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
 
             <div>
                 <label className="block text-sm font-medium mb-1">Author</label>
-                <input required name="author" value={formData.author} placeholder="Author Name" className="input-field" onChange={handleChange} />
+                <input name="author" value={formData.author} placeholder="Author Name" className="input-field" onChange={handleChange} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -164,9 +210,39 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
             </div>
 
-            <button type="submit" disabled={loading} className="w-full btn-primary mt-6">
-                {loading ? 'Adding...' : 'Add Book'}
-            </button>
+            {searchError && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg">
+                    {searchError}
+                </div>
+            )}
+
+            <div className="flex gap-3 mt-6">
+                <button
+                    type="button"
+                    onClick={handleSearch}
+                    disabled={searching || !formData.title}
+                    className="flex-1 btn-secondary flex items-center justify-center gap-2"
+                >
+                    {searching ? (
+                        <>
+                            <Loader2 size={18} className="animate-spin" />
+                            Searching...
+                        </>
+                    ) : (
+                        <>
+                            <Search size={18} />
+                            Search
+                        </>
+                    )}
+                </button>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 btn-primary"
+                >
+                    {loading ? 'Adding...' : 'Add Book'}
+                </button>
+            </div>
         </form>
     )
 }
