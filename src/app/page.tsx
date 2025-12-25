@@ -81,7 +81,7 @@ export default function LandingPage() {
                 </Link>
 
                 <a
-                  href="https://github.com/yourusername/book-guardian"
+                  href="https://github.com/RuBiCK/bookguardian"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-8 py-4 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-all shadow-lg hover:shadow-xl font-semibold text-lg flex items-center gap-2 border-2 border-neutral-200 dark:border-neutral-700"
@@ -216,98 +216,98 @@ export default function LandingPage() {
                   {/* Library 1 - Left Side */}
                   <g id="library1">
                     {/* Frame */}
-                    <rect x="10" y="20" width="180" height="220" rx="8" fill="#D4A574" fillOpacity="0.15" stroke="#C4956C" strokeWidth="2"/>
+                    <rect x="10" y="20" width="180" height="220" rx="8" fill="#D4A574" fillOpacity="0.15" stroke="#C4956C" strokeWidth="2" />
                     <text x="100" y="15" textAnchor="middle" fill="#8B7355" fontSize="12" fontWeight="bold">Home Library</text>
 
                     {/* Shelf 1 */}
-                    <line x1="20" y1="80" x2="180" y2="80" stroke="#A88860" strokeWidth="3"/>
+                    <line x1="20" y1="80" x2="180" y2="80" stroke="#A88860" strokeWidth="3" />
                     {/* Books on shelf 1 */}
-                    <rect x="25" y="45" width="18" height="35" rx="2" fill="#D4A574"/>
-                    <rect x="45" y="40" width="22" height="40" rx="2" fill="#C4956C"/>
-                    <rect x="69" y="47" width="16" height="33" rx="2" fill="#E8C4A0"/>
-                    <rect x="87" y="42" width="20" height="38" rx="2" fill="#B89968"/>
-                    <rect x="109" y="44" width="19" height="36" rx="2" fill="#D9B99B"/>
-                    <rect x="130" y="38" width="23" height="42" rx="2" fill="#A88860"/>
-                    <rect x="155" y="46" width="17" height="34" rx="2" fill="#E0B896"/>
+                    <rect x="25" y="45" width="18" height="35" rx="2" fill="#D4A574" />
+                    <rect x="45" y="40" width="22" height="40" rx="2" fill="#C4956C" />
+                    <rect x="69" y="47" width="16" height="33" rx="2" fill="#E8C4A0" />
+                    <rect x="87" y="42" width="20" height="38" rx="2" fill="#B89968" />
+                    <rect x="109" y="44" width="19" height="36" rx="2" fill="#D9B99B" />
+                    <rect x="130" y="38" width="23" height="42" rx="2" fill="#A88860" />
+                    <rect x="155" y="46" width="17" height="34" rx="2" fill="#E0B896" />
 
                     {/* Shelf 2 */}
-                    <line x1="20" y1="140" x2="180" y2="140" stroke="#A88860" strokeWidth="3"/>
+                    <line x1="20" y1="140" x2="180" y2="140" stroke="#A88860" strokeWidth="3" />
                     {/* Books on shelf 2 */}
-                    <rect x="25" y="108" width="20" height="32" rx="2" fill="#C9A07A"/>
-                    <rect x="47" y="103" width="18" height="37" rx="2" fill="#E0B896"/>
-                    <rect x="67" y="110" width="24" height="30" rx="2" fill="#D4A574"/>
-                    <rect x="93" y="105" width="17" height="35" rx="2" fill="#B89968"/>
-                    <rect x="112" y="107" width="21" height="33" rx="2" fill="#E8C4A0"/>
-                    <rect x="135" y="102" width="19" height="38" rx="2" fill="#C4956C"/>
-                    <rect x="156" y="109" width="16" height="31" rx="2" fill="#D9B99B"/>
+                    <rect x="25" y="108" width="20" height="32" rx="2" fill="#C9A07A" />
+                    <rect x="47" y="103" width="18" height="37" rx="2" fill="#E0B896" />
+                    <rect x="67" y="110" width="24" height="30" rx="2" fill="#D4A574" />
+                    <rect x="93" y="105" width="17" height="35" rx="2" fill="#B89968" />
+                    <rect x="112" y="107" width="21" height="33" rx="2" fill="#E8C4A0" />
+                    <rect x="135" y="102" width="19" height="38" rx="2" fill="#C4956C" />
+                    <rect x="156" y="109" width="16" height="31" rx="2" fill="#D9B99B" />
 
                     {/* Shelf 3 */}
-                    <line x1="20" y1="200" x2="180" y2="200" stroke="#A88860" strokeWidth="3"/>
+                    <line x1="20" y1="200" x2="180" y2="200" stroke="#A88860" strokeWidth="3" />
                     {/* Books on shelf 3 */}
-                    <rect x="25" y="165" width="22" height="35" rx="2" fill="#A88860"/>
-                    <rect x="49" y="168" width="19" height="32" rx="2" fill="#D4A574"/>
-                    <rect x="70" y="162" width="17" height="38" rx="2" fill="#E0B896"/>
-                    <rect x="89" y="167" width="23" height="33" rx="2" fill="#C9A07A"/>
-                    <rect x="114" y="164" width="18" height="36" rx="2" fill="#B89968"/>
-                    <rect x="134" y="169" width="20" height="31" rx="2" fill="#E8C4A0"/>
-                    <rect x="156" y="163" width="16" height="37" rx="2" fill="#D9B99B"/>
+                    <rect x="25" y="165" width="22" height="35" rx="2" fill="#A88860" />
+                    <rect x="49" y="168" width="19" height="32" rx="2" fill="#D4A574" />
+                    <rect x="70" y="162" width="17" height="38" rx="2" fill="#E0B896" />
+                    <rect x="89" y="167" width="23" height="33" rx="2" fill="#C9A07A" />
+                    <rect x="114" y="164" width="18" height="36" rx="2" fill="#B89968" />
+                    <rect x="134" y="169" width="20" height="31" rx="2" fill="#E8C4A0" />
+                    <rect x="156" y="163" width="16" height="37" rx="2" fill="#D9B99B" />
                   </g>
 
                   {/* Library 2 - Right Side */}
                   <g id="library2">
                     {/* Frame */}
-                    <rect x="210" y="20" width="180" height="220" rx="8" fill="#D4A574" fillOpacity="0.15" stroke="#C4956C" strokeWidth="2"/>
+                    <rect x="210" y="20" width="180" height="220" rx="8" fill="#D4A574" fillOpacity="0.15" stroke="#C4956C" strokeWidth="2" />
                     <text x="300" y="15" textAnchor="middle" fill="#8B7355" fontSize="12" fontWeight="bold">Office Library</text>
 
                     {/* Shelf 1 */}
-                    <line x1="220" y1="80" x2="380" y2="80" stroke="#A88860" strokeWidth="3"/>
+                    <line x1="220" y1="80" x2="380" y2="80" stroke="#A88860" strokeWidth="3" />
                     {/* Books on shelf 1 */}
-                    <rect x="225" y="43" width="19" height="37" rx="2" fill="#C4956C"/>
-                    <rect x="246" y="47" width="22" height="33" rx="2" fill="#D4A574"/>
-                    <rect x="270" y="41" width="18" height="39" rx="2" fill="#E8C4A0"/>
-                    <rect x="290" y="45" width="21" height="35" rx="2" fill="#D9B99B"/>
-                    <rect x="313" y="39" width="17" height="41" rx="2" fill="#B89968"/>
-                    <rect x="332" y="44" width="23" height="36" rx="2" fill="#C9A07A"/>
-                    <rect x="357" y="48" width="16" height="32" rx="2" fill="#E0B896"/>
+                    <rect x="225" y="43" width="19" height="37" rx="2" fill="#C4956C" />
+                    <rect x="246" y="47" width="22" height="33" rx="2" fill="#D4A574" />
+                    <rect x="270" y="41" width="18" height="39" rx="2" fill="#E8C4A0" />
+                    <rect x="290" y="45" width="21" height="35" rx="2" fill="#D9B99B" />
+                    <rect x="313" y="39" width="17" height="41" rx="2" fill="#B89968" />
+                    <rect x="332" y="44" width="23" height="36" rx="2" fill="#C9A07A" />
+                    <rect x="357" y="48" width="16" height="32" rx="2" fill="#E0B896" />
 
                     {/* Shelf 2 */}
-                    <line x1="220" y1="140" x2="380" y2="140" stroke="#A88860" strokeWidth="3"/>
+                    <line x1="220" y1="140" x2="380" y2="140" stroke="#A88860" strokeWidth="3" />
                     {/* Books on shelf 2 */}
-                    <rect x="225" y="106" width="21" height="34" rx="2" fill="#A88860"/>
-                    <rect x="248" y="109" width="18" height="31" rx="2" fill="#D4A574"/>
-                    <rect x="268" y="103" width="20" height="37" rx="2" fill="#C4956C"/>
-                    <rect x="290" y="108" width="24" height="32" rx="2" fill="#E0B896"/>
-                    <rect x="316" y="105" width="17" height="35" rx="2" fill="#B89968"/>
-                    <rect x="335" y="110" width="19" height="30" rx="2" fill="#E8C4A0"/>
-                    <rect x="356" y="107" width="16" height="33" rx="2" fill="#D9B99B"/>
+                    <rect x="225" y="106" width="21" height="34" rx="2" fill="#A88860" />
+                    <rect x="248" y="109" width="18" height="31" rx="2" fill="#D4A574" />
+                    <rect x="268" y="103" width="20" height="37" rx="2" fill="#C4956C" />
+                    <rect x="290" y="108" width="24" height="32" rx="2" fill="#E0B896" />
+                    <rect x="316" y="105" width="17" height="35" rx="2" fill="#B89968" />
+                    <rect x="335" y="110" width="19" height="30" rx="2" fill="#E8C4A0" />
+                    <rect x="356" y="107" width="16" height="33" rx="2" fill="#D9B99B" />
 
                     {/* Shelf 3 */}
-                    <line x1="220" y1="200" x2="380" y2="200" stroke="#A88860" strokeWidth="3"/>
+                    <line x1="220" y1="200" x2="380" y2="200" stroke="#A88860" strokeWidth="3" />
                     {/* Books on shelf 3 */}
-                    <rect x="225" y="166" width="20" height="34" rx="2" fill="#C9A07A"/>
-                    <rect x="247" y="163" width="22" height="37" rx="2" fill="#D4A574"/>
-                    <rect x="271" y="168" width="17" height="32" rx="2" fill="#B89968"/>
-                    <rect x="290" y="164" width="19" height="36" rx="2" fill="#E8C4A0"/>
-                    <rect x="311" y="167" width="23" height="33" rx="2" fill="#D9B99B"/>
-                    <rect x="336" y="162" width="18" height="38" rx="2" fill="#C4956C"/>
-                    <rect x="356" y="169" width="16" height="31" rx="2" fill="#E0B896"/>
+                    <rect x="225" y="166" width="20" height="34" rx="2" fill="#C9A07A" />
+                    <rect x="247" y="163" width="22" height="37" rx="2" fill="#D4A574" />
+                    <rect x="271" y="168" width="17" height="32" rx="2" fill="#B89968" />
+                    <rect x="290" y="164" width="19" height="36" rx="2" fill="#E8C4A0" />
+                    <rect x="311" y="167" width="23" height="33" rx="2" fill="#D9B99B" />
+                    <rect x="336" y="162" width="18" height="38" rx="2" fill="#C4956C" />
+                    <rect x="356" y="169" width="16" height="31" rx="2" fill="#E0B896" />
                   </g>
 
                   {/* Camera Icon with subtle effect */}
                   <g id="camera-icon">
-                    <circle cx="200" cy="240" r="30" fill="#D4A574" opacity="0.2"/>
-                    <circle cx="200" cy="240" r="24" fill="#F59E0B"/>
-                    <rect x="190" y="234" width="20" height="12" rx="2" fill="#FFF"/>
-                    <circle cx="200" cy="240" r="7" fill="#FFF" opacity="0.6"/>
+                    <circle cx="200" cy="240" r="30" fill="#D4A574" opacity="0.2" />
+                    <circle cx="200" cy="240" r="24" fill="#F59E0B" />
+                    <rect x="190" y="234" width="20" height="12" rx="2" fill="#FFF" />
+                    <circle cx="200" cy="240" r="7" fill="#FFF" opacity="0.6" />
                     {/* Subtle sparkles */}
                     <circle cx="175" cy="220" r="2" fill="#F59E0B" opacity="0.6">
-                      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite"/>
+                      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite" />
                     </circle>
                     <circle cx="225" cy="225" r="1.5" fill="#F59E0B" opacity="0.6">
-                      <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2.5s" repeatCount="indefinite"/>
+                      <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2.5s" repeatCount="indefinite" />
                     </circle>
                     <circle cx="210" cy="260" r="2" fill="#F59E0B" opacity="0.6">
-                      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.8s" repeatCount="indefinite"/>
+                      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.8s" repeatCount="indefinite" />
                     </circle>
                   </g>
                 </svg>
@@ -470,7 +470,7 @@ export default function LandingPage() {
               </div>
 
               <a
-                href="https://github.com/yourusername/book-guardian"
+                href="https://github.com/RuBiCK/bookguardian"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white text-neutral-900 rounded-xl hover:bg-neutral-100 transition-all shadow-xl hover:shadow-2xl font-semibold text-lg"
@@ -492,7 +492,7 @@ export default function LandingPage() {
               </div>
               <pre className="text-sm text-neutral-300 font-mono overflow-x-auto">
                 <code>{`# Clone the repository
-git clone https://github.com/yourusername/book-guardian.git
+git clone https://github.com/RuBiCK/bookguardian.git
 
 # Install dependencies
 cd book-guardian
@@ -532,7 +532,7 @@ docker-compose up -d`}</code>
               {session ? "Go to Your Library" : "Get Started Free"}
             </Link>
             <a
-              href="https://github.com/yourusername/book-guardian"
+              href="https://github.com/RuBiCK/bookguardian"
               target="_blank"
               rel="noopener noreferrer"
               className="px-8 py-4 bg-amber-700 text-white rounded-xl hover:bg-amber-800 transition-all shadow-xl hover:shadow-2xl font-semibold text-lg flex items-center gap-2"
@@ -573,17 +573,17 @@ docker-compose up -d`}</code>
             <div>
               <h3 className="text-white font-semibold mb-4">Developers</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="https://github.com/yourusername/book-guardian" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">GitHub</a></li>
-                <li><a href="https://github.com/yourusername/book-guardian/blob/main/README.md" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Documentation</a></li>
-                <li><a href="https://github.com/yourusername/book-guardian/issues" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Issues</a></li>
-                <li><a href="https://github.com/yourusername/book-guardian/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Contribute</a></li>
+                <li><a href="https://github.com/RuBiCK/bookguardian" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">GitHub</a></li>
+                <li><a href="https://github.com/RuBiCK/bookguardian/blob/main/README.md" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Documentation</a></li>
+                <li><a href="https://github.com/RuBiCK/bookguardian/issues" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Issues</a></li>
+                <li><a href="https://github.com/RuBiCK/bookguardian/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Contribute</a></li>
               </ul>
             </div>
 
             <div>
               <h3 className="text-white font-semibold mb-4">Community</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="https://github.com/yourusername/book-guardian/discussions" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Discussions</a></li>
+                <li><a href="https://github.com/RuBiCK/bookguardian/discussions" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Discussions</a></li>
                 <li><a href="https://twitter.com/bookguardian" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">Twitter</a></li>
               </ul>
             </div>
