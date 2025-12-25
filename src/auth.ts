@@ -18,7 +18,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // JWT callback - called when JWT is created or updated
     jwt({ token, user, account, profile }) {
       // Initial sign in - add user ID to token
-      if (user) {
+      if (user?.id) {
         token.id = user.id
       }
       return token
@@ -26,8 +26,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Session callback - called when session is checked
     session({ session, token }) {
       // Add user ID from token to session
-      if (token && session.user) {
-        session.user.id = token.id as string
+      if (token?.id && session.user) {
+        session.user.id = token.id
       }
       return session
     },
