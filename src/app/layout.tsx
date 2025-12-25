@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
+import { SessionProvider } from '@/components/SessionProvider'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -18,10 +19,12 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${inter.variable} font-sans antialiased bg-background text-foreground min-h-screen pb-24 md:pb-0 md:pt-16`}>
-                <main className="container mx-auto px-4 py-6 max-w-5xl">
-                    {children}
-                </main>
-                <Navigation />
+                <SessionProvider>
+                    <main className="container mx-auto px-4 py-6 max-w-5xl">
+                        {children}
+                    </main>
+                    <Navigation />
+                </SessionProvider>
             </body>
         </html>
     )

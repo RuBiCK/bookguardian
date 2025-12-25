@@ -2,17 +2,28 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, PlusCircle, BookOpen, Settings } from 'lucide-react'
+import { Home, PlusCircle, BookOpen, Settings, LogOut } from 'lucide-react'
+import { useSession, signOut } from 'next-auth/react'
+import Image from 'next/image'
+import { useState } from 'react'
 
 export default function Navigation() {
     const pathname = usePathname()
+    const { data: session } = useSession()
+    const [showUserMenu, setShowUserMenu] = useState(false)
 
     const isActive = (path: string) => pathname === path
 
+    const handleSignOut = async () => {
+        await signOut({ callbackUrl: '/login' })
+    }
+
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 pb-safe pt-2 px-6 z-50 md:top-0 md:bottom-auto md:h-16 md:border-t-0 md:border-b md:flex md:items-center md:justify-between md:px-8">
-            <div className="hidden md:block text-xl font-bold text-primary">
-                MyLibrary
+            <div className="hidden md:flex items-center gap-4">
+                <div className="text-xl font-bold text-primary">
+                    Personal Library
+                </div>
             </div>
 
             <div className="flex justify-between items-center md:gap-8">
@@ -36,6 +47,58 @@ export default function Navigation() {
                     <span className="text-[10px] md:text-xs font-medium">Settings</span>
                 </Link>
             </div>
+
+            {/* User Profile Menu - Desktop Only */}
+            {session?.user && (
+                <div className="hidden md:block relative">
+                    <button
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary transition-colors"
+                    >
+                        {session.user.image ? (
+                            <Image
+                                src={session.user.image}
+                                alt={session.user.name || 'User'}
+                                width={32}
+                                height={32}
+                                className="rounded-full"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+                                {session.user.name?.[0] || session.user.email?.[0] || 'U'}
+                            </div>
+                        )}
+                        <span className="text-sm font-medium max-w-[150px] truncate">
+                            {session.user.name || session.user.email}
+                        </span>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {showUserMenu && (
+                        <>
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setShowUserMenu(false)}
+                            />
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg py-2 z-50">
+                                <div className="px-4 py-3 border-b border-border">
+                                    <p className="text-sm font-medium">{session.user.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                        {session.user.email}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleSignOut}
+                                    className="w-full px-4 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2 text-red-600 dark:text-red-400"
+                                >
+                                    <LogOut size={16} />
+                                    Sign Out
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
         </nav>
     )
 }

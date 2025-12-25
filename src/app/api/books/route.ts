@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
 
 export async function GET(request: Request) {
     try {
+        const user = await requireAuth()
+
         const { searchParams } = new URL(request.url)
         const libraryId = searchParams.get('libraryId')
         const readStatus = searchParams.get('readStatus')
@@ -12,10 +15,17 @@ export async function GET(request: Request) {
         const search = searchParams.get('search')
         const tags = searchParams.get('tags') // Comma separated tags
 
-        const where: any = {}
+        const where: any = {
+            // CRITICAL: Filter books by user through shelf → library → userId relationship
+            shelf: {
+                library: {
+                    userId: user.id
+                }
+            }
+        }
 
         if (libraryId) {
-            where.shelf = { libraryId }
+            where.shelf.libraryId = libraryId
         }
 
         if (readStatus) {
@@ -37,11 +47,31 @@ export async function GET(request: Request) {
         }
 
         if (search) {
-            where.OR = [
+            const searchConditions: any[] = [
                 { title: { contains: search, mode: 'insensitive' } },
                 { author: { contains: search, mode: 'insensitive' } },
-                { isbn: { contains: search } }
+                { isbn: { contains: search } },
+                { publisher: { contains: search, mode: 'insensitive' } },
+                { category: { contains: search, mode: 'insensitive' } },
+                { language: { contains: search, mode: 'insensitive' } },
+                { comment: { contains: search, mode: 'insensitive' } },
+                // Search by tag names
+                {
+                    tags: {
+                        some: {
+                            name: { contains: search, mode: 'insensitive' }
+                        }
+                    }
+                }
             ]
+
+            // If search term is a number, also search by year
+            const yearNumber = parseInt(search)
+            if (!isNaN(yearNumber)) {
+                searchConditions.push({ year: yearNumber })
+            }
+
+            where.OR = searchConditions
         }
 
         if (tags) {
@@ -74,6 +104,9 @@ export async function GET(request: Request) {
         })
         return NextResponse.json(books)
     } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+            return unauthorizedResponse()
+        }
         console.error('Error fetching books:', error)
         return NextResponse.json({ error: 'Error fetching books' }, { status: 500 })
     }
@@ -81,6 +114,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const user = await requireAuth()
+
         const body = await request.json()
         const {
             title,
@@ -98,24 +133,46 @@ export async function POST(request: Request) {
             tags, // Array of strings
         } = body
 
-        // If no shelfId is provided, try to find the default shelf
+        // If no shelfId is provided, try to find the user's default shelf
         let targetShelfId = shelfId
         if (!targetShelfId) {
             const defaultShelf = await prisma.shelf.findFirst({
-                where: { name: 'Default Shelf' },
+                where: {
+                    name: 'Default Shelf',
+                    library: {
+                        userId: user.id
+                    }
+                },
             })
             if (defaultShelf) {
                 targetShelfId = defaultShelf.id
             } else {
-                // Fallback: create a default library and shelf if they don't exist (safety net)
+                // Create a default library and shelf for new user
                 const newLib = await prisma.library.create({
                     data: {
                         name: 'Default Library',
+                        userId: user.id,
                         shelves: { create: { name: 'Default Shelf' } }
                     },
                     include: { shelves: true }
                 })
                 targetShelfId = newLib.shelves[0].id
+            }
+        } else {
+            // Verify shelf belongs to user's library
+            const shelf = await prisma.shelf.findFirst({
+                where: {
+                    id: targetShelfId,
+                    library: {
+                        userId: user.id
+                    }
+                }
+            })
+            if (!shelf) {
+                return NextResponse.json(
+                    { error: 'Shelf not found or unauthorized' },
+                    { status: 403 }
+                )
             }
         }
 
@@ -147,6 +204,9 @@ export async function POST(request: Request) {
 
         return NextResponse.json(book)
     } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+            return unauthorizedResponse()
+        }
         console.error('Error creating book:', error)
         return NextResponse.json({ error: 'Error creating book' }, { status: 500 })
     }

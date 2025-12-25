@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
+import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
 
 export async function GET() {
     try {
+        const user = await requireAuth()
+
         const books = await prisma.book.findMany({
+            where: {
+                shelf: {
+                    library: {
+                        userId: user.id
+                    }
+                }
+            },
             include: {
                 shelf: {
                     include: {
@@ -49,6 +57,9 @@ export async function GET() {
 
         return NextResponse.json(exportData)
     } catch (error) {
+        if (error instanceof Error && error.message === 'Unauthorized') {
+            return unauthorizedResponse()
+        }
         console.error('Error fetching books for export:', error)
         return NextResponse.json({ error: 'Failed to fetch books' }, { status: 500 })
     }
