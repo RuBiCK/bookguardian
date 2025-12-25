@@ -133,6 +133,12 @@ export async function PATCH(
                 tags: tagUpdate,
             },
             include: {
+                shelf: {
+                    include: {
+                        library: true
+                    }
+                },
+                lendings: true,
                 tags: true,
             }
         })

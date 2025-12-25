@@ -77,6 +77,7 @@ export default function BookDetailsPage() {
                 const updatedData = await updatedRes.json()
                 setBook(updatedData)
                 setLendingName('')
+                setShowLendingInput(false)
             }
         } catch (error) {
             console.error('Error lending book:', error)

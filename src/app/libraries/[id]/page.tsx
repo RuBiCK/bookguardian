@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, use } from 'react'
-import { Plus, ArrowLeft, Trash2, Book, Loader2 } from 'lucide-react'
+import { Plus, ArrowLeft, Trash2, Book, Loader2, Edit2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -25,6 +25,8 @@ export default function LibraryDetailsPage({ params }: { params: Promise<{ id: s
     const [loading, setLoading] = useState(true)
     const [showAddShelf, setShowAddShelf] = useState(false)
     const [newShelfName, setNewShelfName] = useState('')
+    const [editingShelf, setEditingShelf] = useState<Shelf | null>(null)
+    const [editShelfName, setEditShelfName] = useState('')
 
     useEffect(() => {
         fetchLibrary()
@@ -77,6 +79,54 @@ export default function LibraryDetailsPage({ params }: { params: Promise<{ id: s
         }
     }
 
+    const handleEditShelf = (shelf: Shelf) => {
+        setEditingShelf(shelf)
+        setEditShelfName(shelf.name)
+    }
+
+    const handleUpdateShelf = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editingShelf) return
+
+        try {
+            const res = await fetch(`/api/shelves/${editingShelf.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: editShelfName })
+            })
+            if (res.ok) {
+                setEditingShelf(null)
+                setEditShelfName('')
+                fetchLibrary()
+            }
+        } catch (error) {
+            console.error('Error updating shelf:', error)
+        }
+    }
+
+    const handleDeleteShelf = async (shelf: Shelf) => {
+        if (shelf._count.books > 0) {
+            alert('Cannot delete shelf with books. Please move or delete the books first.')
+            return
+        }
+
+        if (!confirm(`Are you sure you want to delete the shelf "${shelf.name}"?`)) return
+
+        try {
+            const res = await fetch(`/api/shelves/${shelf.id}`, {
+                method: 'DELETE'
+            })
+            if (res.ok) {
+                fetchLibrary()
+            } else {
+                const error = await res.json()
+                alert(error.error || 'Error deleting shelf')
+            }
+        } catch (error) {
+            console.error('Error deleting shelf:', error)
+        }
+    }
+
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
     if (!library) return <div className="p-8 text-center">Library not found</div>
 
@@ -111,7 +161,7 @@ export default function LibraryDetailsPage({ params }: { params: Promise<{ id: s
 
             <div className="grid gap-3">
                 {library.shelves.map(shelf => (
-                    <div key={shelf.id} className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+                    <div key={shelf.id} className="bg-card border border-border rounded-lg p-4 flex items-center justify-between group">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-secondary rounded-md">
                                 <Book size={20} className="text-muted-foreground" />
@@ -120,6 +170,22 @@ export default function LibraryDetailsPage({ params }: { params: Promise<{ id: s
                                 <h3 className="font-medium">{shelf.name}</h3>
                                 <p className="text-xs text-muted-foreground">{shelf._count.books} books</p>
                             </div>
+                        </div>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={() => handleEditShelf(shelf)}
+                                className="p-2 hover:bg-secondary rounded-md transition-colors"
+                                title="Rename shelf"
+                            >
+                                <Edit2 size={16} className="text-muted-foreground" />
+                            </button>
+                            <button
+                                onClick={() => handleDeleteShelf(shelf)}
+                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                title="Delete shelf"
+                            >
+                                <Trash2 size={16} className="text-red-500" />
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -150,6 +216,41 @@ export default function LibraryDetailsPage({ params }: { params: Promise<{ id: s
                                 </button>
                                 <button type="submit" className="btn-primary px-4 py-2">
                                     Create Shelf
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {editingShelf && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-background rounded-xl p-6 w-full max-w-md shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                        <h2 className="text-xl font-bold mb-4">Rename Shelf</h2>
+                        <form onSubmit={handleUpdateShelf} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Name</label>
+                                <input
+                                    required
+                                    value={editShelfName}
+                                    onChange={e => setEditShelfName(e.target.value)}
+                                    placeholder="e.g. Top Shelf"
+                                    className="input-field"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingShelf(null)
+                                        setEditShelfName('')
+                                    }}
+                                    className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary px-4 py-2">
+                                    Save Changes
                                 </button>
                             </div>
                         </form>
