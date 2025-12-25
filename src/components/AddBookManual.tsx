@@ -9,6 +9,7 @@ interface AddBookManualProps {
         title?: string
         author?: string
         isbn?: string
+        coverUrl?: string
         category?: string
         publisher?: string
         year?: string
@@ -34,6 +35,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
         title: initialData?.title || '',
         author: initialData?.author || '',
         isbn: initialData?.isbn || '',
+        coverUrl: initialData?.coverUrl || '',
         category: initialData?.category || '',
         publisher: initialData?.publisher || '',
         year: initialData?.year ? String(initialData.year) : '',
@@ -75,6 +77,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 title: initialData.title || prev.title,
                 author: initialData.author || prev.author,
                 isbn: initialData.isbn || prev.isbn,
+                coverUrl: initialData.coverUrl || prev.coverUrl,
                 category: initialData.category || prev.category,
                 publisher: initialData.publisher || prev.publisher,
                 year: initialData.year ? String(initialData.year) : prev.year,
@@ -127,6 +130,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                     title: bookInfo.title || prev.title,
                     author: bookInfo.authors ? bookInfo.authors.join(', ') : prev.author,
                     isbn: bookInfo.industryIdentifiers?.[0]?.identifier || prev.isbn,
+                    coverUrl: bookInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || prev.coverUrl,
                     category: bookInfo.categories ? bookInfo.categories[0] : prev.category,
                     publisher: bookInfo.publisher || prev.publisher,
                     year: bookInfo.publishedDate ? bookInfo.publishedDate.substring(0, 4) : prev.year,
