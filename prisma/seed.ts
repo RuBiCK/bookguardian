@@ -3,18 +3,10 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  const defaultLibrary = await prisma.library.create({
-    data: {
-      name: 'Default Library',
-      location: 'Home',
-      shelves: {
-        create: {
-          name: 'Default Shelf',
-        },
-      },
-    },
-  })
-  console.log({ defaultLibrary })
+  // Seed file is no longer needed for multi-user authentication system
+  // Default libraries and shelves are automatically created when users
+  // add their first book (see src/app/api/books/route.ts)
+  console.log('Seed: Multi-user system - no default data needed')
 }
 
 main()
