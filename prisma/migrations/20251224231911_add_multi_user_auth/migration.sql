@@ -4,6 +4,14 @@
   - Added the required column `userId` to the `Library` table without a default value. This is not possible if the table is not empty.
 
 */
+
+-- Clean up failed migration state if exists
+DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20251224231911_add_multi_user_auth';
+
+-- Delete all existing data to allow clean migration
+-- Cascade will handle related books, shelves, lendings, etc.
+DELETE FROM "Library";
+
 -- AlterTable
 ALTER TABLE "Library" ADD COLUMN     "userId" TEXT NOT NULL;
 
