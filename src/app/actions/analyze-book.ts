@@ -39,7 +39,7 @@ export async function analyzeBookImage(base64Image: string) {
         const aiData = JSON.parse(content)
 
         // Search for multiple editions with Google Books
-        let multipleResults = []
+        let multipleResults: Awaited<ReturnType<typeof searchGoogleBooksMultiple>> = []
 
         // Try to search by ISBN first
         if (aiData.isbn) {
