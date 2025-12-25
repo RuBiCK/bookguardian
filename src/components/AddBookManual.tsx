@@ -112,7 +112,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 }),
             })
             if (res.ok) {
-                router.push('/')
+                router.push('/library')
                 router.refresh()
             }
         } catch (error) {
