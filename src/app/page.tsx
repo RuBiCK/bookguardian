@@ -590,7 +590,7 @@ docker-compose up -d`}</code>
           </div>
 
           <div className="pt-8 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-neutral-400">
-            <p>© {new Date().getFullYear()} Book Guardian. Open source under MIT License.</p>
+            <p>© {new Date().getFullYear()} Book Guardian. Licensed under PolyForm Noncommercial 1.0.0</p>
             <p>Made with ❤️ for book lovers everywhere</p>
           </div>
         </div>
