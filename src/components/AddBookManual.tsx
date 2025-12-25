@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Star, Search, Loader2 } from 'lucide-react'
 
+const STORAGE_KEY_LIBRARY = 'bookForm_lastLibraryId'
+const STORAGE_KEY_SHELF = 'bookForm_lastShelfId'
+
 interface AddBookManualProps {
     initialData?: {
         title?: string
@@ -54,11 +57,26 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 if (res.ok) {
                     const data = await res.json()
                     setLibraries(data)
-                    // Auto-select first library and shelf
-                    if (data.length > 0) {
-                        setSelectedLibrary(data[0].id)
-                        if (data[0].shelves?.length > 0) {
-                            setSelectedShelf(data[0].shelves[0].id)
+
+                    // Try to restore from localStorage
+                    const savedLibraryId = localStorage.getItem(STORAGE_KEY_LIBRARY)
+                    const savedShelfId = localStorage.getItem(STORAGE_KEY_SHELF)
+
+                    if (savedLibraryId && data.find((lib: Library) => lib.id === savedLibraryId)) {
+                        setSelectedLibrary(savedLibraryId)
+                        const lib = data.find((lib: Library) => lib.id === savedLibraryId)
+                        if (savedShelfId && lib && lib.shelves?.find(s => s.id === savedShelfId)) {
+                            setSelectedShelf(savedShelfId)
+                        } else if (lib && lib.shelves?.length > 0) {
+                            setSelectedShelf(lib.shelves[0].id)
+                        }
+                    } else {
+                        // Fallback to first library/shelf
+                        if (data.length > 0) {
+                            setSelectedLibrary(data[0].id)
+                            if (data[0].shelves?.length > 0) {
+                                setSelectedShelf(data[0].shelves[0].id)
+                            }
                         }
                     }
                 }
@@ -85,6 +103,20 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
             }))
         }
     }, [initialData])
+
+    // Save library selection to localStorage
+    useEffect(() => {
+        if (selectedLibrary) {
+            localStorage.setItem(STORAGE_KEY_LIBRARY, selectedLibrary)
+        }
+    }, [selectedLibrary])
+
+    // Save shelf selection to localStorage
+    useEffect(() => {
+        if (selectedShelf) {
+            localStorage.setItem(STORAGE_KEY_SHELF, selectedShelf)
+        }
+    }, [selectedShelf])
 
     // Update shelf options when library changes
     const handleLibraryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -147,7 +179,24 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
         }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const resetFormData = () => {
+        setFormData({
+            title: '',
+            author: '',
+            isbn: '',
+            coverUrl: '',
+            category: '',
+            publisher: '',
+            year: '',
+            language: '',
+            readStatus: 'WANT_TO_READ',
+            rating: '0',
+            comment: '',
+            tags: ''
+        })
+    }
+
+    const handleSubmit = async (e: React.FormEvent, mode: 'return' | 'addMore' = 'return') => {
         e.preventDefault()
         setLoading(true)
         try {
@@ -161,8 +210,14 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 }),
             })
             if (res.ok) {
-                router.push('/library')
-                router.refresh()
+                if (mode === 'addMore') {
+                    // Stay on page, clear form, keep library/shelf
+                    resetFormData()
+                } else {
+                    // Original behavior: redirect to library
+                    router.push('/library')
+                    router.refresh()
+                }
             }
         } catch (error) {
             console.error('Error adding book:', error)
@@ -315,7 +370,16 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                     )}
                 </button>
                 <button
+                    type="button"
+                    onClick={(e) => handleSubmit(e, 'addMore')}
+                    disabled={loading}
+                    className="flex-1 btn-secondary"
+                >
+                    {loading ? 'Adding...' : 'Save & Add More'}
+                </button>
+                <button
                     type="submit"
+                    onClick={(e) => handleSubmit(e, 'return')}
                     disabled={loading}
                     className="flex-1 btn-primary"
                 >

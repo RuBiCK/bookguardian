@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Book, Lending, Tag } from '@prisma/client'
-import { ArrowLeft, Star, Calendar, User, BookOpen } from 'lucide-react'
+import { ArrowLeft, Star, Calendar, User, BookOpen, Library, ChevronDown, CheckCircle2, Users } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -29,6 +29,8 @@ export default function BookDetailsPage() {
         comment: '',
         tags: ''
     })
+    const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+    const [showLendingInput, setShowLendingInput] = useState(false)
 
     useEffect(() => {
         async function fetchBook() {
@@ -97,6 +99,25 @@ export default function BookDetailsPage() {
             }
         } catch (error) {
             console.error('Error returning book:', error)
+        }
+    }
+
+    const handleStatusChange = async (newStatus: string) => {
+        if (!book) return
+        try {
+            const res = await fetch(`/api/books/${book.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ readStatus: newStatus })
+            })
+
+            if (res.ok) {
+                const updatedBook = await res.json()
+                setBook(updatedBook)
+                setShowStatusDropdown(false)
+            }
+        } catch (error) {
+            console.error('Error updating status:', error)
         }
     }
 
@@ -269,15 +290,51 @@ export default function BookDetailsPage() {
                                     {book.rating}/5
                                 </div>
                             )}
-                            <div className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium">
-                                {book.readStatus.replace(/_/g, ' ')}
-                            </div>
                             {book.year && (
                                 <div className="flex items-center text-muted-foreground">
                                     <Calendar size={18} className="mr-1" />
                                     {book.year}
                                 </div>
                             )}
+                            {/* Library and Shelf */}
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Library size={16} />
+                                <span>
+                                    {(book as any).shelf?.library?.name} / {(book as any).shelf?.name}
+                                </span>
+                            </div>
+                            {/* Reading Status - Clickable Dropdown */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                                    className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-colors flex items-center gap-1"
+                                >
+                                    {book.readStatus.replace(/_/g, ' ')}
+                                    <ChevronDown size={14} />
+                                </button>
+
+                                {showStatusDropdown && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setShowStatusDropdown(false)}
+                                        />
+                                        <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-1 z-50 min-w-[150px]">
+                                            {['WANT_TO_READ', 'READING', 'READ'].map(status => (
+                                                <button
+                                                    key={status}
+                                                    onClick={() => handleStatusChange(status)}
+                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary transition-colors ${
+                                                        book.readStatus === status ? 'bg-secondary font-medium' : ''
+                                                    }`}
+                                                >
+                                                    {status.replace(/_/g, ' ')}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         {/* Tags Display */}
@@ -298,44 +355,79 @@ export default function BookDetailsPage() {
                         )}
 
                         <div className="border-t border-border pt-6">
-                            <h3 className="text-lg font-semibold mb-4">Lending Status</h3>
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <Users size={20} />
+                                Lending Status
+                            </h3>
 
                             {currentLending ? (
-                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-full text-blue-600 dark:text-blue-200">
-                                            <User size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-blue-900 dark:text-blue-100">Lent to {currentLending.borrowerName}</p>
-                                            <p className="text-xs text-blue-700 dark:text-blue-300">Since {new Date(currentLending.lentDate).toLocaleDateString()}</p>
+                                // Book is currently lent out
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                        <User size={20} className="text-blue-600 dark:text-blue-400" />
+                                        <div className="flex-1">
+                                            <p className="font-medium text-blue-900 dark:text-blue-100">
+                                                Lent to {currentLending.borrowerName}
+                                            </p>
+                                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                                                Since {new Date(currentLending.lentDate).toLocaleDateString()}
+                                            </p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleReturn(currentLending.id)}
-                                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                        className="w-full btn-secondary"
                                     >
                                         Mark as Returned
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <p className="text-sm text-muted-foreground">This book is currently available.</p>
-                                    <div className="flex gap-2">
+                            ) : showLendingInput ? (
+                                // Show borrower input form
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Borrower Name</label>
                                         <input
-                                            placeholder="Borrower Name"
-                                            className="input-field"
+                                            type="text"
                                             value={lendingName}
                                             onChange={(e) => setLendingName(e.target.value)}
+                                            placeholder="Enter borrower name"
+                                            className="input-field"
                                         />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setShowLendingInput(false)
+                                                setLendingName('')
+                                            }}
+                                            className="flex-1 btn-secondary"
+                                        >
+                                            Cancel
+                                        </button>
                                         <button
                                             onClick={handleLend}
-                                            disabled={!lendingName || isLending}
-                                            className="btn-primary whitespace-nowrap"
+                                            disabled={!lendingName.trim() || isLending}
+                                            className="flex-1 btn-primary"
                                         >
-                                            Lend Book
+                                            {isLending ? 'Lending...' : 'Confirm Lending'}
                                         </button>
                                     </div>
+                                </div>
+                            ) : (
+                                // Book is available
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                        <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />
+                                        <p className="font-medium text-green-900 dark:text-green-100">
+                                            This book is currently available
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowLendingInput(true)}
+                                        className="w-full btn-primary"
+                                    >
+                                        Lend This Book
+                                    </button>
                                 </div>
                             )}
                         </div>
