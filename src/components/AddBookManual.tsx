@@ -88,7 +88,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
         const libId = e.target.value
         setSelectedLibrary(libId)
         const library = libraries.find(lib => lib.id === libId)
-        if (library?.shelves?.length > 0) {
+        if (library && library.shelves && library.shelves.length > 0) {
             setSelectedShelf(library.shelves[0].id)
         } else {
             setSelectedShelf('')
