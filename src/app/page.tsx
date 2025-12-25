@@ -146,61 +146,61 @@ export default function LandingPage() {
       </section>
 
       {/* AI Camera Feature - Highlighted Section */}
-      <section className="py-24 px-6 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute w-96 h-96 bg-purple-400/30 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
-          <div className="absolute w-96 h-96 bg-blue-400/30 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse delay-1000"></div>
+      <section className="py-24 px-6 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-800 relative overflow-hidden">
+        {/* Subtle background elements */}
+        <div className="absolute inset-0 overflow-hidden opacity-40">
+          <div className="absolute w-96 h-96 bg-amber-200/20 rounded-full blur-3xl -top-48 -left-48"></div>
+          <div className="absolute w-96 h-96 bg-orange-200/20 rounded-full blur-3xl -bottom-48 -right-48"></div>
         </div>
 
         <div className="container mx-auto max-w-7xl relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium border border-white/30">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-800 dark:text-amber-200 text-sm font-medium border border-amber-200 dark:border-amber-800">
                 <Sparkles className="w-4 h-4" />
                 <span>Powered by AI</span>
               </div>
 
-              <h2 className="text-5xl lg:text-6xl font-bold leading-tight">
+              <h2 className="text-4xl lg:text-5xl font-bold leading-tight text-neutral-900 dark:text-white">
                 📸 Snap a Photo,
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">
                   AI Does the Rest
                 </span>
               </h2>
 
-              <p className="text-2xl text-purple-100 leading-relaxed">
+              <p className="text-xl text-neutral-600 dark:text-neutral-300 leading-relaxed">
                 Just take a picture of your book's cover, and our AI instantly extracts all the details—title, author, ISBN, and more. No typing, no searching, just magic.
               </p>
 
               <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0">
+                <div className="flex items-start gap-4 p-4 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0">
                     <Camera className="text-white" size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Instant Recognition</h3>
-                    <p className="text-purple-100">AI analyzes the book cover and extracts all metadata automatically</p>
+                    <h3 className="text-lg font-semibold mb-1 text-neutral-900 dark:text-white">Instant Recognition</h3>
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm">AI analyzes the book cover and extracts all metadata automatically</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                <div className="flex items-start gap-4 p-4 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0">
                     <ScanLine className="text-white" size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Auto-Complete Details</h3>
-                    <p className="text-purple-100">Title, author, publisher, year, ISBN—all filled in seconds</p>
+                    <h3 className="text-lg font-semibold mb-1 text-neutral-900 dark:text-white">Auto-Complete Details</h3>
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm">Title, author, publisher, year, ISBN—all filled in seconds</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                <div className="flex items-start gap-4 p-4 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center flex-shrink-0">
                     <Sparkles className="text-white" size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Smart & Fast</h3>
-                    <p className="text-purple-100">Add dozens of books to your library in minutes, not hours</p>
+                    <h3 className="text-lg font-semibold mb-1 text-neutral-900 dark:text-white">Smart & Fast</h3>
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm">Add dozens of books to your library in minutes, not hours</p>
                   </div>
                 </div>
               </div>
@@ -208,27 +208,27 @@ export default function LandingPage() {
 
             {/* Library Visualization with Shelves */}
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-pink-500 rounded-3xl blur-3xl opacity-30 animate-pulse"></div>
-              <div className="relative bg-white/10 backdrop-blur-md rounded-3xl p-8 border-2 border-white/30 shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-200 to-orange-200 dark:from-amber-900/20 dark:to-orange-900/20 rounded-3xl blur-2xl opacity-20"></div>
+              <div className="relative bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm rounded-3xl p-8 border border-neutral-200 dark:border-neutral-700 shadow-xl">
                 <svg viewBox="0 0 400 500" className="w-full h-auto">
                   {/* Library Structure */}
 
                   {/* Library 1 - Left Side */}
                   <g id="library1">
                     {/* Frame */}
-                    <rect x="10" y="20" width="180" height="220" rx="8" fill="#FFF" fillOpacity="0.1" stroke="#FFF" strokeWidth="2"/>
-                    <text x="100" y="15" textAnchor="middle" fill="#FFF" fontSize="12" fontWeight="bold">Home Library</text>
+                    <rect x="10" y="20" width="180" height="220" rx="8" fill="#D4A574" fillOpacity="0.15" stroke="#C4956C" strokeWidth="2"/>
+                    <text x="100" y="15" textAnchor="middle" fill="#8B7355" fontSize="12" fontWeight="bold">Home Library</text>
 
                     {/* Shelf 1 */}
-                    <line x1="20" y1="80" x2="180" y2="80" stroke="#FFF" strokeWidth="3"/>
+                    <line x1="20" y1="80" x2="180" y2="80" stroke="#A88860" strokeWidth="3"/>
                     {/* Books on shelf 1 */}
-                    <rect x="25" y="45" width="18" height="35" rx="2" fill="#FF6B6B"/>
-                    <rect x="45" y="40" width="22" height="40" rx="2" fill="#4ECDC4"/>
-                    <rect x="69" y="47" width="16" height="33" rx="2" fill="#FFE66D"/>
-                    <rect x="87" y="42" width="20" height="38" rx="2" fill="#95E1D3"/>
-                    <rect x="109" y="44" width="19" height="36" rx="2" fill="#F38181"/>
-                    <rect x="130" y="38" width="23" height="42" rx="2" fill="#AA96DA"/>
-                    <rect x="155" y="46" width="17" height="34" rx="2" fill="#FCBAD3"/>
+                    <rect x="25" y="45" width="18" height="35" rx="2" fill="#D4A574"/>
+                    <rect x="45" y="40" width="22" height="40" rx="2" fill="#C4956C"/>
+                    <rect x="69" y="47" width="16" height="33" rx="2" fill="#E8C4A0"/>
+                    <rect x="87" y="42" width="20" height="38" rx="2" fill="#B89968"/>
+                    <rect x="109" y="44" width="19" height="36" rx="2" fill="#D9B99B"/>
+                    <rect x="130" y="38" width="23" height="42" rx="2" fill="#A88860"/>
+                    <rect x="155" y="46" width="17" height="34" rx="2" fill="#E0B896"/>
 
                     {/* Shelf 2 */}
                     <line x1="20" y1="140" x2="180" y2="140" stroke="#FFF" strokeWidth="3"/>
