@@ -1,5 +1,16 @@
 'use server'
 
+interface BookData {
+    title: string
+    author?: string
+    isbn?: string
+    coverUrl?: string
+    category?: string
+    year?: number
+    publisher?: string
+    language?: string
+}
+
 export async function searchGoogleBooks(query: string) {
     try {
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1`)
@@ -22,5 +33,32 @@ export async function searchGoogleBooks(query: string) {
     } catch (error) {
         console.error('Google Books Search Error:', error)
         return null
+    }
+}
+
+export async function searchGoogleBooksMultiple(query: string): Promise<BookData[]> {
+    try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`)
+        const data = await res.json()
+
+        if (data.totalItems > 0) {
+            return data.items.map((item: any) => {
+                const bookInfo = item.volumeInfo
+                return {
+                    title: bookInfo.title,
+                    author: bookInfo.authors ? bookInfo.authors.join(', ') : undefined,
+                    isbn: bookInfo.industryIdentifiers?.find((id: any) => id.type === 'ISBN_13')?.identifier || bookInfo.industryIdentifiers?.find((id: any) => id.type === 'ISBN_10')?.identifier,
+                    coverUrl: bookInfo.imageLinks?.thumbnail?.replace('http:', 'https:'),
+                    category: bookInfo.categories ? bookInfo.categories[0] : undefined,
+                    year: bookInfo.publishedDate ? parseInt(bookInfo.publishedDate.substring(0, 4)) : undefined,
+                    publisher: bookInfo.publisher,
+                    language: bookInfo.language,
+                }
+            }).filter((book: BookData) => book.isbn) // Only return books with ISBN
+        }
+        return []
+    } catch (error) {
+        console.error('Google Books Search Error:', error)
+        return []
     }
 }

@@ -1,7 +1,7 @@
 'use server'
 
 import OpenAI from 'openai'
-import { searchGoogleBooks } from './google-books'
+import { searchGoogleBooks, searchGoogleBooksMultiple } from './google-books'
 
 export async function analyzeBookImage(base64Image: string) {
     const apiKey = process.env.OPENAI_API_KEY
@@ -38,22 +38,41 @@ export async function analyzeBookImage(base64Image: string) {
 
         const aiData = JSON.parse(content)
 
-        // Enrich with Google Books
-        let enrichedData = { ...aiData }
+        // Search for multiple editions with Google Books
+        let multipleResults = []
 
         // Try to search by ISBN first
         if (aiData.isbn) {
-            const googleData = await searchGoogleBooks(`isbn:${aiData.isbn}`)
-            if (googleData) {
-                enrichedData = { ...enrichedData, ...googleData }
-            }
+            multipleResults = await searchGoogleBooksMultiple(`isbn:${aiData.isbn}`)
         }
-        // If no ISBN or no result, try Title + Author
-        else if (aiData.title) {
+        // If no ISBN or no results, try Title + Author
+        if (multipleResults.length === 0 && aiData.title) {
             const query = `${aiData.title} ${aiData.author || ''}`.trim()
-            const googleData = await searchGoogleBooks(query)
-            if (googleData) {
-                enrichedData = { ...enrichedData, ...googleData }
+            multipleResults = await searchGoogleBooksMultiple(query)
+        }
+
+        // If we found multiple results, return them for user selection
+        if (multipleResults.length > 1) {
+            return { data: aiData, multipleOptions: multipleResults }
+        }
+
+        // If only one result or no results, use the old behavior
+        let enrichedData = { ...aiData }
+        if (multipleResults.length === 1) {
+            enrichedData = { ...enrichedData, ...multipleResults[0] }
+        } else {
+            // Fallback to single search if no multiple results
+            if (aiData.isbn) {
+                const googleData = await searchGoogleBooks(`isbn:${aiData.isbn}`)
+                if (googleData) {
+                    enrichedData = { ...enrichedData, ...googleData }
+                }
+            } else if (aiData.title) {
+                const query = `${aiData.title} ${aiData.author || ''}`.trim()
+                const googleData = await searchGoogleBooks(query)
+                if (googleData) {
+                    enrichedData = { ...enrichedData, ...googleData }
+                }
             }
         }
 

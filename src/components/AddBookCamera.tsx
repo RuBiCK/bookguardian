@@ -1,9 +1,20 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Camera, Upload, X, Loader2, RefreshCw } from 'lucide-react'
+import { Camera, Upload, X, Loader2, RefreshCw, CheckCircle2 } from 'lucide-react'
 
 import { analyzeBookImage } from '@/app/actions/analyze-book'
+
+interface BookOption {
+    title: string
+    author?: string
+    isbn?: string
+    coverUrl?: string
+    category?: string
+    year?: number
+    publisher?: string
+    language?: string
+}
 
 interface AddBookCameraProps {
     onScanComplete: (data: any) => void
@@ -13,6 +24,8 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
     const [image, setImage] = useState<string | null>(null)
     const [analyzing, setAnalyzing] = useState(false)
     const [isCameraOpen, setIsCameraOpen] = useState(false)
+    const [multipleOptions, setMultipleOptions] = useState<BookOption[]>([])
+    const [aiData, setAiData] = useState<any>(null)
     const videoRef = useRef<HTMLVideoElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -104,6 +117,10 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
             console.log('Server action result:', result)
             if (result.error) {
                 alert(result.error)
+            } else if (result.multipleOptions && result.multipleOptions.length > 1) {
+                // Show selection list
+                setMultipleOptions(result.multipleOptions)
+                setAiData(result.data)
             } else if (result.data) {
                 onScanComplete(result.data)
             }
@@ -115,6 +132,12 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
         }
     }
 
+    const handleSelectBook = (selectedBook: BookOption) => {
+        // Merge AI data with selected book data
+        const mergedData = { ...aiData, ...selectedBook }
+        onScanComplete(mergedData)
+    }
+
     // Cleanup on unmount
     useEffect(() => {
         return () => {
@@ -124,7 +147,62 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {!image && !isCameraOpen ? (
+            {multipleOptions.length > 0 ? (
+                // Show selection list
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Select Book Edition</h3>
+                        <button
+                            onClick={() => {
+                                setMultipleOptions([])
+                                setAiData(null)
+                            }}
+                            className="p-2 hover:bg-secondary rounded-full transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Multiple editions found. Select the correct one:</p>
+
+                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                        {multipleOptions.map((book, index) => (
+                            <button
+                                key={index}
+                                onClick={() => handleSelectBook(book)}
+                                className="w-full flex gap-4 p-4 bg-card border border-border rounded-xl hover:bg-secondary/50 transition-all text-left group"
+                            >
+                                {book.coverUrl && (
+                                    <img
+                                        src={book.coverUrl}
+                                        alt={book.title}
+                                        className="w-16 h-24 object-cover rounded-lg shadow-sm"
+                                    />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                                        {book.title}
+                                    </h4>
+                                    {book.author && (
+                                        <p className="text-xs text-muted-foreground mt-1">{book.author}</p>
+                                    )}
+                                    <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                                        {book.isbn && (
+                                            <span className="px-2 py-1 bg-secondary rounded">ISBN: {book.isbn}</span>
+                                        )}
+                                        {book.year && (
+                                            <span className="px-2 py-1 bg-secondary rounded">{book.year}</span>
+                                        )}
+                                        {book.publisher && (
+                                            <span className="px-2 py-1 bg-secondary rounded truncate max-w-[150px]">{book.publisher}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <CheckCircle2 className="text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" size={24} />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            ) : !image && !isCameraOpen ? (
                 <div className="grid grid-cols-2 gap-4">
                     <button
                         onClick={() => fileInputRef.current?.click()}
@@ -207,9 +285,11 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
                 </div>
             )}
 
-            <div className="text-center text-xs text-muted-foreground">
-                {isCameraOpen ? "Position the book cover in the frame." : "Take a clear photo of the book cover or spine."}
-            </div>
+            {!multipleOptions.length && (
+                <div className="text-center text-xs text-muted-foreground">
+                    {isCameraOpen ? "Position the book cover in the frame." : "Take a clear photo of the book cover or spine."}
+                </div>
+            )}
         </div>
     )
 }
