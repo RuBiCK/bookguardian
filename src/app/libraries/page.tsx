@@ -92,38 +92,42 @@ export default function LibrariesPage() {
             </div>
 
             {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-background rounded-xl p-6 w-full max-w-md shadow-xl animate-in fade-in zoom-in-95 duration-200">
-                        <h2 className="text-xl font-bold mb-4">Add New Library</h2>
-                        <form onSubmit={handleAddLibrary} className="space-y-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl p-8 w-full max-w-lg shadow-2xl border border-neutral-200 dark:border-neutral-800 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+                        <h2 className="text-2xl font-bold mb-6 text-neutral-900 dark:text-white">Add New Library</h2>
+                        <form onSubmit={handleAddLibrary} className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium mb-1">Name</label>
+                                <label className="block text-sm font-semibold mb-2 text-neutral-700 dark:text-neutral-300">
+                                    Name
+                                </label>
                                 <input
                                     required
                                     value={newLibName}
                                     onChange={e => setNewLibName(e.target.value)}
                                     placeholder="e.g. Home Office"
-                                    className="input-field"
+                                    className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Location</label>
+                                <label className="block text-sm font-semibold mb-2 text-neutral-700 dark:text-neutral-300">
+                                    Location
+                                </label>
                                 <input
                                     value={newLibLocation}
                                     onChange={e => setNewLibLocation(e.target.value)}
                                     placeholder="e.g. 2nd Floor"
-                                    className="input-field"
+                                    className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                                 />
                             </div>
-                            <div className="flex justify-end gap-3 mt-6">
+                            <div className="flex justify-end gap-3 mt-8">
                                 <button
                                     type="button"
                                     onClick={() => setShowAddModal(false)}
-                                    className="px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
+                                    className="px-6 py-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors font-medium text-neutral-700 dark:text-neutral-300"
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn-primary px-4 py-2">
+                                <button type="submit" className="px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl font-semibold">
                                     Create Library
                                 </button>
                             </div>

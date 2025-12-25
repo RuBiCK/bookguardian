@@ -137,11 +137,11 @@ export default function Home() {
 
             <div className="flex gap-3">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={20} />
                     <input
                         type="text"
                         placeholder="Search title, author, ISBN..."
-                        className="input-field pl-10"
+                        className="input-field pl-11 w-full"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />

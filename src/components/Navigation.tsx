@@ -78,11 +78,11 @@ export default function Navigation() {
                     {showUserMenu && (
                         <>
                             <div
-                                className="fixed inset-0 z-40"
+                                className="fixed inset-0 z-[100]"
                                 onClick={() => setShowUserMenu(false)}
                             />
-                            <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg py-2 z-50">
-                                <div className="px-4 py-3 border-b border-border">
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-2xl py-2 z-[110]">
+                                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
                                     <p className="text-sm font-medium">{session.user.name}</p>
                                     <p className="text-xs text-muted-foreground truncate">
                                         {session.user.email}

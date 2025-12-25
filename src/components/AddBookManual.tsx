@@ -16,11 +16,20 @@ interface AddBookManualProps {
     }
 }
 
+interface Library {
+    id: string
+    name: string
+    shelves: { id: string; name: string }[]
+}
+
 export default function AddBookManual({ initialData }: AddBookManualProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [searching, setSearching] = useState(false)
     const [searchError, setSearchError] = useState('')
+    const [libraries, setLibraries] = useState<Library[]>([])
+    const [selectedLibrary, setSelectedLibrary] = useState('')
+    const [selectedShelf, setSelectedShelf] = useState('')
     const [formData, setFormData] = useState({
         title: initialData?.title || '',
         author: initialData?.author || '',
@@ -34,6 +43,29 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
         comment: '',
         tags: ''
     })
+
+    // Load libraries on mount
+    useEffect(() => {
+        const fetchLibraries = async () => {
+            try {
+                const res = await fetch('/api/libraries')
+                if (res.ok) {
+                    const data = await res.json()
+                    setLibraries(data)
+                    // Auto-select first library and shelf
+                    if (data.length > 0) {
+                        setSelectedLibrary(data[0].id)
+                        if (data[0].shelves?.length > 0) {
+                            setSelectedShelf(data[0].shelves[0].id)
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading libraries:', error)
+            }
+        }
+        fetchLibraries()
+    }, [])
 
     // Update form data if initialData changes
     useEffect(() => {
@@ -50,6 +82,18 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
             }))
         }
     }, [initialData])
+
+    // Update shelf options when library changes
+    const handleLibraryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const libId = e.target.value
+        setSelectedLibrary(libId)
+        const library = libraries.find(lib => lib.id === libId)
+        if (library?.shelves?.length > 0) {
+            setSelectedShelf(library.shelves[0].id)
+        } else {
+            setSelectedShelf('')
+        }
+    }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -108,6 +152,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
+                    shelfId: selectedShelf || undefined,
                     tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean)
                 }),
             })
@@ -153,6 +198,36 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 <div>
                     <label className="block text-sm font-medium mb-1">Language</label>
                     <input name="language" value={formData.language} placeholder="EN, ES..." className="input-field" onChange={handleChange} />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1">Library</label>
+                    <select
+                        value={selectedLibrary}
+                        onChange={handleLibraryChange}
+                        className="input-field"
+                    >
+                        <option value="">Select a library</option>
+                        {libraries.map(lib => (
+                            <option key={lib.id} value={lib.id}>{lib.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Shelf</label>
+                    <select
+                        value={selectedShelf}
+                        onChange={(e) => setSelectedShelf(e.target.value)}
+                        className="input-field"
+                        disabled={!selectedLibrary}
+                    >
+                        <option value="">Select a shelf</option>
+                        {selectedLibrary && libraries.find(lib => lib.id === selectedLibrary)?.shelves?.map(shelf => (
+                            <option key={shelf.id} value={shelf.id}>{shelf.name}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
