@@ -231,148 +231,90 @@ export default function LandingPage() {
                     <rect x="155" y="46" width="17" height="34" rx="2" fill="#E0B896"/>
 
                     {/* Shelf 2 */}
-                    <line x1="20" y1="140" x2="180" y2="140" stroke="#FFF" strokeWidth="3"/>
+                    <line x1="20" y1="140" x2="180" y2="140" stroke="#A88860" strokeWidth="3"/>
                     {/* Books on shelf 2 */}
-                    <rect x="25" y="108" width="20" height="32" rx="2" fill="#A8E6CF"/>
-                    <rect x="47" y="103" width="18" height="37" rx="2" fill="#FFD3B6"/>
-                    <rect x="67" y="110" width="24" height="30" rx="2" fill="#FFAAA5"/>
-                    <rect x="93" y="105" width="17" height="35" rx="2" fill="#FF8B94"/>
-                    <rect x="112" y="107" width="21" height="33" rx="2" fill="#A8E6CF"/>
-                    <rect x="135" y="102" width="19" height="38" rx="2" fill="#DCEDC1"/>
-                    <rect x="156" y="109" width="16" height="31" rx="2" fill="#FFD3B6"/>
+                    <rect x="25" y="108" width="20" height="32" rx="2" fill="#C9A07A"/>
+                    <rect x="47" y="103" width="18" height="37" rx="2" fill="#E0B896"/>
+                    <rect x="67" y="110" width="24" height="30" rx="2" fill="#D4A574"/>
+                    <rect x="93" y="105" width="17" height="35" rx="2" fill="#B89968"/>
+                    <rect x="112" y="107" width="21" height="33" rx="2" fill="#E8C4A0"/>
+                    <rect x="135" y="102" width="19" height="38" rx="2" fill="#C4956C"/>
+                    <rect x="156" y="109" width="16" height="31" rx="2" fill="#D9B99B"/>
 
                     {/* Shelf 3 */}
-                    <line x1="20" y1="200" x2="180" y2="200" stroke="#FFF" strokeWidth="3"/>
+                    <line x1="20" y1="200" x2="180" y2="200" stroke="#A88860" strokeWidth="3"/>
                     {/* Books on shelf 3 */}
-                    <rect x="25" y="165" width="22" height="35" rx="2" fill="#B4A7D6"/>
-                    <rect x="49" y="168" width="19" height="32" rx="2" fill="#FFDAC1"/>
-                    <rect x="70" y="162" width="17" height="38" rx="2" fill="#E2F0CB"/>
-                    <rect x="89" y="167" width="23" height="33" rx="2" fill="#B5EAD7"/>
-                    <rect x="114" y="164" width="18" height="36" rx="2" fill="#C7CEEA"/>
-                    <rect x="134" y="169" width="20" height="31" rx="2" fill="#FFDAC1"/>
-                    <rect x="156" y="163" width="16" height="37" rx="2" fill="#FF9AA2"/>
+                    <rect x="25" y="165" width="22" height="35" rx="2" fill="#A88860"/>
+                    <rect x="49" y="168" width="19" height="32" rx="2" fill="#D4A574"/>
+                    <rect x="70" y="162" width="17" height="38" rx="2" fill="#E0B896"/>
+                    <rect x="89" y="167" width="23" height="33" rx="2" fill="#C9A07A"/>
+                    <rect x="114" y="164" width="18" height="36" rx="2" fill="#B89968"/>
+                    <rect x="134" y="169" width="20" height="31" rx="2" fill="#E8C4A0"/>
+                    <rect x="156" y="163" width="16" height="37" rx="2" fill="#D9B99B"/>
                   </g>
 
                   {/* Library 2 - Right Side */}
                   <g id="library2">
                     {/* Frame */}
-                    <rect x="210" y="20" width="180" height="220" rx="8" fill="#FFF" fillOpacity="0.1" stroke="#FFF" strokeWidth="2"/>
-                    <text x="300" y="15" textAnchor="middle" fill="#FFF" fontSize="12" fontWeight="bold">Office Library</text>
+                    <rect x="210" y="20" width="180" height="220" rx="8" fill="#D4A574" fillOpacity="0.15" stroke="#C4956C" strokeWidth="2"/>
+                    <text x="300" y="15" textAnchor="middle" fill="#8B7355" fontSize="12" fontWeight="bold">Office Library</text>
 
                     {/* Shelf 1 */}
-                    <line x1="220" y1="80" x2="380" y2="80" stroke="#FFF" strokeWidth="3"/>
+                    <line x1="220" y1="80" x2="380" y2="80" stroke="#A88860" strokeWidth="3"/>
                     {/* Books on shelf 1 */}
-                    <rect x="225" y="43" width="19" height="37" rx="2" fill="#C7CEEA"/>
-                    <rect x="246" y="47" width="22" height="33" rx="2" fill="#B5EAD7"/>
-                    <rect x="270" y="41" width="18" height="39" rx="2" fill="#FFDAC1"/>
-                    <rect x="290" y="45" width="21" height="35" rx="2" fill="#FFD3B6"/>
-                    <rect x="313" y="39" width="17" height="41" rx="2" fill="#FFAAA5"/>
-                    <rect x="332" y="44" width="23" height="36" rx="2" fill="#FF8B94"/>
-                    <rect x="357" y="48" width="16" height="32" rx="2" fill="#DCEDC1"/>
+                    <rect x="225" y="43" width="19" height="37" rx="2" fill="#C4956C"/>
+                    <rect x="246" y="47" width="22" height="33" rx="2" fill="#D4A574"/>
+                    <rect x="270" y="41" width="18" height="39" rx="2" fill="#E8C4A0"/>
+                    <rect x="290" y="45" width="21" height="35" rx="2" fill="#D9B99B"/>
+                    <rect x="313" y="39" width="17" height="41" rx="2" fill="#B89968"/>
+                    <rect x="332" y="44" width="23" height="36" rx="2" fill="#C9A07A"/>
+                    <rect x="357" y="48" width="16" height="32" rx="2" fill="#E0B896"/>
 
                     {/* Shelf 2 */}
-                    <line x1="220" y1="140" x2="380" y2="140" stroke="#FFF" strokeWidth="3"/>
+                    <line x1="220" y1="140" x2="380" y2="140" stroke="#A88860" strokeWidth="3"/>
                     {/* Books on shelf 2 */}
-                    <rect x="225" y="106" width="21" height="34" rx="2" fill="#A8E6CF"/>
-                    <rect x="248" y="109" width="18" height="31" rx="2" fill="#FFAAA5"/>
-                    <rect x="268" y="103" width="20" height="37" rx="2" fill="#FF6B6B"/>
-                    <rect x="290" y="108" width="24" height="32" rx="2" fill="#4ECDC4"/>
-                    <rect x="316" y="105" width="17" height="35" rx="2" fill="#FFE66D"/>
-                    <rect x="335" y="110" width="19" height="30" rx="2" fill="#95E1D3"/>
-                    <rect x="356" y="107" width="16" height="33" rx="2" fill="#F38181"/>
+                    <rect x="225" y="106" width="21" height="34" rx="2" fill="#A88860"/>
+                    <rect x="248" y="109" width="18" height="31" rx="2" fill="#D4A574"/>
+                    <rect x="268" y="103" width="20" height="37" rx="2" fill="#C4956C"/>
+                    <rect x="290" y="108" width="24" height="32" rx="2" fill="#E0B896"/>
+                    <rect x="316" y="105" width="17" height="35" rx="2" fill="#B89968"/>
+                    <rect x="335" y="110" width="19" height="30" rx="2" fill="#E8C4A0"/>
+                    <rect x="356" y="107" width="16" height="33" rx="2" fill="#D9B99B"/>
 
                     {/* Shelf 3 */}
-                    <line x1="220" y1="200" x2="380" y2="200" stroke="#FFF" strokeWidth="3"/>
+                    <line x1="220" y1="200" x2="380" y2="200" stroke="#A88860" strokeWidth="3"/>
                     {/* Books on shelf 3 */}
-                    <rect x="225" y="166" width="20" height="34" rx="2" fill="#AA96DA"/>
-                    <rect x="247" y="163" width="22" height="37" rx="2" fill="#FCBAD3"/>
-                    <rect x="271" y="168" width="17" height="32" rx="2" fill="#B4A7D6"/>
-                    <rect x="290" y="164" width="19" height="36" rx="2" fill="#FFDAC1"/>
-                    <rect x="311" y="167" width="23" height="33" rx="2" fill="#E2F0CB"/>
-                    <rect x="336" y="162" width="18" height="38" rx="2" fill="#B5EAD7"/>
-                    <rect x="356" y="169" width="16" height="31" rx="2" fill="#C7CEEA"/>
+                    <rect x="225" y="166" width="20" height="34" rx="2" fill="#C9A07A"/>
+                    <rect x="247" y="163" width="22" height="37" rx="2" fill="#D4A574"/>
+                    <rect x="271" y="168" width="17" height="32" rx="2" fill="#B89968"/>
+                    <rect x="290" y="164" width="19" height="36" rx="2" fill="#E8C4A0"/>
+                    <rect x="311" y="167" width="23" height="33" rx="2" fill="#D9B99B"/>
+                    <rect x="336" y="162" width="18" height="38" rx="2" fill="#C4956C"/>
+                    <rect x="356" y="169" width="16" height="31" rx="2" fill="#E0B896"/>
                   </g>
 
-                  {/* Library 3 - Bottom Center */}
-                  <g id="library3">
-                    {/* Frame */}
-                    <rect x="60" y="260" width="280" height="220" rx="8" fill="#FFF" fillOpacity="0.1" stroke="#FFF" strokeWidth="2"/>
-                    <text x="200" y="255" textAnchor="middle" fill="#FFF" fontSize="12" fontWeight="bold">Personal Collection</text>
-
-                    {/* Shelf 1 */}
-                    <line x1="70" y1="320" x2="330" y2="320" stroke="#FFF" strokeWidth="3"/>
-                    {/* Books on shelf 1 */}
-                    <rect x="75" y="285" width="18" height="35" rx="2" fill="#FFDAC1"/>
-                    <rect x="95" y="288" width="22" height="32" rx="2" fill="#FF9AA2"/>
-                    <rect x="119" y="282" width="19" height="38" rx="2" fill="#FFD3B6"/>
-                    <rect x="140" y="286" width="21" height="34" rx="2" fill="#FFAAA5"/>
-                    <rect x="163" y="284" width="17" height="36" rx="2" fill="#FF8B94"/>
-                    <rect x="182" y="289" width="24" height="31" rx="2" fill="#A8E6CF"/>
-                    <rect x="208" y="283" width="20" height="37" rx="2" fill="#DCEDC1"/>
-                    <rect x="230" y="287" width="18" height="33" rx="2" fill="#B4A7D6"/>
-                    <rect x="250" y="285" width="22" height="35" rx="2" fill="#FFDAC1"/>
-                    <rect x="274" y="290" width="19" height="30" rx="2" fill="#E2F0CB"/>
-                    <rect x="295" y="284" width="17" height="36" rx="2" fill="#B5EAD7"/>
-                    <rect x="314" y="288" width="14" height="32" rx="2" fill="#C7CEEA"/>
-
-                    {/* Shelf 2 */}
-                    <line x1="70" y1="380" x2="330" y2="380" stroke="#FFF" strokeWidth="3"/>
-                    {/* Books on shelf 2 */}
-                    <rect x="75" y="347" width="20" height="33" rx="2" fill="#FF6B6B"/>
-                    <rect x="97" y="343" width="18" height="37" rx="2" fill="#4ECDC4"/>
-                    <rect x="117" y="348" width="23" height="32" rx="2" fill="#FFE66D"/>
-                    <rect x="142" y="344" width="19" height="36" rx="2" fill="#95E1D3"/>
-                    <rect x="163" y="346" width="21" height="34" rx="2" fill="#F38181"/>
-                    <rect x="186" y="342" width="17" height="38" rx="2" fill="#AA96DA"/>
-                    <rect x="205" y="349" width="22" height="31" rx="2" fill="#FCBAD3"/>
-                    <rect x="229" y="345" width="18" height="35" rx="2" fill="#A8E6CF"/>
-                    <rect x="249" y="347" width="20" height="33" rx="2" fill="#FFD3B6"/>
-                    <rect x="271" y="343" width="24" height="37" rx="2" fill="#FFAAA5"/>
-                    <rect x="297" y="348" width="16" height="32" rx="2" fill="#FF8B94"/>
-                    <rect x="315" y="346" width="13" height="34" rx="2" fill="#DCEDC1"/>
-
-                    {/* Shelf 3 */}
-                    <line x1="70" y1="440" x2="330" y2="440" stroke="#FFF" strokeWidth="3"/>
-                    {/* Books on shelf 3 */}
-                    <rect x="75" y="408" width="22" height="32" rx="2" fill="#B4A7D6"/>
-                    <rect x="99" y="405" width="19" height="35" rx="2" fill="#FFDAC1"/>
-                    <rect x="120" y="410" width="18" height="30" rx="2" fill="#E2F0CB"/>
-                    <rect x="140" y="406" width="21" height="34" rx="2" fill="#B5EAD7"/>
-                    <rect x="163" y="408" width="17" height="32" rx="2" fill="#C7CEEA"/>
-                    <rect x="182" y="403" width="23" height="37" rx="2" fill="#FFDAC1"/>
-                    <rect x="207" y="409" width="19" height="31" rx="2" fill="#FF9AA2"/>
-                    <rect x="228" y="407" width="20" height="33" rx="2" fill="#FFD3B6"/>
-                    <rect x="250" y="405" width="18" height="35" rx="2" fill="#FFAAA5"/>
-                    <rect x="270" y="410" width="22" height="30" rx="2" fill="#FF8B94"/>
-                    <rect x="294" y="406" width="17" height="34" rx="2" fill="#A8E6CF"/>
-                    <rect x="313" y="408" width="15" height="32" rx="2" fill="#DCEDC1"/>
-                  </g>
-
-                  {/* Camera Icon with AI Magic */}
+                  {/* Camera Icon with subtle effect */}
                   <g id="camera-icon">
-                    <circle cx="200" cy="120" r="35" fill="#FFF" opacity="0.2"/>
-                    <circle cx="200" cy="120" r="28" fill="#6366F1"/>
-                    <rect x="188" y="113" width="24" height="14" rx="3" fill="#FFF"/>
-                    <circle cx="200" cy="120" r="8" fill="#FFF" opacity="0.5"/>
-                    {/* Sparkles around camera */}
-                    <circle cx="170" cy="95" r="3" fill="#FBBF24">
-                      <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+                    <circle cx="200" cy="240" r="30" fill="#D4A574" opacity="0.2"/>
+                    <circle cx="200" cy="240" r="24" fill="#F59E0B"/>
+                    <rect x="190" y="234" width="20" height="12" rx="2" fill="#FFF"/>
+                    <circle cx="200" cy="240" r="7" fill="#FFF" opacity="0.6"/>
+                    {/* Subtle sparkles */}
+                    <circle cx="175" cy="220" r="2" fill="#F59E0B" opacity="0.6">
+                      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite"/>
                     </circle>
-                    <circle cx="230" cy="100" r="2" fill="#FBBF24">
-                      <animate attributeName="opacity" values="1;0;1" dur="1.5s" repeatCount="indefinite"/>
+                    <circle cx="225" cy="225" r="1.5" fill="#F59E0B" opacity="0.6">
+                      <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2.5s" repeatCount="indefinite"/>
                     </circle>
-                    <circle cx="215" cy="145" r="3" fill="#FBBF24">
-                      <animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/>
-                    </circle>
-                    <circle cx="185" cy="140" r="2" fill="#FBBF24">
-                      <animate attributeName="opacity" values="1;0;1" dur="2.2s" repeatCount="indefinite"/>
+                    <circle cx="210" cy="260" r="2" fill="#F59E0B" opacity="0.6">
+                      <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.8s" repeatCount="indefinite"/>
                     </circle>
                   </g>
                 </svg>
 
                 <div className="mt-6 text-center">
-                  <p className="text-white/90 text-sm">
-                    📚 Organize multiple libraries • 🏷️ Custom shelves • 📖 Hundreds of books
+                  <p className="text-neutral-600 dark:text-neutral-400 text-sm">
+                    📚 Multiple libraries • 🏷️ Custom shelves • 📖 Organized collection
                   </p>
                 </div>
               </div>
@@ -398,20 +340,17 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 - AI Camera (Highlighted) */}
-            <div className="group p-8 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-2xl border-2 border-purple-300 dark:border-purple-600 hover:shadow-2xl transition-all hover:-translate-y-2 relative overflow-hidden">
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
+            <div className="group p-8 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 hover:shadow-xl transition-all hover:-translate-y-1 relative">
               <div className="relative">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
-                  <Camera className="text-white" size={32} />
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
+                  <Camera className="text-white" size={28} />
                 </div>
-                <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                <div className="absolute -top-1 -right-1 bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   AI
                 </div>
-                <h3 className="text-2xl font-bold mb-3 text-purple-900 dark:text-purple-100">📸 AI Camera Scan</h3>
-                <p className="text-neutral-700 dark:text-neutral-200 leading-relaxed font-medium">
+                <h3 className="text-2xl font-bold mb-3">📸 AI Camera Scan</h3>
+                <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
                   Just snap a photo of your book's cover and let AI extract all the details instantly. No typing required!
                 </p>
               </div>
