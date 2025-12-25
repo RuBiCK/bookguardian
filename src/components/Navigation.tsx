@@ -20,14 +20,15 @@ export default function Navigation() {
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 pb-safe pt-2 px-6 z-50 md:top-0 md:bottom-auto md:h-16 md:border-t-0 md:border-b md:flex md:items-center md:justify-between md:px-8">
-            <div className="hidden md:flex items-center gap-4">
-                <div className="text-xl font-bold text-primary">
-                    Personal Library
+            <div className="hidden md:flex items-center gap-3">
+                <Image src="/logo.svg" alt="Book Guardian" width={32} height={32} />
+                <div className="text-xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
+                    Book Guardian
                 </div>
             </div>
 
             <div className="flex justify-between items-center md:gap-8">
-                <Link href="/" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Link href="/library" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/library') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                     <Home size={24} />
                     <span className="text-[10px] md:text-xs font-medium">Home</span>
                 </Link>

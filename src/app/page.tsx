@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSession } from 'next-auth/react'
-import { BookOpen, Heart, Tag, Users, Lock, Download, Github, ArrowRight, Star, Shield, Zap, Camera, Sparkles, ScanLine } from 'lucide-react'
+import { BookOpen, Heart, Tag, Users, Lock, Download, Github, ArrowRight, Star, Shield, Zap, Camera, Sparkles, ScanLine, Library } from 'lucide-react'
 
 export default function LandingPage() {
   const { data: session } = useSession()
@@ -12,29 +13,50 @@ export default function LandingPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-amber-200 dark:border-neutral-800">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-              <BookOpen className="text-white" size={24} />
-            </div>
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Image src="/logo.svg" alt="Book Guardian" width={40} height={40} />
             <span className="text-2xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
               Book Guardian
             </span>
-          </div>
+          </Link>
 
           <nav className="flex items-center gap-6">
-            <a href="#features" className="text-neutral-600 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium">
-              Features
-            </a>
-            <a href="#open-source" className="text-neutral-600 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium">
-              Open Source
-            </a>
+            {!session && (
+              <>
+                <a href="#features" className="hidden md:block text-neutral-600 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium">
+                  Features
+                </a>
+                <a href="#open-source" className="hidden md:block text-neutral-600 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium">
+                  Open Source
+                </a>
+              </>
+            )}
+
             {session ? (
-              <Link
-                href="/library"
-                className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl font-medium"
-              >
-                Go to Library
-              </Link>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/library"
+                  className="flex items-center gap-2 text-neutral-700 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium"
+                >
+                  <Library size={20} />
+                  <span className="hidden sm:inline">My Library</span>
+                </Link>
+                <Link href="/library" className="flex items-center">
+                  {session.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || 'User'}
+                      width={40}
+                      height={40}
+                      className="rounded-full border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 transition-colors"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-semibold border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 transition-colors">
+                      {session.user?.name?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                  )}
+                </Link>
+              </div>
             ) : (
               <Link
                 href="/login"
