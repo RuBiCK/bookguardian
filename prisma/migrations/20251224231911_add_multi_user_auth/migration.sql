@@ -8,8 +8,11 @@
 -- Clean up failed migration state if exists
 DELETE FROM "_prisma_migrations" WHERE "migration_name" = '20251224231911_add_multi_user_auth';
 
--- Delete all existing data to allow clean migration
--- Cascade will handle related books, shelves, lendings, etc.
+-- Delete all existing data in correct order to respect foreign keys
+DELETE FROM "Lending";
+DELETE FROM "Tag";
+DELETE FROM "Book";
+DELETE FROM "Shelf";
 DELETE FROM "Library";
 
 -- AlterTable
