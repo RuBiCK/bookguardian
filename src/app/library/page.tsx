@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { LayoutGrid, List as ListIcon, Search, BookOpen, Filter, X, Loader2, Star } from 'lucide-react'
 import BookCard from '@/components/BookCard'
-import { Book, Tag as PrismaTag } from '@prisma/client'
+import { Book, Tag as PrismaTag, Lending } from '@prisma/client'
 
 type BookWithTags = Book & {
     tags: PrismaTag[]
+    lendings?: Lending[]
 }
 
 interface Library {
@@ -37,6 +38,27 @@ export default function Home() {
         minRating: '',
         tags: ''
     })
+
+    // Read URL parameters on mount
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search)
+        const urlFilters: any = {}
+
+        if (searchParams.get('libraryId')) urlFilters.libraryId = searchParams.get('libraryId')!
+        if (searchParams.get('readStatus')) urlFilters.readStatus = searchParams.get('readStatus')!
+        if (searchParams.get('isLent')) urlFilters.isLent = searchParams.get('isLent')!
+        if (searchParams.get('category')) urlFilters.category = searchParams.get('category')!
+        if (searchParams.get('minRating')) urlFilters.minRating = searchParams.get('minRating')!
+        if (searchParams.get('tags')) urlFilters.tags = searchParams.get('tags')!
+
+        if (Object.keys(urlFilters).length > 0) {
+            setFilters(prev => ({ ...prev, ...urlFilters }))
+        }
+
+        if (searchParams.get('search')) {
+            setSearch(searchParams.get('search')!)
+        }
+    }, [])
 
     useEffect(() => {
         fetchLibraries()

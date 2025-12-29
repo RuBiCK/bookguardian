@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BarChart3, BookOpen, PieChart, Loader2, Download } from 'lucide-react'
+import { BarChart3, BookOpen, PieChart, Loader2, Download, Users } from 'lucide-react'
+import Link from 'next/link'
 
 interface Stats {
     totalBooks: number
     readStatusCounts: { status: string, count: number }[]
     categoryCounts: { category: string, count: number }[]
+    lendingCounts: { status: string, count: number }[]
 }
 
 interface ExportBook {
@@ -58,6 +60,14 @@ export default function SettingsPage() {
             case 'WANT_TO_READ': return 'Want to Read'
             case 'READING': return 'Reading'
             case 'READ': return 'Read'
+            default: return status
+        }
+    }
+
+    const getLendingLabel = (status: string) => {
+        switch (status) {
+            case 'AVAILABLE': return 'Available'
+            case 'LENT': return 'Lent Out'
             default: return status
         }
     }
@@ -250,7 +260,7 @@ export default function SettingsPage() {
 
             <div className="grid gap-6">
                 {/* Overview Card */}
-                <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+                <Link href="/library" className="bg-card border border-border rounded-xl p-6 shadow-sm hover:bg-secondary/30 transition-colors cursor-pointer block">
                     <div className="flex items-center gap-4 mb-4">
                         <div className="p-3 bg-primary/10 text-primary rounded-lg">
                             <BookOpen size={24} />
@@ -260,7 +270,7 @@ export default function SettingsPage() {
                             <p className="text-3xl font-bold">{stats?.totalBooks || 0}</p>
                         </div>
                     </div>
-                </div>
+                </Link>
 
                 {/* Reading Status */}
                 <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
@@ -270,7 +280,11 @@ export default function SettingsPage() {
                     </div>
                     <div className="space-y-3">
                         {stats?.readStatusCounts.map((item) => (
-                            <div key={item.status} className="flex items-center justify-between">
+                            <Link
+                                key={item.status}
+                                href={`/library?readStatus=${item.status}`}
+                                className="flex items-center justify-between hover:bg-secondary/50 -mx-2 px-2 py-2 rounded-lg transition-colors cursor-pointer"
+                            >
                                 <span className="text-sm text-muted-foreground">{getStatusLabel(item.status)}</span>
                                 <div className="flex items-center gap-3">
                                     <div className="w-32 h-2 bg-secondary rounded-full overflow-hidden">
@@ -281,9 +295,38 @@ export default function SettingsPage() {
                                     </div>
                                     <span className="text-sm font-medium w-6 text-right">{item.count}</span>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                         {stats?.readStatusCounts.length === 0 && <p className="text-sm text-muted-foreground">No books added yet.</p>}
+                    </div>
+                </div>
+
+                {/* Lending Status */}
+                <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                        <Users size={20} className="text-muted-foreground" />
+                        <h2 className="text-lg font-semibold">Lending Status</h2>
+                    </div>
+                    <div className="space-y-3">
+                        {stats?.lendingCounts.map((item) => (
+                            <Link
+                                key={item.status}
+                                href={`/library?isLent=${item.status === 'LENT' ? 'true' : 'false'}`}
+                                className="flex items-center justify-between hover:bg-secondary/50 -mx-2 px-2 py-2 rounded-lg transition-colors cursor-pointer"
+                            >
+                                <span className="text-sm text-muted-foreground">{getLendingLabel(item.status)}</span>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-32 h-2 bg-secondary rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-amber-500 rounded-full"
+                                            style={{ width: `${(item.count / (stats?.totalBooks || 1)) * 100}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-medium w-6 text-right">{item.count}</span>
+                                </div>
+                            </Link>
+                        ))}
+                        {stats?.lendingCounts.length === 0 && <p className="text-sm text-muted-foreground">No books added yet.</p>}
                     </div>
                 </div>
 
@@ -295,7 +338,11 @@ export default function SettingsPage() {
                     </div>
                     <div className="space-y-3">
                         {stats?.categoryCounts.map((item) => (
-                            <div key={item.category} className="flex items-center justify-between">
+                            <Link
+                                key={item.category}
+                                href={`/library?search=${encodeURIComponent(item.category)}`}
+                                className="flex items-center justify-between hover:bg-secondary/50 -mx-2 px-2 py-2 rounded-lg transition-colors cursor-pointer"
+                            >
                                 <span className="text-sm text-muted-foreground truncate max-w-[150px]">{item.category}</span>
                                 <div className="flex items-center gap-3">
                                     <div className="w-32 h-2 bg-secondary rounded-full overflow-hidden">
@@ -306,7 +353,7 @@ export default function SettingsPage() {
                                     </div>
                                     <span className="text-sm font-medium w-6 text-right">{item.count}</span>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                         {stats?.categoryCounts.length === 0 && <p className="text-sm text-muted-foreground">No categories found.</p>}
                     </div>

@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Increase limit for shelf scanner images
+    },
+  },
 };
 
 export default nextConfig;

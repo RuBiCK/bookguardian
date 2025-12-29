@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Book, Lending, Tag } from '@prisma/client'
-import { ArrowLeft, Star, Calendar, User, BookOpen, Library, ChevronDown, CheckCircle2, Users } from 'lucide-react'
+import { ArrowLeft, Star, Calendar, User, BookOpen, Library, ChevronDown, CheckCircle2, Users, Hash, Building2, Tag as TagIcon, CalendarPlus, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { separateTags, formatSourceName } from '@/lib/source-tags'
+import InlineEdit from '@/components/InlineEdit'
 
 type BookWithLending = Book & {
     lendings: Lending[]
@@ -31,6 +33,9 @@ export default function BookDetailsPage() {
     })
     const [showStatusDropdown, setShowStatusDropdown] = useState(false)
     const [showLendingInput, setShowLendingInput] = useState(false)
+    const [libraries, setLibraries] = useState<any[]>([])
+    const [selectedLibrary, setSelectedLibrary] = useState('')
+    const [showLibraryShelfDropdown, setShowLibraryShelfDropdown] = useState(false)
 
     useEffect(() => {
         async function fetchBook() {
@@ -39,7 +44,8 @@ export default function BookDetailsPage() {
                 if (!res.ok) throw new Error('Book not found')
                 const data = await res.json()
                 setBook(data)
-                // Initialize edit form
+                // Initialize edit form - only include user tags, not source tags
+                const { userTags } = separateTags(data.tags || [])
                 setEditForm({
                     title: data.title,
                     author: data.author,
@@ -47,7 +53,7 @@ export default function BookDetailsPage() {
                     readStatus: data.readStatus,
                     rating: data.rating ? String(data.rating) : '0',
                     comment: data.comment || '',
-                    tags: data.tags ? data.tags.map((t: any) => t.name).join(', ') : ''
+                    tags: userTags.map((t: any) => t.name).join(', ')
                 })
             } catch (error) {
                 console.error(error)
@@ -58,6 +64,21 @@ export default function BookDetailsPage() {
         }
         fetchBook()
     }, [params.id, router])
+
+    useEffect(() => {
+        async function fetchLibraries() {
+            try {
+                const res = await fetch('/api/libraries')
+                if (res.ok) {
+                    const data = await res.json()
+                    setLibraries(data)
+                }
+            } catch (error) {
+                console.error('Error loading libraries:', error)
+            }
+        }
+        fetchLibraries()
+    }, [])
 
     const handleLend = async () => {
         if (!lendingName || !book) return
@@ -140,6 +161,42 @@ export default function BookDetailsPage() {
             }
         } catch (error) {
             console.error('Error updating book:', error)
+        }
+    }
+
+    const handleInlineUpdate = async (field: string, value: string) => {
+        if (!book) return
+        try {
+            const res = await fetch(`/api/books/${book.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [field]: value }),
+            })
+            if (res.ok) {
+                const updatedData = await res.json()
+                setBook(updatedData)
+            }
+        } catch (error) {
+            console.error(`Error updating ${field}:`, error)
+            throw error
+        }
+    }
+
+    const handleShelfChange = async (shelfId: string) => {
+        if (!book) return
+        try {
+            const res = await fetch(`/api/books/${book.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shelfId }),
+            })
+            if (res.ok) {
+                const updatedData = await res.json()
+                setBook(updatedData)
+                setShowLibraryShelfDropdown(false)
+            }
+        } catch (error) {
+            console.error('Error updating shelf:', error)
         }
     }
 
@@ -280,80 +337,216 @@ export default function BookDetailsPage() {
 
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-3xl font-bold leading-tight">{book.title}</h1>
-                            <p className="text-xl text-muted-foreground mt-2">{book.author}</p>
+                            <h1 className="text-3xl font-bold leading-tight">
+                                <InlineEdit
+                                    value={book.title}
+                                    onSave={(value) => handleInlineUpdate('title', value)}
+                                    className="text-3xl font-bold"
+                                    placeholder="Book title"
+                                />
+                            </h1>
+                            <div className="text-xl text-muted-foreground mt-2">
+                                <InlineEdit
+                                    value={book.author}
+                                    onSave={(value) => handleInlineUpdate('author', value)}
+                                    className="text-xl text-muted-foreground"
+                                    placeholder="Author name"
+                                />
+                            </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-4">
-                            {(book.rating || 0) > 0 && (
-                                <div className="flex items-center text-yellow-500 font-medium">
-                                    <Star size={20} fill="currentColor" className="mr-1" />
-                                    {book.rating}/5
-                                </div>
-                            )}
-                            {book.year && (
-                                <div className="flex items-center text-muted-foreground">
-                                    <Calendar size={18} className="mr-1" />
-                                    {book.year}
-                                </div>
-                            )}
-                            {/* Library and Shelf */}
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Library size={16} />
-                                <span>
-                                    {(book as any).shelf?.library?.name} / {(book as any).shelf?.name}
-                                </span>
-                            </div>
-                            {/* Reading Status - Clickable Dropdown */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                                    className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-colors flex items-center gap-1"
-                                >
-                                    {book.readStatus.replace(/_/g, ' ')}
-                                    <ChevronDown size={14} />
-                                </button>
-
-                                {showStatusDropdown && (
-                                    <>
-                                        <div
-                                            className="fixed inset-0 z-40"
-                                            onClick={() => setShowStatusDropdown(false)}
+                        <div className="space-y-3">
+                            {/* First row: Rating, Published, Added, ISBN */}
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                                {(book.rating || 0) > 0 && (
+                                    <div className="flex items-center gap-1.5 text-yellow-500 font-medium">
+                                        <Star size={16} fill="currentColor" />
+                                        <span>{book.rating}/5</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-1.5 text-muted-foreground" title="Publication year">
+                                    <Calendar size={16} />
+                                    <span>Published: </span>
+                                    <span className="inline-block" style={{ maxWidth: '80px' }}>
+                                        <InlineEdit
+                                            value={book.year?.toString() || ''}
+                                            onSave={(value) => handleInlineUpdate('year', value)}
+                                            className="text-sm text-muted-foreground w-full"
+                                            placeholder="Year"
                                         />
-                                        <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-1 z-50 min-w-[150px]">
-                                            {['WANT_TO_READ', 'READING', 'READ'].map(status => (
-                                                <button
-                                                    key={status}
-                                                    onClick={() => handleStatusChange(status)}
-                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary transition-colors ${
-                                                        book.readStatus === status ? 'bg-secondary font-medium' : ''
-                                                    }`}
-                                                >
-                                                    {status.replace(/_/g, ' ')}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
+                                    </span>
+                                </div>
+                                {book.createdAt && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground" title="Date added to library">
+                                        <CalendarPlus size={16} />
+                                        <span>Added: {new Date(book.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                )}
+                                {book.isbn && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Hash size={16} />
+                                        <span>ISBN: {book.isbn}</span>
+                                    </div>
                                 )}
                             </div>
+
+                            {/* Second row: Publisher, Category, Library/Shelf, Status */}
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                                {book.publisher && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Building2 size={16} />
+                                        <span>{book.publisher}</span>
+                                    </div>
+                                )}
+                                {book.category && (
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <TagIcon size={16} />
+                                        <span>{book.category}</span>
+                                    </div>
+                                )}
+                                {/* Library and Shelf - Clickable Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowLibraryShelfDropdown(!showLibraryShelfDropdown)}
+                                        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm"
+                                        title="Click to change library/shelf"
+                                    >
+                                        <Library size={16} />
+                                        <span>
+                                            {(book as any).shelf?.library?.name} / {(book as any).shelf?.name}
+                                        </span>
+                                        <ChevronDown size={14} />
+                                    </button>
+
+                                    {showLibraryShelfDropdown && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={() => setShowLibraryShelfDropdown(false)}
+                                            />
+                                            <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-2 z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
+                                                {libraries.map(library => (
+                                                    <div key={library.id}>
+                                                        <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                            {library.name}
+                                                        </div>
+                                                        {library.shelves?.map((shelf: any) => (
+                                                            <button
+                                                                key={shelf.id}
+                                                                onClick={() => handleShelfChange(shelf.id)}
+                                                                className={`w-full px-4 py-2 text-left text-sm hover:bg-secondary transition-colors ${
+                                                                    (book as any).shelf?.id === shelf.id ? 'bg-secondary font-medium' : ''
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <CheckCircle2
+                                                                        size={14}
+                                                                        className={`${
+                                                                            (book as any).shelf?.id === shelf.id
+                                                                                ? 'text-primary'
+                                                                                : 'text-transparent'
+                                                                        }`}
+                                                                    />
+                                                                    {shelf.name}
+                                                                </div>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                                {/* Reading Status - Clickable Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                                        className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-colors flex items-center gap-1"
+                                    >
+                                        {book.readStatus.replace(/_/g, ' ')}
+                                        <ChevronDown size={14} />
+                                    </button>
+
+                                    {showStatusDropdown && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={() => setShowStatusDropdown(false)}
+                                            />
+                                            <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-1 z-50 min-w-[150px]">
+                                                {['WANT_TO_READ', 'READING', 'READ'].map(status => (
+                                                    <button
+                                                        key={status}
+                                                        onClick={() => handleStatusChange(status)}
+                                                        className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary transition-colors ${
+                                                            book.readStatus === status ? 'bg-secondary font-medium' : ''
+                                                        }`}
+                                                    >
+                                                        {status.replace(/_/g, ' ')}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Tags Display */}
-                        {book.tags && book.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                                {book.tags.map((tag: any) => (
-                                    <span key={tag.id} className="px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 text-sm">
-                                        {tag.name}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
+                        {/* Tags Display - Separar user tags de source tags */}
+                        {book.tags && book.tags.length > 0 && (() => {
+                            const { userTags, sourceTags } = separateTags(book.tags)
 
-                        {book.comment && (
-                            <div className="p-4 bg-secondary/50 rounded-lg italic text-muted-foreground">
-                                "{book.comment}"
-                            </div>
-                        )}
+                            return (
+                                <div className="space-y-3">
+                                    {/* Source Tags */}
+                                    {sourceTags.length > 0 && (
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Sparkles size={14} className="text-purple-600 dark:text-purple-400" />
+                                                <span className="text-xs font-semibold text-muted-foreground">
+                                                    Sources
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {sourceTags.map((tag: any) => (
+                                                    <span
+                                                        key={tag.id}
+                                                        className="px-2 py-1 rounded-md bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-700 text-xs font-medium"
+                                                    >
+                                                        {formatSourceName(tag.name)}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* User Tags */}
+                                    {userTags.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {userTags.map((tag: any) => (
+                                                <span
+                                                    key={tag.id}
+                                                    className="px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 text-sm"
+                                                >
+                                                    {tag.name}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })()}
+
+                        <div className="p-4 bg-secondary/50 rounded-lg italic text-muted-foreground">
+                            <InlineEdit
+                                value={book.comment || ''}
+                                onSave={(value) => handleInlineUpdate('comment', value)}
+                                className="text-muted-foreground italic"
+                                placeholder="Add notes or comments..."
+                                multiline={true}
+                                singleClick={true}
+                            />
+                        </div>
 
                         <div className="border-t border-border pt-6">
                             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">

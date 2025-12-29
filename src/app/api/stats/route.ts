@@ -14,7 +14,7 @@ export async function GET() {
             }
         }
 
-        const [totalBooks, readStatusCounts, categoryCounts] = await Promise.all([
+        const [totalBooks, readStatusCounts, categoryCounts, lentBooks, availableBooks] = await Promise.all([
             // Total Books for user
             prisma.book.count({
                 where: userBooksWhere
@@ -42,6 +42,30 @@ export async function GET() {
                     }
                 },
                 take: 5
+            }),
+
+            // Books currently lent out
+            prisma.book.count({
+                where: {
+                    ...userBooksWhere,
+                    lendings: {
+                        some: {
+                            status: 'LENT'
+                        }
+                    }
+                }
+            }),
+
+            // Books available (not lent)
+            prisma.book.count({
+                where: {
+                    ...userBooksWhere,
+                    lendings: {
+                        none: {
+                            status: 'LENT'
+                        }
+                    }
+                }
             })
         ])
 
@@ -54,7 +78,11 @@ export async function GET() {
             categoryCounts: categoryCounts.map(item => ({
                 category: item.category || 'Uncategorized',
                 count: item._count.category
-            }))
+            })),
+            lendingCounts: [
+                { status: 'AVAILABLE', count: availableBooks },
+                { status: 'LENT', count: lentBooks }
+            ]
         })
     } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
