@@ -9,12 +9,6 @@ export interface BoundingBox {
   height: number   // Alto normalizado (0-1)
 }
 
-export interface SegmentationMask {
-  contour: Array<{x: number, y: number}>  // Polígono con coordenadas normalizadas (0-1)
-  confidence?: number
-  simplifiedContour?: Array<{x: number, y: number}>  // Versión simplificada para detección de hover
-}
-
 export type ReadabilityStatus = 'clear' | 'partial' | 'unreadable' | 'uncertain'
 
 export interface DetectedBook {
@@ -22,7 +16,6 @@ export interface DetectedBook {
   author?: string
   isbn?: string
   position: BoundingBox
-  mask?: SegmentationMask  // Opcional: máscara de segmentación (si disponible)
   confidence?: number  // Opcional: confianza del modelo (0-1)
   readabilityStatus?: ReadabilityStatus  // Estado de legibilidad del título
 }
