@@ -10,6 +10,7 @@ import {
   AIProviderError,
 } from '@/lib/ai/types'
 import { createSourceTag } from '@/lib/source-tags'
+import { checkQuota, logUsage, QuotaExceededError } from '@/lib/quota-helpers'
 
 /**
  * Analiza una imagen de estantería y detecta todos los libros
@@ -19,12 +20,16 @@ export async function analyzeShelfImage(base64Image: string) {
   try {
     // 1. Verificar autenticación
     const user = await requireAuth()
+    const userId = user.id as string
 
-    // 2. Obtener provider de IA
+    // 2. Check quota before making AI call
+    await checkQuota(userId)
+
+    // 3. Obtener provider de IA
     const aiProvider = getAIProvider()
     console.log(`[ShelfAnalysis] Using AI provider: ${aiProvider.name}`)
 
-    // 3. Analizar imagen con IA
+    // 4. Analizar imagen con IA
     console.log('[ShelfAnalysis] Starting shelf analysis...')
     const shelfAnalysis = await aiProvider.analyzeShelf(base64Image, {
       compressionQuality: 0.85,
@@ -32,6 +37,18 @@ export async function analyzeShelfImage(base64Image: string) {
     })
 
     console.log(`[ShelfAnalysis] Detected ${shelfAnalysis.totalDetected} books`)
+
+    // 5. Log usage from the AI response
+    const usage = (aiProvider as any).getLastUsage?.()
+    if (usage) {
+      await logUsage(
+        userId,
+        'gpt-4o', // TODO: Get from provider
+        'analyzeShelf',
+        usage.promptTokens,
+        usage.completionTokens
+      )
+    }
 
     // 4. Verificar cuáles libros ya están en la colección del usuario
     const enrichedBooks = await enrichBooksWithCollectionStatus(
@@ -61,6 +78,20 @@ export async function analyzeShelfImage(base64Image: string) {
     }
   } catch (error) {
     console.error('[ShelfAnalysis] Error:', error)
+
+    if (error instanceof QuotaExceededError) {
+      return {
+        success: false,
+        error: error.message,
+        quotaExceeded: true,
+        quotaInfo: {
+          type: error.quotaType,
+          used: error.used,
+          limit: error.limit,
+          resetDate: error.resetDate,
+        },
+      }
+    }
 
     if (error instanceof AIProviderError) {
       return {

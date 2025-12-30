@@ -2,17 +2,32 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, PlusCircle, BookOpen, Settings, LogOut } from 'lucide-react'
+import { Home, PlusCircle, BookOpen, Settings, LogOut, Shield } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function Navigation() {
     const pathname = usePathname()
     const { data: session } = useSession()
     const [showUserMenu, setShowUserMenu] = useState(false)
+    const [isAdmin, setIsAdmin] = useState(false)
 
     const isActive = (path: string) => pathname === path
+
+    // Check if user is admin
+    useEffect(() => {
+        if (session?.user) {
+            fetch('/api/user/me')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.role === 'ADMIN') {
+                        setIsAdmin(true)
+                    }
+                })
+                .catch(() => setIsAdmin(false))
+        }
+    }, [session])
 
     const handleSignOut = async () => {
         await signOut({ callbackUrl: '/login' })
@@ -88,6 +103,16 @@ export default function Navigation() {
                                         {session.user.email}
                                     </p>
                                 </div>
+                                {isAdmin && (
+                                    <Link
+                                        href="/admin"
+                                        onClick={() => setShowUserMenu(false)}
+                                        className="w-full px-4 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2"
+                                    >
+                                        <Shield size={16} />
+                                        Admin Dashboard
+                                    </Link>
+                                )}
                                 <button
                                     onClick={handleSignOut}
                                     className="w-full px-4 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2 text-red-600 dark:text-red-400"

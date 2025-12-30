@@ -17,9 +17,19 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Usage tracking and quotas
+  role                String    @default("USER")  // USER, ADMIN
+  tier                String    @default("FREE")  // FREE, PRO, UNLIMITED
+  monthlyTokenQuota   Int       @default(50000)   // Tokens per month
+  monthlyCallQuota    Int       @default(20)      // API calls per month
+  tokensUsed          Int       @default(0)       // Current month usage
+  callsUsed           Int       @default(0)       // Current month usage
+  quotaResetDate      DateTime  @default(now())   // Next reset date
+
   accounts  Account[]
   sessions  Session[]
   libraries Library[]
+  usageLogs UsageLog[]
 }
 
 model Account {
@@ -117,4 +127,21 @@ model Lending {
   lentDate     DateTime  @default(now())
   returnDate   DateTime?
   status       String    @default("LENT") // LENT, RETURNED
+}
+
+model UsageLog {
+  id               String   @id @default(uuid())
+  userId           String
+  model            String   // e.g. "gpt-4o"
+  operation        String   // e.g. "analyzeBook", "analyzeShelf"
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  cost             Float    @default(0) // Estimated cost in USD
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }

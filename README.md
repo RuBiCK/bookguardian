@@ -20,6 +20,8 @@ A beautiful, mobile-first web application to manage your personal book collectio
 - **📤 Export Options**: Export your collection in CSV, MARC21, or JSON formats
 - **📱 Mobile First**: Optimized for smartphones with a responsive design for desktop
 - **🎨 Modern UI**: Beautiful, intuitive interface built with Tailwind CSS
+- **📊 Admin Dashboard**: Track AI usage, manage user quotas, and monitor platform statistics
+- **💰 Usage Tracking**: Built-in token and API call tracking with three-tier quota system (Free, Pro, Unlimited)
 
 ## 🚀 Quick Start
 
@@ -131,6 +133,46 @@ The camera feature uses AI to extract book information from cover images. To ena
 4. The feature will automatically become functional
 
 > **Note**: The camera feature is currently a demonstration skeleton. Full implementation requires integrating the OpenAI API in `src/components/AddBookCamera.tsx`.
+
+### Admin Dashboard Setup
+
+Book Guardian includes a built-in admin dashboard for tracking AI usage and managing user quotas. To set up your first admin user:
+
+1. **Create your user account** by signing up through the application
+2. **Set yourself as admin** by running the SQL script:
+
+```bash
+# For Docker deployment
+docker exec -i book-guardian-db psql -U library_user -d personal_library << 'EOF'
+-- Update all users with default quotas
+UPDATE "User"
+SET role = 'USER', tier = 'FREE',
+    "monthlyTokenQuota" = 50000, "monthlyCallQuota" = 20,
+    "tokensUsed" = 0, "callsUsed" = 0,
+    "quotaResetDate" = NOW() + INTERVAL '1 month'
+WHERE role IS NULL OR role = '';
+
+-- Set your user as ADMIN with unlimited quota
+UPDATE "User"
+SET role = 'ADMIN', tier = 'UNLIMITED',
+    "monthlyTokenQuota" = 999999999, "monthlyCallQuota" = 999999
+WHERE email = 'your-email@example.com';  -- Replace with your email
+
+SELECT email, role, tier FROM "User";
+EOF
+```
+
+3. **Access the admin dashboard** by clicking your profile → "Admin Dashboard"
+
+#### Quota Tiers
+
+Book Guardian includes three quota tiers for AI usage:
+
+- **Free Tier**: 50,000 tokens, 20 API calls per month
+- **Pro Tier**: 500,000 tokens, 200 API calls per month
+- **Unlimited Tier**: Unlimited usage (admin users)
+
+Admins can change user tiers through the admin dashboard. Quotas reset automatically at the beginning of each month.
 
 ## 🛠️ Tech Stack
 
