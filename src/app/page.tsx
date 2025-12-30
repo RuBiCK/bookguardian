@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
-import { BookOpen, Heart, Tag, Users, Lock, Download, Github, ArrowRight, Star, Shield, Zap, Camera, Sparkles, ScanLine, Library } from 'lucide-react'
+import { BookOpen, Heart, Tag, Users, Lock, Download, Github, ArrowRight, Star, Shield, Zap, Camera, Sparkles, ScanLine, Library, BarChart3 } from 'lucide-react'
 
 export default function LandingPage() {
   const { data: session } = useSession()
@@ -410,6 +410,17 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold mb-3">Export Anywhere</h3>
               <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
                 Export your library in CSV, JSON, or MARC21 format. Your data is portable and never locked in.
+              </p>
+            </div>
+
+            {/* Feature 7 - Admin Dashboard */}
+            <div className="group p-8 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-neutral-800 dark:to-neutral-800 rounded-2xl border border-indigo-200 dark:border-neutral-700 hover:shadow-xl transition-all hover:-translate-y-1">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <BarChart3 className="text-white" size={28} />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Admin Dashboard</h3>
+              <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
+                Track AI usage, manage user quotas, and monitor platform statistics. Full control for multi-user deployments.
               </p>
             </div>
           </div>
