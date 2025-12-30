@@ -5,11 +5,12 @@ import { QUOTA_TIERS, TierType } from '@/lib/quota-config'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdmin()
 
+    const { id } = await params
     const body = await request.json()
     const { tier, role } = body
 
@@ -29,7 +30,7 @@ export async function PATCH(
     }
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,
