@@ -26,6 +26,7 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
     const [isCameraOpen, setIsCameraOpen] = useState(false)
     const [multipleOptions, setMultipleOptions] = useState<BookOption[]>([])
     const [aiData, setAiData] = useState<any>(null)
+    const [captureMethod, setCaptureMethod] = useState<'camera' | 'upload' | null>(null)
     const videoRef = useRef<HTMLVideoElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -66,6 +67,7 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
     }
 
     const capturePhoto = () => {
+        setCaptureMethod('camera')
         if (videoRef.current && canvasRef.current) {
             const video = videoRef.current
             const canvas = canvasRef.current
@@ -93,6 +95,7 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCaptureMethod('upload')
         const file = e.target.files?.[0]
         if (file) {
             const reader = new FileReader()
@@ -122,7 +125,13 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
                 setMultipleOptions(result.multipleOptions)
                 setAiData(result.data)
             } else if (result.data) {
-                onScanComplete(result.data)
+                // Añadir source tag basado en método de captura
+                const sourceType = captureMethod === 'camera' ? 'camera_live' : 'photo_upload'
+                const enrichedData = {
+                    ...result.data,
+                    sourceTags: [sourceType],
+                }
+                onScanComplete(enrichedData)
             }
         } catch (error) {
             console.error(error)
@@ -134,7 +143,12 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
 
     const handleSelectBook = (selectedBook: BookOption) => {
         // Merge AI data with selected book data
-        const mergedData = { ...aiData, ...selectedBook }
+        const sourceType = captureMethod === 'camera' ? 'camera_live' : 'photo_upload'
+        const mergedData = {
+            ...aiData,
+            ...selectedBook,
+            sourceTags: [sourceType],
+        }
         onScanComplete(mergedData)
     }
 

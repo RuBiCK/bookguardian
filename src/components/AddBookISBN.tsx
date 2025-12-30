@@ -70,7 +70,8 @@ export default function AddBookISBN({ onScanComplete }: AddBookISBNProps) {
                     year: bookInfo.publishedDate ? parseInt(bookInfo.publishedDate.substring(0, 4)) : undefined,
                     publisher: bookInfo.publisher,
                     language: bookInfo.language,
-                    readStatus: 'WANT_TO_READ'
+                    readStatus: 'WANT_TO_READ',
+                    sourceTags: ['isbn_search', 'google_books']
                 }
 
                 onScanComplete(newBook)

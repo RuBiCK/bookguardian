@@ -1,14 +1,16 @@
-<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Book pages -->
-  <path d="M8 6C8 4.89543 8.89543 4 10 4H28C29.1046 4 30 4.89543 30 6V34C30 35.1046 29.1046 36 28 36H10C8.89543 36 8 35.1046 8 34V6Z" fill="#F59E0B"/>
-
-  <!-- Book spine highlight -->
-  <path d="M8 6C8 4.89543 8.89543 4 10 4H12V36H10C8.89543 36 8 35.1046 8 34V6Z" fill="#D97706"/>
-
-  <!-- Shield overlay -->
-  <path d="M19 8L13 11V20C13 24 16 27 19 28C22 27 25 24 25 20V11L19 8Z" fill="white" fill-opacity="0.9"/>
-  <path d="M19 9L14 11.5V20C14 23.5 16.5 26 19 27C21.5 26 24 23.5 24 20V11.5L19 9Z" stroke="#D97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Check mark in shield -->
-  <path d="M16.5 19L18.5 21L22 17" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="40"
+  height="40"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M16 6l4 14" />
+  <path d="M12 6v14" />
+  <path d="M8 8v12" />
+  <path d="M4 4v16" />
 </svg>

@@ -10,63 +10,32 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-orange-50 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-amber-200 dark:border-neutral-800">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between max-w-7xl">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image src="/logo.svg" alt="Book Guardian" width={40} height={40} />
-            <span className="text-2xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
-              Book Guardian
-            </span>
-          </Link>
-
-          <nav className="flex items-center gap-6">
-            {!session && (
-              <>
-                <a href="#features" className="hidden md:block text-neutral-600 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium">
-                  Features
-                </a>
-                <a href="#open-source" className="hidden md:block text-neutral-600 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium">
-                  Open Source
-                </a>
-              </>
-            )}
-
-            {session ? (
-              <div className="flex items-center gap-4">
-                <Link
-                  href="/library"
-                  className="flex items-center gap-2 text-neutral-700 hover:text-amber-700 dark:text-neutral-300 dark:hover:text-amber-400 transition-colors font-medium"
-                >
-                  <Library size={20} />
-                  <span className="hidden sm:inline">My Library</span>
-                </Link>
-                <Link href="/library" className="flex items-center">
-                  {session.user?.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name || 'User'}
-                      width={40}
-                      height={40}
-                      className="rounded-full border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 transition-colors"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-semibold border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 transition-colors">
-                      {session.user?.name?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                  )}
-                </Link>
-              </div>
+      {/* Header - Minimal with only profile/login */}
+      <header className="fixed top-0 right-0 z-50 p-6">
+        {session ? (
+          <Link href="/library" className="flex items-center hover:scale-105 transition-transform">
+            {session.user?.image ? (
+              <Image
+                src={session.user.image}
+                alt={session.user.name || 'User'}
+                width={48}
+                height={48}
+                className="rounded-full border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 transition-colors shadow-lg"
+              />
             ) : (
-              <Link
-                href="/login"
-                className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl font-medium"
-              >
-                Login
-              </Link>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white font-semibold border-2 border-amber-200 dark:border-amber-800 hover:border-amber-400 transition-colors shadow-lg">
+                {session.user?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
             )}
-          </nav>
-        </div>
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl font-medium"
+          >
+            Login
+          </Link>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -573,7 +542,21 @@ docker-compose up -d`}</code>
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                  <BookOpen className="text-white" size={18} />
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M16 6l4 14" />
+                    <path d="M12 6v14" />
+                    <path d="M8 8v12" />
+                    <path d="M4 4v16" />
+                  </svg>
                 </div>
                 <span className="text-lg font-bold text-white">Book Guardian</span>
               </div>

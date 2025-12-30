@@ -131,6 +131,7 @@ export async function POST(request: Request) {
             readStatus,
             shelfId,
             tags, // Array of strings
+            metadataSource, // manual, google_books, ai_shelf_scan
         } = body
 
         // If no shelfId is provided, try to find the user's default shelf
@@ -189,6 +190,7 @@ export async function POST(request: Request) {
                 rating: rating ? parseInt(rating) : 0,
                 comment,
                 readStatus: readStatus || 'WANT_TO_READ',
+                metadataSource: metadataSource || 'manual',
                 shelfId: targetShelfId,
                 tags: tags && tags.length > 0 ? {
                     connectOrCreate: tags.map((tag: string) => ({

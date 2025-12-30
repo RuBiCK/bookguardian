@@ -7,8 +7,17 @@ import { SessionProvider } from '@/components/SessionProvider'
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-    title: 'Personal Library',
-    description: 'Manage your personal book collection',
+    title: {
+        default: 'Book Guardian - Your Personal Library',
+        template: '%s | Book Guardian'
+    },
+    description: 'Organize, track, and cherish your book collection with a beautiful, privacy-focused library management system.',
+    keywords: ['book library', 'book management', 'personal library', 'book collection', 'book tracker', 'reading list'],
+    authors: [{ name: 'Book Guardian' }],
+    icons: {
+        icon: '/logo.svg',
+        apple: '/apple-icon.png',
+    },
 }
 
 export default function RootLayout({

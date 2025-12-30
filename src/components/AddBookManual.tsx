@@ -2,10 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Star, Search, Loader2 } from 'lucide-react'
+import { Star, Search, Loader2, X, CheckCircle2 } from 'lucide-react'
+import { createSourceTag } from '@/lib/source-tags'
 
 const STORAGE_KEY_LIBRARY = 'bookForm_lastLibraryId'
 const STORAGE_KEY_SHELF = 'bookForm_lastShelfId'
+
+interface BookOption {
+    title: string
+    author?: string
+    isbn?: string
+    coverUrl?: string
+    category?: string
+    year?: string
+    publisher?: string
+    language?: string
+}
 
 interface AddBookManualProps {
     initialData?: {
@@ -17,7 +29,11 @@ interface AddBookManualProps {
         publisher?: string
         year?: string
         language?: string
+        sourceTags?: string[]
     }
+    defaultShelfId?: string
+    onSaveSuccess?: () => void
+    hideNavigation?: boolean
 }
 
 interface Library {
@@ -26,7 +42,7 @@ interface Library {
     shelves: { id: string; name: string }[]
 }
 
-export default function AddBookManual({ initialData }: AddBookManualProps) {
+export default function AddBookManual({ initialData, defaultShelfId, onSaveSuccess, hideNavigation }: AddBookManualProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [searching, setSearching] = useState(false)
@@ -34,6 +50,9 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
     const [libraries, setLibraries] = useState<Library[]>([])
     const [selectedLibrary, setSelectedLibrary] = useState('')
     const [selectedShelf, setSelectedShelf] = useState('')
+    const [usedSearch, setUsedSearch] = useState(false)
+    const [multipleOptions, setMultipleOptions] = useState<BookOption[]>([])
+    const [initialSourceTags, setInitialSourceTags] = useState<string[]>([])
     const [formData, setFormData] = useState({
         title: initialData?.title || '',
         author: initialData?.author || '',
@@ -62,7 +81,16 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                     const savedLibraryId = localStorage.getItem(STORAGE_KEY_LIBRARY)
                     const savedShelfId = localStorage.getItem(STORAGE_KEY_SHELF)
 
-                    if (savedLibraryId && data.find((lib: Library) => lib.id === savedLibraryId)) {
+                    // If defaultShelfId provided, use it
+                    if (defaultShelfId) {
+                        setSelectedShelf(defaultShelfId)
+                        const lib = data.find((lib: Library) =>
+                            lib.shelves?.find((s: { id: string }) => s.id === defaultShelfId)
+                        )
+                        if (lib) {
+                            setSelectedLibrary(lib.id)
+                        }
+                    } else if (savedLibraryId && data.find((lib: Library) => lib.id === savedLibraryId)) {
                         setSelectedLibrary(savedLibraryId)
                         const lib = data.find((lib: Library) => lib.id === savedLibraryId)
                         if (savedShelfId && lib && lib.shelves?.find((s: { id: string; name: string }) => s.id === savedShelfId)) {
@@ -85,7 +113,7 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
             }
         }
         fetchLibraries()
-    }, [])
+    }, [defaultShelfId])
 
     // Update form data if initialData changes
     useEffect(() => {
@@ -101,6 +129,11 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
                 year: initialData.year ? String(initialData.year) : prev.year,
                 language: initialData.language || prev.language,
             }))
+            // If we received initial data (from ISBN/Camera scan), save source tags
+            if (initialData.sourceTags && initialData.sourceTags.length > 0) {
+                setInitialSourceTags(initialData.sourceTags)
+                setUsedSearch(true)
+            }
         }
     }, [initialData])
 
@@ -154,20 +187,37 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
             const data = await res.json()
 
             if (data.totalItems > 0) {
-                const bookInfo = data.items[0].volumeInfo
-
-                // Update form with found data, preserving user input where it exists
-                setFormData(prev => ({
-                    ...prev,
-                    title: bookInfo.title || prev.title,
-                    author: bookInfo.authors ? bookInfo.authors.join(', ') : prev.author,
-                    isbn: bookInfo.industryIdentifiers?.[0]?.identifier || prev.isbn,
-                    coverUrl: bookInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || prev.coverUrl,
-                    category: bookInfo.categories ? bookInfo.categories[0] : prev.category,
-                    publisher: bookInfo.publisher || prev.publisher,
-                    year: bookInfo.publishedDate ? bookInfo.publishedDate.substring(0, 4) : prev.year,
-                    language: bookInfo.language || prev.language,
+                // Map all results (limit to 10)
+                const options: BookOption[] = data.items.slice(0, 10).map((item: any) => ({
+                    title: item.volumeInfo.title || '',
+                    author: item.volumeInfo.authors ? item.volumeInfo.authors.join(', ') : undefined,
+                    isbn: item.volumeInfo.industryIdentifiers?.[0]?.identifier,
+                    coverUrl: item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:'),
+                    category: item.volumeInfo.categories?.[0],
+                    publisher: item.volumeInfo.publisher,
+                    year: item.volumeInfo.publishedDate ? item.volumeInfo.publishedDate.substring(0, 4) : undefined,
+                    language: item.volumeInfo.language,
                 }))
+
+                // If multiple results, show selection list
+                if (options.length > 1) {
+                    setMultipleOptions(options)
+                } else {
+                    // If only one result, fill form directly
+                    const bookInfo = options[0]
+                    setFormData(prev => ({
+                        ...prev,
+                        title: bookInfo.title || prev.title,
+                        author: bookInfo.author || prev.author,
+                        isbn: bookInfo.isbn || prev.isbn,
+                        coverUrl: bookInfo.coverUrl || prev.coverUrl,
+                        category: bookInfo.category || prev.category,
+                        publisher: bookInfo.publisher || prev.publisher,
+                        year: bookInfo.year || prev.year,
+                        language: bookInfo.language || prev.language,
+                    }))
+                    setUsedSearch(true)
+                }
             } else {
                 setSearchError('No results found. Try a different search.')
             }
@@ -177,6 +227,23 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
         } finally {
             setSearching(false)
         }
+    }
+
+    const handleSelectBook = (selectedBook: BookOption) => {
+        // Fill form with selected book data
+        setFormData(prev => ({
+            ...prev,
+            title: selectedBook.title || prev.title,
+            author: selectedBook.author || prev.author,
+            isbn: selectedBook.isbn || prev.isbn,
+            coverUrl: selectedBook.coverUrl || prev.coverUrl,
+            category: selectedBook.category || prev.category,
+            publisher: selectedBook.publisher || prev.publisher,
+            year: selectedBook.year || prev.year,
+            language: selectedBook.language || prev.language,
+        }))
+        setUsedSearch(true)
+        setMultipleOptions([])
     }
 
     const resetFormData = () => {
@@ -194,25 +261,45 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
             comment: '',
             tags: ''
         })
+        setUsedSearch(false)
+        setMultipleOptions([])
+        setInitialSourceTags([])
     }
 
     const handleSubmit = async (e: React.FormEvent, mode: 'return' | 'addMore' = 'return') => {
         e.preventDefault()
         setLoading(true)
         try {
+            // Combinar tags de usuario con tags de fuentes
+            const userTags = formData.tags.split(',').map(t => t.trim()).filter(Boolean)
+
+            // Si hay source tags iniciales (de ISBN/Camera), usar esos
+            // Si no, si se usó búsqueda manual, usar manual + google_books
+            // Si no, solo manual
+            const sourceTags = initialSourceTags.length > 0
+                ? initialSourceTags.map(s => createSourceTag(s))
+                : usedSearch
+                    ? [createSourceTag('manual'), createSourceTag('google_books')]
+                    : [createSourceTag('manual')]
+
+            const allTags = [...userTags, ...sourceTags]
+
             const res = await fetch('/api/books', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
                     shelfId: selectedShelf || undefined,
-                    tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean)
+                    tags: allTags
                 }),
             })
             if (res.ok) {
                 if (mode === 'addMore') {
                     // Stay on page, clear form, keep library/shelf
                     resetFormData()
+                } else if (onSaveSuccess) {
+                    // Callback mode: call the success handler
+                    onSaveSuccess()
                 } else {
                     // Original behavior: redirect to library
                     router.push('/library')
@@ -224,6 +311,64 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
         } finally {
             setLoading(false)
         }
+    }
+
+    // If showing multiple options, display selection list
+    if (multipleOptions.length > 0) {
+        return (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Select Book Edition</h3>
+                    <button
+                        type="button"
+                        onClick={() => setMultipleOptions([])}
+                        className="p-2 hover:bg-secondary rounded-full transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+                <p className="text-sm text-muted-foreground">Multiple editions found. Select the correct one:</p>
+
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                    {multipleOptions.map((book, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            onClick={() => handleSelectBook(book)}
+                            className="w-full flex gap-4 p-4 bg-card border border-border rounded-xl hover:bg-secondary/50 transition-all text-left group"
+                        >
+                            {book.coverUrl && (
+                                <img
+                                    src={book.coverUrl}
+                                    alt={book.title}
+                                    className="w-16 h-24 object-cover rounded-lg shadow-sm"
+                                />
+                            )}
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                                    {book.title}
+                                </h4>
+                                {book.author && (
+                                    <p className="text-xs text-muted-foreground mt-1">{book.author}</p>
+                                )}
+                                <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                                    {book.isbn && (
+                                        <span className="px-2 py-1 bg-secondary rounded">ISBN: {book.isbn}</span>
+                                    )}
+                                    {book.year && (
+                                        <span className="px-2 py-1 bg-secondary rounded">{book.year}</span>
+                                    )}
+                                    {book.publisher && (
+                                        <span className="px-2 py-1 bg-secondary rounded truncate max-w-[150px]">{book.publisher}</span>
+                                    )}
+                                </div>
+                            </div>
+                            <CheckCircle2 className="text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" size={24} />
+                        </button>
+                    ))}
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -351,40 +496,53 @@ export default function AddBookManual({ initialData }: AddBookManualProps) {
             )}
 
             <div className="flex gap-3 mt-6">
-                <button
-                    type="button"
-                    onClick={handleSearch}
-                    disabled={searching || !formData.title}
-                    className="flex-1 btn-secondary flex items-center justify-center gap-2"
-                >
-                    {searching ? (
-                        <>
-                            <Loader2 size={18} className="animate-spin" />
-                            Searching...
-                        </>
-                    ) : (
-                        <>
-                            <Search size={18} />
-                            Search
-                        </>
-                    )}
-                </button>
-                <button
-                    type="button"
-                    onClick={(e) => handleSubmit(e, 'addMore')}
-                    disabled={loading}
-                    className="flex-1 btn-secondary"
-                >
-                    {loading ? 'Adding...' : 'Save & Add More'}
-                </button>
-                <button
-                    type="submit"
-                    onClick={(e) => handleSubmit(e, 'return')}
-                    disabled={loading}
-                    className="flex-1 btn-primary"
-                >
-                    {loading ? 'Adding...' : 'Add Book'}
-                </button>
+                {!hideNavigation ? (
+                    <>
+                        <button
+                            type="button"
+                            onClick={handleSearch}
+                            disabled={searching || !formData.title}
+                            className="flex-1 btn-secondary flex items-center justify-center gap-2"
+                        >
+                            {searching ? (
+                                <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Searching...
+                                </>
+                            ) : (
+                                <>
+                                    <Search size={18} />
+                                    Search
+                                </>
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(e) => handleSubmit(e, 'addMore')}
+                            disabled={loading}
+                            className="flex-1 btn-secondary"
+                        >
+                            {loading ? 'Adding...' : 'Save & Add More'}
+                        </button>
+                        <button
+                            type="submit"
+                            onClick={(e) => handleSubmit(e, 'return')}
+                            disabled={loading}
+                            className="flex-1 btn-primary"
+                        >
+                            {loading ? 'Adding...' : 'Add Book'}
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        type="submit"
+                        onClick={(e) => handleSubmit(e, 'return')}
+                        disabled={loading}
+                        className="w-full btn-primary"
+                    >
+                        {loading ? 'Saving...' : 'Save Book'}
+                    </button>
+                )}
             </div>
         </form>
     )

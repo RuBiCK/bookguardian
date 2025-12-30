@@ -82,24 +82,25 @@ model Shelf {
 }
 
 model Book {
-  id          String   @id @default(uuid())
-  title       String
-  author      String
-  isbn        String?
-  coverUrl    String?
-  category    String?
-  year        Int?
-  publisher   String?
-  language    String?
-  rating      Int?     @default(0) // 0-5
-  comment     String?
-  readStatus  String   @default("WANT_TO_READ") // WANT_TO_READ, READING, READ
-  shelfId     String
-  shelf       Shelf    @relation(fields: [shelfId], references: [id])
-  lendings    Lending[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tags        Tag[]
+  id             String   @id @default(uuid())
+  title          String
+  author         String
+  isbn           String?
+  coverUrl       String?
+  category       String?
+  year           Int?     // Publication year
+  publisher      String?
+  language       String?
+  rating         Int?     @default(0) // 0-5
+  comment        String?
+  readStatus     String   @default("WANT_TO_READ") // WANT_TO_READ, READING, READ
+  metadataSource String?  @default("manual") // manual, google_books, ai_shelf_scan
+  shelfId        String
+  shelf          Shelf    @relation(fields: [shelfId], references: [id])
+  lendings       Lending[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  tags           Tag[]
 }
 
 model Tag {
