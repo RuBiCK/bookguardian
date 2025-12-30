@@ -2,16 +2,37 @@
 
 import { getAIProvider } from '@/lib/ai/factory'
 import { searchGoogleBooks, searchGoogleBooksMultiple } from './google-books'
+import { requireAuth } from '@/lib/auth-helpers'
+import { checkQuota, logUsage, QuotaExceededError } from '@/lib/quota-helpers'
 
 export async function analyzeBookImage(base64Image: string) {
     try {
-        // Usar el nuevo sistema pluggable
+        // Require authentication
+        const user = await requireAuth()
+        const userId = user.id as string
+
+        // Check quota before making AI call
+        await checkQuota(userId)
+
+        // Get AI provider and make the call
         const aiProvider = getAIProvider()
         console.log(`Analyzing image with ${aiProvider.name}...`)
 
         const aiData = await aiProvider.analyzeSingleBook(base64Image, {
             compressionQuality: 0.8,
         })
+
+        // Log usage from the AI response
+        const usage = (aiProvider as any).getLastUsage?.()
+        if (usage) {
+            await logUsage(
+                userId,
+                'gpt-4o', // TODO: Get from provider
+                'analyzeBook',
+                usage.promptTokens,
+                usage.completionTokens
+            )
+        }
 
         // Search for multiple editions with Google Books
         let multipleResults: Awaited<ReturnType<typeof searchGoogleBooksMultiple>> = []
@@ -66,6 +87,21 @@ export async function analyzeBookImage(base64Image: string) {
         }
     } catch (error) {
         console.error("AI Provider Error:", error)
+
+        // Handle quota exceeded errors
+        if (error instanceof QuotaExceededError) {
+            return {
+                error: error.message,
+                quotaExceeded: true,
+                quotaInfo: {
+                    type: error.quotaType,
+                    used: error.used,
+                    limit: error.limit,
+                    resetDate: error.resetDate,
+                },
+            }
+        }
+
         return { error: 'Failed to analyze image. Please try again.' }
     }
 }

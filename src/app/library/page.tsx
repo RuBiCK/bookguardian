@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LayoutGrid, List as ListIcon, Search, BookOpen, Filter, X, Loader2, Star } from 'lucide-react'
+import { LayoutGrid, List as ListIcon, Search, BookOpen, Filter, X, Loader2, Star, Plus } from 'lucide-react'
+import Link from 'next/link'
 import BookCard from '@/components/BookCard'
 import { Book, Tag as PrismaTag, Lending } from '@prisma/client'
 
@@ -189,9 +190,18 @@ export default function Home() {
                         <BookOpen size={32} className="text-muted-foreground" />
                     </div>
                     <h3 className="text-lg font-medium">No books found</h3>
-                    <p className="text-muted-foreground mt-1">Try adjusting your search or filters.</p>
+                    <p className="text-muted-foreground mt-1 mb-4">
+                        Try adjusting your search or filters or add a new book
+                    </p>
+                    <Link
+                        href="/add-book"
+                        className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity shadow-lg"
+                        aria-label="Add new book"
+                    >
+                        <Plus size={32} strokeWidth={2.5} />
+                    </Link>
                     {(search || activeFilterCount > 0) && (
-                        <button onClick={clearFilters} className="mt-4 text-primary hover:underline">
+                        <button onClick={clearFilters} className="mt-4 text-primary hover:underline block mx-auto">
                             Clear all filters
                         </button>
                     )}

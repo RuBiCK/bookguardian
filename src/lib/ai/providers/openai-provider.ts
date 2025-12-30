@@ -26,6 +26,7 @@ export class OpenAIProvider extends BaseAIProvider {
 
   private client: OpenAI
   private model: string
+  private lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | null = null
 
   constructor(config: OpenAIConfig) {
     super({
@@ -41,6 +42,13 @@ export class OpenAIProvider extends BaseAIProvider {
     })
 
     this.model = config.model
+  }
+
+  /**
+   * Get token usage from the last API call
+   */
+  getLastUsage() {
+    return this.lastUsage
   }
 
   // ========================================================================
@@ -71,6 +79,16 @@ export class OpenAIProvider extends BaseAIProvider {
       response_format: { type: 'json_object' },
       max_tokens: 1000,
     })
+
+    // Capture token usage
+    if (response.usage) {
+      this.lastUsage = {
+        promptTokens: response.usage.prompt_tokens,
+        completionTokens: response.usage.completion_tokens,
+        totalTokens: response.usage.total_tokens,
+      }
+      console.log('[OpenAI] Token usage:', this.lastUsage)
+    }
 
     const content = response.choices[0].message.content
     if (!content) {
@@ -116,6 +134,16 @@ export class OpenAIProvider extends BaseAIProvider {
     console.log('[OpenAI] Response received')
     console.log('[OpenAI] Choices:', response.choices?.length)
     console.log('[OpenAI] Finish reason:', response.choices?.[0]?.finish_reason)
+
+    // Capture token usage
+    if (response.usage) {
+      this.lastUsage = {
+        promptTokens: response.usage.prompt_tokens,
+        completionTokens: response.usage.completion_tokens,
+        totalTokens: response.usage.total_tokens,
+      }
+      console.log('[OpenAI] Token usage:', this.lastUsage)
+    }
 
     const message = response.choices[0]?.message
     const content = message?.content
