@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, Users, Activity, Zap, TrendingUp, Clock } from 'lucide-react'
+import { Shield, Users, Activity, Zap, TrendingUp, Clock, Library, Layers, BookOpen } from 'lucide-react'
 
 interface User {
   id: string
@@ -174,49 +174,55 @@ export default function AdminPage() {
       )}
 
       {/* Users Table */}
-      <div className="bg-card border border-border rounded-xl p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">User Management</h2>
+      <div className="bg-card border border-border rounded-xl p-4 mb-8">
+        <h2 className="text-xl font-semibold mb-3">User Management</h2>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="pb-3 text-sm font-medium text-muted-foreground">User</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Tier</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Tokens</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Calls</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Role</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Last Login</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Libraries</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Shelves</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Books</th>
+                <th className="pb-2 font-medium text-muted-foreground">User</th>
+                <th className="pb-2 font-medium text-muted-foreground">Tier</th>
+                <th className="pb-2 font-medium text-muted-foreground">Tokens</th>
+                <th className="pb-2 font-medium text-muted-foreground">Calls</th>
+                <th className="pb-2 font-medium text-muted-foreground">Role</th>
+                <th className="pb-2 font-medium text-muted-foreground">Last Login</th>
+                <th className="pb-2 font-medium text-muted-foreground text-center" title="Libraries">
+                  <Library size={16} className="inline" />
+                </th>
+                <th className="pb-2 font-medium text-muted-foreground text-center" title="Shelves">
+                  <Layers size={16} className="inline" />
+                </th>
+                <th className="pb-2 font-medium text-muted-foreground text-center" title="Books">
+                  <BookOpen size={16} className="inline" />
+                </th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
                 <tr key={user.id} className="border-b border-border last:border-0">
-                  <td className="py-3">
+                  <td className="py-2">
                     <div>
                       <div className="font-medium">{user.name || 'No name'}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
+                      <div className="text-xs text-muted-foreground">{user.email}</div>
                     </div>
                   </td>
-                  <td className="py-3">
+                  <td className="py-2">
                     <select
                       value={user.tier}
                       onChange={(e) => updateUserTier(user.id, e.target.value)}
-                      className="px-3 py-1 border border-border rounded-lg bg-background text-sm hover:bg-secondary cursor-pointer"
+                      className="px-2 py-1 border border-border rounded bg-background text-xs hover:bg-secondary cursor-pointer"
                     >
                       <option value="FREE">Free</option>
                       <option value="PRO">Pro</option>
                       <option value="UNLIMITED">Unlimited</option>
                     </select>
                   </td>
-                  <td className="py-3">
-                    <div className="text-sm">
+                  <td className="py-2">
+                    <div className="text-xs">
                       {user.tokensUsed.toLocaleString()} / {user.monthlyTokenQuota.toLocaleString()}
                     </div>
-                    <div className="w-24 h-1.5 bg-secondary rounded-full mt-1">
+                    <div className="w-20 h-1 bg-secondary rounded-full mt-0.5">
                       <div
                         className={`h-full rounded-full ${
                           user.tokensUsed / user.monthlyTokenQuota > 0.9
@@ -234,12 +240,12 @@ export default function AdminPage() {
                       />
                     </div>
                   </td>
-                  <td className="py-3 text-sm">
+                  <td className="py-2 text-xs">
                     {user.callsUsed} / {user.monthlyCallQuota}
                   </td>
-                  <td className="py-3">
+                  <td className="py-2">
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      className={`text-xs px-2 py-0.5 rounded-full ${
                         user.role === 'ADMIN'
                           ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -248,7 +254,7 @@ export default function AdminPage() {
                       {user.role}
                     </span>
                   </td>
-                  <td className="py-3 text-sm">
+                  <td className="py-2 text-xs">
                     {user.lastLogin
                       ? new Date(user.lastLogin).toLocaleDateString('en-US', {
                           month: 'short',
@@ -259,9 +265,15 @@ export default function AdminPage() {
                         })
                       : 'Never'}
                   </td>
-                  <td className="py-3 text-sm text-center">{user._count.libraries}</td>
-                  <td className="py-3 text-sm text-center">{user.totalShelves}</td>
-                  <td className="py-3 text-sm text-center">{user.totalBooks}</td>
+                  <td className="py-2 text-xs text-center" title={`${user._count.libraries} ${user._count.libraries === 1 ? 'library' : 'libraries'}`}>
+                    {user._count.libraries}
+                  </td>
+                  <td className="py-2 text-xs text-center" title={`${user.totalShelves} ${user.totalShelves === 1 ? 'shelf' : 'shelves'}`}>
+                    {user.totalShelves}
+                  </td>
+                  <td className="py-2 text-xs text-center" title={`${user.totalBooks} ${user.totalBooks === 1 ? 'book' : 'books'}`}>
+                    {user.totalBooks}
+                  </td>
                 </tr>
               ))}
             </tbody>
