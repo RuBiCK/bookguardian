@@ -17,6 +17,7 @@ interface User {
   createdAt: string
   lastLogin: string | null
   totalBooks: number
+  totalShelves: number
   _count: {
     libraries: number
     usageLogs: number
@@ -185,8 +186,10 @@ export default function AdminPage() {
                 <th className="pb-3 text-sm font-medium text-muted-foreground">Tokens</th>
                 <th className="pb-3 text-sm font-medium text-muted-foreground">Calls</th>
                 <th className="pb-3 text-sm font-medium text-muted-foreground">Role</th>
-                <th className="pb-3 text-sm font-medium text-muted-foreground">Books</th>
                 <th className="pb-3 text-sm font-medium text-muted-foreground">Last Login</th>
+                <th className="pb-3 text-sm font-medium text-muted-foreground">Libraries</th>
+                <th className="pb-3 text-sm font-medium text-muted-foreground">Shelves</th>
+                <th className="pb-3 text-sm font-medium text-muted-foreground">Books</th>
               </tr>
             </thead>
             <tbody>
@@ -245,7 +248,6 @@ export default function AdminPage() {
                       {user.role}
                     </span>
                   </td>
-                  <td className="py-3 text-sm text-center">{user.totalBooks}</td>
                   <td className="py-3 text-sm">
                     {user.lastLogin
                       ? new Date(user.lastLogin).toLocaleDateString('en-US', {
@@ -257,6 +259,9 @@ export default function AdminPage() {
                         })
                       : 'Never'}
                   </td>
+                  <td className="py-3 text-sm text-center">{user._count.libraries}</td>
+                  <td className="py-3 text-sm text-center">{user.totalShelves}</td>
+                  <td className="py-3 text-sm text-center">{user.totalBooks}</td>
                 </tr>
               ))}
             </tbody>

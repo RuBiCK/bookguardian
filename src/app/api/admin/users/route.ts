@@ -44,8 +44,8 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    // Calculate total books for each user
-    const usersWithBookCount = users.map((user) => {
+    // Calculate total books and shelves for each user
+    const usersWithCounts = users.map((user) => {
       const totalBooks = user.libraries.reduce(
         (total, library) =>
           total +
@@ -56,14 +56,20 @@ export async function GET() {
         0
       )
 
+      const totalShelves = user.libraries.reduce(
+        (total, library) => total + library.shelves.length,
+        0
+      )
+
       const { libraries, ...userWithoutLibraries } = user
       return {
         ...userWithoutLibraries,
         totalBooks,
+        totalShelves,
       }
     })
 
-    return NextResponse.json({ users: usersWithBookCount })
+    return NextResponse.json({ users: usersWithCounts })
   } catch (error) {
     console.error('Error fetching users:', error)
 
