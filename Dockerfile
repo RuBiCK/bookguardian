@@ -64,5 +64,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Run migrations and start server
-# First resolve any failed migrations, then deploy
-CMD ["sh", "-c", "npx prisma migrate resolve --rolled-back 20251231000000_add_user_role_and_usage_tracking || true && npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
