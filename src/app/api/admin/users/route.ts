@@ -20,6 +20,20 @@ export async function GET() {
         callsUsed: true,
         quotaResetDate: true,
         createdAt: true,
+        lastLogin: true,
+        libraries: {
+          select: {
+            shelves: {
+              select: {
+                _count: {
+                  select: {
+                    books: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             libraries: true,
@@ -30,7 +44,26 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ users })
+    // Calculate total books for each user
+    const usersWithBookCount = users.map((user) => {
+      const totalBooks = user.libraries.reduce(
+        (total, library) =>
+          total +
+          library.shelves.reduce(
+            (shelfTotal, shelf) => shelfTotal + shelf._count.books,
+            0
+          ),
+        0
+      )
+
+      const { libraries, ...userWithoutLibraries } = user
+      return {
+        ...userWithoutLibraries,
+        totalBooks,
+      }
+    })
+
+    return NextResponse.json({ users: usersWithBookCount })
   } catch (error) {
     console.error('Error fetching users:', error)
 

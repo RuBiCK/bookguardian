@@ -51,6 +51,32 @@ SELECT email, role, tier FROM "User";
 EOF
 ```
 
+**Alternative: Set a specific user as admin by email:**
+```bash
+docker exec -i book-guardian-db psql -U library_user -d personal_library << 'EOF'
+UPDATE "User"
+SET
+  role = 'ADMIN',
+  tier = 'UNLIMITED',
+  "monthlyTokenQuota" = 999999999,
+  "monthlyCallQuota" = 999999
+WHERE email = 'your-email@example.com';
+
+SELECT email, role, tier, "monthlyTokenQuota", "monthlyCallQuota" FROM "User" WHERE email = 'your-email@example.com';
+EOF
+```
+
+**Or to grant admin access without unlimited quota:**
+```bash
+docker exec -i book-guardian-db psql -U library_user -d personal_library << 'EOF'
+UPDATE "User"
+SET role = 'ADMIN'
+WHERE email = 'your-email@example.com';
+
+SELECT email, role, tier FROM "User" WHERE email = 'your-email@example.com';
+EOF
+```
+
 ### 3. Access Admin Dashboard
 1. Refresh the page (or logout and login again)
 2. Click on your profile picture/name in the top-right corner

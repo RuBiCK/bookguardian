@@ -25,6 +25,7 @@ model User {
   tokensUsed          Int       @default(0)       // Current month usage
   callsUsed           Int       @default(0)       // Current month usage
   quotaResetDate      DateTime  @default(now())   // Next reset date
+  lastLogin           DateTime?                   // Last login timestamp
 
   accounts  Account[]
   sessions  Session[]

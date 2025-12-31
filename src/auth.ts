@@ -16,6 +16,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/login',
   },
   callbacks: {
+    // Sign in callback - called when user signs in
+    async signIn({ user }) {
+      // Update lastLogin timestamp
+      if (user?.id) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        })
+      }
+      return true
+    },
     // JWT callback - called when JWT is created or updated
     jwt({ token, user, account, profile }) {
       // Initial sign in - add user ID to token
