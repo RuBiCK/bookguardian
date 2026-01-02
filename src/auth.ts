@@ -19,16 +19,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Sign in callback - called when user signs in
     async signIn({ user }) {
       // Update lastLogin timestamp
-      if (user?.id) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLogin: new Date() },
-        })
+      // Use email to find user since id might not be in DB yet on first sign-in
+      if (user?.email) {
+        try {
+          await prisma.user.update({
+            where: { email: user.email },
+            data: { lastLogin: new Date() },
+          })
+        } catch (error) {
+          // Silently fail if user doesn't exist yet (first sign-in in progress)
+          // The adapter will create the user, and lastLogin will be updated on next sign-in
+          console.log('Could not update lastLogin, user may not exist yet:', error)
+        }
       }
       return true
     },
     // JWT callback - called when JWT is created or updated
-    jwt({ token, user, account, profile }) {
+    jwt({ token, user }) {
       // Initial sign in - add user ID to token
       if (user?.id) {
         token.id = user.id
