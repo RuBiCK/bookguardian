@@ -339,307 +339,309 @@ export default function BookDetailsPage() {
                     </div>
                 </div>
             ) : (
-                <div className="grid md:grid-cols-[300px_1fr] gap-8">
-                    <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl shadow-lg">
-                        {book.coverUrl ? (
-                            <Image src={book.coverUrl} alt={book.title} fill className="object-cover" />
-                        ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                                <BookOpen size={48} />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-6">
-                        <div>
-                            <h1 className="text-3xl font-bold leading-tight">
-                                <InlineEdit
-                                    value={book.title}
-                                    onSave={(value) => handleInlineUpdate('title', value)}
-                                    className="text-3xl font-bold"
-                                    placeholder="Book title"
-                                />
-                            </h1>
-                            <div className="text-xl text-muted-foreground mt-2">
-                                <InlineEdit
-                                    value={book.author}
-                                    onSave={(value) => handleInlineUpdate('author', value)}
-                                    className="text-xl text-muted-foreground"
-                                    placeholder="Author name"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            {/* First row: Rating, Published, Added, ISBN */}
-                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                                {(book.rating || 0) > 0 && (
-                                    <div className="flex items-center gap-1.5 text-yellow-500 font-medium">
-                                        <Star size={16} fill="currentColor" />
-                                        <span>{book.rating}/5</span>
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-1.5 text-muted-foreground" title="Publication year">
-                                    <Calendar size={16} />
-                                    <span>Published: </span>
-                                    <span className="inline-block" style={{ maxWidth: '80px' }}>
-                                        <InlineEdit
-                                            value={book.year?.toString() || ''}
-                                            onSave={(value) => handleInlineUpdate('year', value)}
-                                            className="text-sm text-muted-foreground w-full"
-                                            placeholder="Year"
-                                        />
-                                    </span>
-                                </div>
-                                {book.createdAt && (
-                                    <div className="flex items-center gap-1.5 text-muted-foreground" title="Date added to library">
-                                        <CalendarPlus size={16} />
-                                        <span>Added: {new Date(book.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                )}
-                                {book.isbn && (
-                                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                                        <Hash size={16} />
-                                        <span>ISBN: {book.isbn}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Second row: Publisher, Category, Library/Shelf, Status */}
-                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                                {book.publisher && (
-                                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                                        <Building2 size={16} />
-                                        <span>{book.publisher}</span>
-                                    </div>
-                                )}
-                                {book.category && (
-                                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                                        <TagIcon size={16} />
-                                        <span>{book.category}</span>
-                                    </div>
-                                )}
-                                {/* Library and Shelf - Clickable Dropdown */}
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowLibraryShelfDropdown(!showLibraryShelfDropdown)}
-                                        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm"
-                                        title="Click to change library/shelf"
-                                    >
-                                        <Library size={16} />
-                                        <span>
-                                            {(book as any).shelf?.library?.name} / {(book as any).shelf?.name}
-                                        </span>
-                                        <ChevronDown size={14} />
-                                    </button>
-
-                                    {showLibraryShelfDropdown && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-40"
-                                                onClick={() => setShowLibraryShelfDropdown(false)}
-                                            />
-                                            <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-2 z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
-                                                {libraries.map(library => (
-                                                    <div key={library.id}>
-                                                        <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                                            {library.name}
-                                                        </div>
-                                                        {library.shelves?.map((shelf: any) => (
-                                                            <button
-                                                                key={shelf.id}
-                                                                onClick={() => handleShelfChange(shelf.id)}
-                                                                className={`w-full px-4 py-2 text-left text-sm hover:bg-secondary transition-colors ${
-                                                                    (book as any).shelf?.id === shelf.id ? 'bg-secondary font-medium' : ''
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center gap-2">
-                                                                    <CheckCircle2
-                                                                        size={14}
-                                                                        className={`${
-                                                                            (book as any).shelf?.id === shelf.id
-                                                                                ? 'text-primary'
-                                                                                : 'text-transparent'
-                                                                        }`}
-                                                                    />
-                                                                    {shelf.name}
-                                                                </div>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                                {/* Reading Status - Clickable Dropdown */}
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                                        className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-colors flex items-center gap-1"
-                                    >
-                                        {book.readStatus.replace(/_/g, ' ')}
-                                        <ChevronDown size={14} />
-                                    </button>
-
-                                    {showStatusDropdown && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-40"
-                                                onClick={() => setShowStatusDropdown(false)}
-                                            />
-                                            <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-1 z-50 min-w-[150px]">
-                                                {['WANT_TO_READ', 'READING', 'READ'].map(status => (
-                                                    <button
-                                                        key={status}
-                                                        onClick={() => handleStatusChange(status)}
-                                                        className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary transition-colors ${
-                                                            book.readStatus === status ? 'bg-secondary font-medium' : ''
-                                                        }`}
-                                                    >
-                                                        {status.replace(/_/g, ' ')}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Tags Display - Separar user tags de source tags */}
-                        {book.tags && book.tags.length > 0 && (() => {
-                            const { userTags, sourceTags } = separateTags(book.tags)
-
-                            return (
-                                <div className="space-y-3">
-                                    {/* Source Tags */}
-                                    {sourceTags.length > 0 && (
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Sparkles size={14} className="text-purple-600 dark:text-purple-400" />
-                                                <span className="text-xs font-semibold text-muted-foreground">
-                                                    Sources
-                                                </span>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {sourceTags.map((tag: any) => (
-                                                    <span
-                                                        key={tag.id}
-                                                        className="px-2 py-1 rounded-md bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-700 text-xs font-medium"
-                                                    >
-                                                        {formatSourceName(tag.name)}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* User Tags */}
-                                    {userTags.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {userTags.map((tag: any) => (
-                                                <span
-                                                    key={tag.id}
-                                                    className="px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20 text-sm"
-                                                >
-                                                    {tag.name}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })()}
-
-                        <div className="p-4 bg-secondary/50 rounded-lg italic text-muted-foreground">
-                            <InlineEdit
-                                value={book.comment || ''}
-                                onSave={(value) => handleInlineUpdate('comment', value)}
-                                className="text-muted-foreground italic"
-                                placeholder="Add notes or comments..."
-                                multiline={true}
-                                singleClick={true}
-                            />
-                        </div>
-
-                        <div className="border-t border-border pt-6">
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <Users size={20} />
-                                Lending Status
-                            </h3>
-
-                            {currentLending ? (
-                                // Book is currently lent out
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                        <User size={20} className="text-blue-600 dark:text-blue-400" />
-                                        <div className="flex-1">
-                                            <p className="font-medium text-blue-900 dark:text-blue-100">
-                                                Lent to {currentLending.borrowerName}
-                                            </p>
-                                            <p className="text-sm text-blue-700 dark:text-blue-300">
-                                                Since {new Date(currentLending.lentDate).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleReturn(currentLending.id)}
-                                        className="w-full btn-secondary"
-                                    >
-                                        Mark as Returned
-                                    </button>
-                                </div>
-                            ) : showLendingInput ? (
-                                // Show borrower input form
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Borrower Name</label>
-                                        <input
-                                            type="text"
-                                            value={lendingName}
-                                            onChange={(e) => setLendingName(e.target.value)}
-                                            placeholder="Enter borrower name"
-                                            className="input-field"
-                                        />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => {
-                                                setShowLendingInput(false)
-                                                setLendingName('')
-                                            }}
-                                            className="flex-1 btn-secondary"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleLend}
-                                            disabled={!lendingName.trim() || isLending}
-                                            className="flex-1 btn-primary"
-                                        >
-                                            {isLending ? 'Lending...' : 'Confirm Lending'}
-                                        </button>
-                                    </div>
-                                </div>
+                <div className="space-y-6">
+                    {/* Header: Image + Properties side by side */}
+                    <div className="flex flex-col sm:flex-row gap-6">
+                        <div className="relative w-[140px] min-w-[140px] aspect-[2/3] overflow-hidden rounded-lg shadow-md self-start">
+                            {book.coverUrl ? (
+                                <Image src={book.coverUrl} alt={book.title} fill className="object-cover" />
                             ) : (
-                                // Book is available
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                        <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />
-                                        <p className="font-medium text-green-900 dark:text-green-100">
-                                            This book is currently available
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowLendingInput(true)}
-                                        className="w-full btn-primary"
-                                    >
-                                        Lend This Book
-                                    </button>
+                                <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                                    <BookOpen size={32} />
                                 </div>
                             )}
                         </div>
+
+                        <div className="flex-1 space-y-4">
+                            <div>
+                                <h1 className="text-2xl font-bold leading-tight">
+                                    <InlineEdit
+                                        value={book.title}
+                                        onSave={(value) => handleInlineUpdate('title', value)}
+                                        className="text-2xl font-bold"
+                                        placeholder="Book title"
+                                    />
+                                </h1>
+                                <div className="text-lg text-muted-foreground mt-1">
+                                    <InlineEdit
+                                        value={book.author}
+                                        onSave={(value) => handleInlineUpdate('author', value)}
+                                        className="text-lg text-muted-foreground"
+                                        placeholder="Author name"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                {/* First row: Rating, Published, Added, ISBN */}
+                                <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+                                    {(book.rating || 0) > 0 && (
+                                        <div className="flex items-center gap-1.5 text-yellow-500 font-medium">
+                                            <Star size={15} fill="currentColor" />
+                                            <span>{book.rating}/5</span>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-1.5 text-muted-foreground" title="Publication year">
+                                        <Calendar size={15} />
+                                        <span>Published: </span>
+                                        <span className="inline-block" style={{ maxWidth: '80px' }}>
+                                            <InlineEdit
+                                                value={book.year?.toString() || ''}
+                                                onSave={(value) => handleInlineUpdate('year', value)}
+                                                className="text-sm text-muted-foreground w-full"
+                                                placeholder="Year"
+                                            />
+                                        </span>
+                                    </div>
+                                    {book.createdAt && (
+                                        <div className="flex items-center gap-1.5 text-muted-foreground" title="Date added to library">
+                                            <CalendarPlus size={15} />
+                                            <span>Added: {new Date(book.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                    )}
+                                    {book.isbn && (
+                                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                                            <Hash size={15} />
+                                            <span>ISBN: {book.isbn}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Second row: Publisher, Category, Library/Shelf, Status */}
+                                <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+                                    {book.publisher && (
+                                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                                            <Building2 size={15} />
+                                            <span>{book.publisher}</span>
+                                        </div>
+                                    )}
+                                    {book.category && (
+                                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                                            <TagIcon size={15} />
+                                            <span>{book.category}</span>
+                                        </div>
+                                    )}
+                                    {/* Library and Shelf - Clickable Dropdown */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowLibraryShelfDropdown(!showLibraryShelfDropdown)}
+                                            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm"
+                                            title="Click to change library/shelf"
+                                        >
+                                            <Library size={15} />
+                                            <span>
+                                                {(book as any).shelf?.library?.name} / {(book as any).shelf?.name}
+                                            </span>
+                                            <ChevronDown size={14} />
+                                        </button>
+
+                                        {showLibraryShelfDropdown && (
+                                            <>
+                                                <div
+                                                    className="fixed inset-0 z-40"
+                                                    onClick={() => setShowLibraryShelfDropdown(false)}
+                                                />
+                                                <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-2 z-50 min-w-[280px] max-h-[400px] overflow-y-auto">
+                                                    {libraries.map(library => (
+                                                        <div key={library.id}>
+                                                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                                {library.name}
+                                                            </div>
+                                                            {library.shelves?.map((shelf: any) => (
+                                                                <button
+                                                                    key={shelf.id}
+                                                                    onClick={() => handleShelfChange(shelf.id)}
+                                                                    className={`w-full px-4 py-2 text-left text-sm hover:bg-secondary transition-colors ${
+                                                                        (book as any).shelf?.id === shelf.id ? 'bg-secondary font-medium' : ''
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CheckCircle2
+                                                                            size={14}
+                                                                            className={`${
+                                                                                (book as any).shelf?.id === shelf.id
+                                                                                    ? 'text-primary'
+                                                                                    : 'text-transparent'
+                                                                            }`}
+                                                                        />
+                                                                        {shelf.name}
+                                                                    </div>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                    {/* Reading Status - Clickable Dropdown */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                                            className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 transition-colors flex items-center gap-1"
+                                        >
+                                            {book.readStatus.replace(/_/g, ' ')}
+                                            <ChevronDown size={14} />
+                                        </button>
+
+                                        {showStatusDropdown && (
+                                            <>
+                                                <div
+                                                    className="fixed inset-0 z-40"
+                                                    onClick={() => setShowStatusDropdown(false)}
+                                                />
+                                                <div className="absolute top-full mt-1 left-0 bg-white dark:bg-neutral-800 border border-border rounded-lg shadow-lg py-1 z-50 min-w-[150px]">
+                                                    {['WANT_TO_READ', 'READING', 'READ'].map(status => (
+                                                        <button
+                                                            key={status}
+                                                            onClick={() => handleStatusChange(status)}
+                                                            className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary transition-colors ${
+                                                                book.readStatus === status ? 'bg-secondary font-medium' : ''
+                                                            }`}
+                                                        >
+                                                            {status.replace(/_/g, ' ')}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Tags Display - Separar user tags de source tags */}
+                            {book.tags && book.tags.length > 0 && (() => {
+                                const { userTags, sourceTags } = separateTags(book.tags)
+
+                                return (
+                                    <div className="space-y-2">
+                                        {/* Source Tags */}
+                                        {sourceTags.length > 0 && (
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    <Sparkles size={13} className="text-purple-600 dark:text-purple-400" />
+                                                    <span className="text-xs font-semibold text-muted-foreground">
+                                                        Sources
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {sourceTags.map((tag: any) => (
+                                                        <span
+                                                            key={tag.id}
+                                                            className="px-2 py-0.5 rounded-md bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-700 text-xs font-medium"
+                                                        >
+                                                            {formatSourceName(tag.name)}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* User Tags */}
+                                        {userTags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {userTags.map((tag: any) => (
+                                                    <span
+                                                        key={tag.id}
+                                                        className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-xs"
+                                                    >
+                                                        {tag.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })()}
+                        </div>
+                    </div>
+
+                    {/* Notes - full width below */}
+                    <div className="p-4 bg-secondary/50 rounded-lg italic text-muted-foreground">
+                        <InlineEdit
+                            value={book.comment || ''}
+                            onSave={(value) => handleInlineUpdate('comment', value)}
+                            className="text-muted-foreground italic"
+                            placeholder="Add notes or comments..."
+                            multiline={true}
+                            singleClick={true}
+                        />
+                    </div>
+
+                    {/* Lending - full width below */}
+                    <div className="border-t border-border pt-6">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Users size={20} />
+                            Lending Status
+                        </h3>
+
+                        {currentLending ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                    <User size={20} className="text-blue-600 dark:text-blue-400" />
+                                    <div className="flex-1">
+                                        <p className="font-medium text-blue-900 dark:text-blue-100">
+                                            Lent to {currentLending.borrowerName}
+                                        </p>
+                                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                                            Since {new Date(currentLending.lentDate).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleReturn(currentLending.id)}
+                                    className="btn-secondary"
+                                >
+                                    Mark as Returned
+                                </button>
+                            </div>
+                        ) : showLendingInput ? (
+                            <div className="space-y-4 max-w-md">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Borrower Name</label>
+                                    <input
+                                        type="text"
+                                        value={lendingName}
+                                        onChange={(e) => setLendingName(e.target.value)}
+                                        placeholder="Enter borrower name"
+                                        className="input-field"
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setShowLendingInput(false)
+                                            setLendingName('')
+                                        }}
+                                        className="flex-1 btn-secondary"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleLend}
+                                        disabled={!lendingName.trim() || isLending}
+                                        className="flex-1 btn-primary"
+                                    >
+                                        {isLending ? 'Lending...' : 'Confirm Lending'}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                    <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />
+                                    <p className="font-medium text-green-900 dark:text-green-100">
+                                        This book is currently available
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowLendingInput(true)}
+                                    className="btn-primary"
+                                >
+                                    Lend This Book
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
