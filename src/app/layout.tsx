@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
 import { SessionProvider } from '@/components/SessionProvider'
+import ImpersonationBanner from '@/components/ImpersonationBanner'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -97,6 +98,7 @@ export default function RootLayout({
             <body className={`${inter.variable} font-sans antialiased bg-background text-foreground min-h-screen pb-24 md:pb-0 md:pt-16`}>
                 <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:rounded">Skip to main content</a>
                 <SessionProvider>
+                    <ImpersonationBanner />
                     <main id="main-content" className="container mx-auto px-4 py-6 max-w-5xl">
                         {children}
                     </main>

@@ -1,26 +1,23 @@
-import { auth } from '@/auth'
+import { requireRealAuth } from './auth-helpers'
 import { prisma } from './prisma'
 
 /**
- * Require admin access - throws error if not admin
+ * Require admin access - throws error if not admin.
+ * Always uses the real session identity (ignores impersonation).
  */
 export async function requireAdmin() {
-  const session = await auth()
+  const user = await requireRealAuth()
 
-  if (!session || !session.user) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id as string },
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id as string },
     select: { role: true },
   })
 
-  if (user?.role !== 'ADMIN') {
+  if (dbUser?.role !== 'ADMIN') {
     throw new Error('Admin access required')
   }
 
-  return session.user
+  return user
 }
 
 /**

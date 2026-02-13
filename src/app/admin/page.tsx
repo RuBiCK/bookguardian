@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, Users, Activity, Zap, TrendingUp, Clock, Library, Layers, BookOpen } from 'lucide-react'
+import { Shield, Users, Activity, Zap, TrendingUp, Clock, Library, Layers, BookOpen, UserCheck } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface User {
   id: string
@@ -49,6 +50,7 @@ interface Stats {
 }
 
 export default function AdminPage() {
+  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -100,6 +102,22 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Error updating user:', err)
+    }
+  }
+
+  const startImpersonation = async (userId: string) => {
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+
+      if (res.ok) {
+        router.push('/library')
+      }
+    } catch (err) {
+      console.error('Error starting impersonation:', err)
     }
   }
 
@@ -202,9 +220,20 @@ export default function AdminPage() {
               {users.map((user) => (
                 <tr key={user.id} className="border-b border-border last:border-0">
                   <td className="py-2">
-                    <div>
-                      <div className="font-medium">{user.name || 'No name'}</div>
-                      <div className="text-xs text-muted-foreground">{user.email}</div>
+                    <div className="flex items-center gap-1">
+                      <div>
+                        <div className="font-medium">{user.name || 'No name'}</div>
+                        <div className="text-xs text-muted-foreground">{user.email}</div>
+                      </div>
+                      {user.role !== 'ADMIN' && (
+                        <button
+                          onClick={() => startImpersonation(user.id)}
+                          className="ml-1 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          title={`Impersonate ${user.email}`}
+                        >
+                          <UserCheck size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="py-2">
