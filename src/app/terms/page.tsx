@@ -182,10 +182,7 @@ export default function TermsPage() {
           <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
           <p className="text-muted-foreground">
             If you have questions about these Terms of Service, please contact us at:{' '}
-            <span className="font-semibold">[your-personal-email]</span>
-          </p>
-          <p className="text-muted-foreground mt-2 text-sm italic">
-            Note: Replace [your-personal-email] with your actual email address before deploying to production.
+            <span className="font-semibold">legal@bookguardian.app</span>
           </p>
         </section>
 

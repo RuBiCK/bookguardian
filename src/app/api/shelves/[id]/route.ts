@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function PATCH(
     request: Request,
@@ -8,6 +9,10 @@ export async function PATCH(
 ) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`shelf-patch:${user.id}`, { limit: 20 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const { id } = await params
         const body = await request.json()
         const { name } = body
@@ -49,6 +54,10 @@ export async function DELETE(
 ) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`shelf-delete:${user.id}`, { limit: 10 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const { id } = await params
 
         // Verify shelf belongs to user

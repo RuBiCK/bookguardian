@@ -1,16 +1,26 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { CreateLendingSchema } from '@/lib/validation'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
     try {
         const user = await requireAuth()
 
-        const { bookId, borrowerName } = await request.json()
+        const rl = rateLimit(`lending-post:${user.id}`, { limit: 10 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
 
-        if (!bookId || !borrowerName) {
-            return NextResponse.json({ error: 'Book ID and Borrower Name are required' }, { status: 400 })
+        const body = await request.json()
+        const validation = CreateLendingSchema.safeParse(body)
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error.issues },
+                { status: 400 }
+            )
         }
+
+        const { bookId, borrowerName } = validation.data
 
         // Verify book belongs to user
         const book = await prisma.book.findUnique({
@@ -65,6 +75,9 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`lending-put:${user.id}`, { limit: 10 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
 
         const { lendingId, status } = await request.json()
 

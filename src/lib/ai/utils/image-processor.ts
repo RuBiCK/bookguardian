@@ -26,8 +26,7 @@ export function validateImage(
 }
 
 /**
- * Procesa y optimiza imagen para análisis
- * (Esta función simula compresión - en producción usar librería como sharp o canvas)
+ * Procesa y optimiza imagen para análisis usando sharp
  */
 export async function processImage(
   base64Image: string,
@@ -37,9 +36,47 @@ export async function processImage(
     format: 'jpeg' | 'png' | 'webp'
   }
 ): Promise<string> {
-  // En un entorno Node.js, aquí usarías sharp o canvas
-  // Para este diseño, asumimos que la compresión ya se hizo en el frontend
-  return base64Image
+  try {
+    const sharp = (await import('sharp')).default
+
+    // Extract the base64 data and mime type
+    const matches = base64Image.match(/^data:image\/(\w+);base64,(.+)$/)
+    if (!matches) {
+      return base64Image // Return unchanged if not a valid data URI
+    }
+
+    const base64Data = matches[2]
+    const buffer = Buffer.from(base64Data, 'base64')
+
+    // Process with sharp: resize and convert
+    let pipeline = sharp(buffer).resize({
+      width: options.maxWidth,
+      withoutEnlargement: true,
+    })
+
+    // Convert to target format with quality
+    const quality = Math.round(options.quality * 100)
+    switch (options.format) {
+      case 'webp':
+        pipeline = pipeline.webp({ quality })
+        break
+      case 'jpeg':
+        pipeline = pipeline.jpeg({ quality })
+        break
+      case 'png':
+        pipeline = pipeline.png({ quality })
+        break
+    }
+
+    const outputBuffer = await pipeline.toBuffer()
+    const outputBase64 = outputBuffer.toString('base64')
+    const mimeType = options.format === 'jpeg' ? 'image/jpeg' : `image/${options.format}`
+
+    return `data:${mimeType};base64,${outputBase64}`
+  } catch (error) {
+    console.warn('[ImageProcessor] sharp processing failed, returning original:', error)
+    return base64Image
+  }
 }
 
 /**

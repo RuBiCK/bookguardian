@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET() {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`export-get:${user.id}`, { limit: 5 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
 
         const books = await prisma.book.findMany({
             where: {

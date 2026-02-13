@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { CreateBookSchema } from '@/lib/validation'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(request: Request) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`books-get:${user.id}`)
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
 
         const { searchParams } = new URL(request.url)
         const libraryId = searchParams.get('libraryId')
@@ -116,7 +121,18 @@ export async function POST(request: Request) {
     try {
         const user = await requireAuth()
 
+        const rl = rateLimit(`books-post:${user.id}`, { limit: 20 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const body = await request.json()
+        const validation = CreateBookSchema.safeParse(body)
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error.issues },
+                { status: 400 }
+            )
+        }
+
         const {
             title,
             author,
@@ -130,9 +146,9 @@ export async function POST(request: Request) {
             comment,
             readStatus,
             shelfId,
-            tags, // Array of strings
-            metadataSource, // manual, google_books, ai_shelf_scan
-        } = body
+            tags,
+            metadataSource,
+        } = validation.data
 
         // If no shelfId is provided, try to find the user's default shelf
         let targetShelfId = shelfId
@@ -180,14 +196,14 @@ export async function POST(request: Request) {
         const book = await prisma.book.create({
             data: {
                 title,
-                author,
+                author: author ?? '',
                 isbn,
                 coverUrl,
                 category,
-                year: year ? parseInt(year) : undefined,
+                year: year ?? undefined,
                 publisher,
                 language,
-                rating: rating ? parseInt(rating) : 0,
+                rating: rating ?? 0,
                 comment,
                 readStatus: readStatus || 'WANT_TO_READ',
                 metadataSource: metadataSource || 'manual',

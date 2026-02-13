@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(
     request: Request,
@@ -8,6 +9,10 @@ export async function GET(
 ) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`library-get:${user.id}`)
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const { id } = await params
 
         const library = await prisma.library.findUnique({
@@ -48,6 +53,10 @@ export async function DELETE(
 ) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`library-delete:${user.id}`, { limit: 10 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const { id } = await params
 
         // Verify library belongs to user before deleting

@@ -139,9 +139,9 @@ export abstract class BaseAIProvider implements AIProvider {
     options?: ImageAnalysisOptions
   ): Promise<string> {
     return processImage(base64Image, {
-      maxWidth: 2048,
+      maxWidth: options?.maxWidth || 2048,
       quality: options?.compressionQuality || 0.85,
-      format: 'jpeg',
+      format: 'webp',
     })
   }
 

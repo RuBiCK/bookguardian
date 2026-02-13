@@ -4,9 +4,9 @@ services:
     container_name: book-guardian-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: library_user
-      POSTGRES_PASSWORD: library_password
-      POSTGRES_DB: personal_library
+      POSTGRES_USER: ${POSTGRES_USER:-library_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-library_password}
+      POSTGRES_DB: ${POSTGRES_DB:-personal_library}
     ports:
       - "5432:5432"
     volumes:

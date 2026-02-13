@@ -11,6 +11,7 @@ import {
 } from '@/lib/ai/types'
 import { createSourceTag } from '@/lib/source-tags'
 import { checkQuota, logUsage, QuotaExceededError } from '@/lib/quota-helpers'
+import { validateImage } from '@/lib/ai/utils/image-processor'
 
 /**
  * Analiza una imagen de estantería y detecta todos los libros
@@ -18,6 +19,12 @@ import { checkQuota, logUsage, QuotaExceededError } from '@/lib/quota-helpers'
  */
 export async function analyzeShelfImage(base64Image: string) {
   try {
+    // 0. Validate image format and size
+    const validation = validateImage(base64Image, { maxSizeMB: 10 })
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
+
     // 1. Verificar autenticación
     const user = await requireAuth()
     const userId = user.id as string

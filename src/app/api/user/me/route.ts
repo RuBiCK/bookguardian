@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET() {
   try {
     const user = await requireAuth()
+
+    const rl = rateLimit(`user-me:${user.id}`)
+    if (!rl.success) return rateLimitResponse(rl.resetTime)
 
     const userData = await prisma.user.findUnique({
       where: { id: user.id as string },

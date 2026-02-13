@@ -2,17 +2,39 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/admin-helpers'
 import { QUOTA_TIERS, TierType } from '@/lib/quota-config'
+import { UpdateUserSchema } from '@/lib/validation'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin()
+    const admin = await requireAdmin()
+
+    const rl = rateLimit(`admin-patch:${admin.id}`, { limit: 20 })
+    if (!rl.success) return rateLimitResponse(rl.resetTime)
 
     const { id } = await params
     const body = await request.json()
-    const { tier, role } = body
+
+    const validation = UpdateUserSchema.safeParse(body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.error.issues },
+        { status: 400 }
+      )
+    }
+
+    const { tier, role } = validation.data
+
+    // Prevent admin from modifying their own role
+    if (role && admin.id === id) {
+      return NextResponse.json(
+        { error: 'Cannot modify your own role' },
+        { status: 403 }
+      )
+    }
 
     const updateData: any = {}
 

@@ -1,0 +1,57 @@
+{
+  "name": "Book Guardian - Personal Library Management",
+  "short_name": "Book Guardian",
+  "description": "Free, open-source personal library management system. Organize your book collection with AI-powered scanning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d97706",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "lifestyle", "education"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Book",
+      "short_name": "Add Book",
+      "description": "Quickly add a new book to your library",
+      "url": "/add-book",
+      "icons": [
+        {
+          "src": "/logo.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "My Library",
+      "short_name": "Library",
+      "description": "View your book collection",
+      "url": "/library",
+      "icons": [
+        {
+          "src": "/logo.svg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

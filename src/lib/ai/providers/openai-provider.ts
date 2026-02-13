@@ -71,7 +71,7 @@ export class OpenAIProvider extends BaseAIProvider {
             },
             {
               type: 'image_url',
-              image_url: { url: base64Image },
+              image_url: { url: base64Image, detail: 'low' },
             },
           ],
         },
@@ -121,7 +121,7 @@ export class OpenAIProvider extends BaseAIProvider {
             },
             {
               type: 'image_url',
-              image_url: { url: base64Image },
+              image_url: { url: base64Image, detail: 'high' },
             },
           ],
         },

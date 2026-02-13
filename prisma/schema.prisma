@@ -18,14 +18,14 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Usage tracking and quotas
-  role                String    @default("USER")  // USER, ADMIN
-  tier                String    @default("FREE")  // FREE, PRO, UNLIMITED
-  monthlyTokenQuota   Int       @default(50000)   // Tokens per month
-  monthlyCallQuota    Int       @default(20)      // API calls per month
-  tokensUsed          Int       @default(0)       // Current month usage
-  callsUsed           Int       @default(0)       // Current month usage
-  quotaResetDate      DateTime  @default(now())   // Next reset date
-  lastLogin           DateTime?                   // Last login timestamp
+  role              String    @default("USER") // USER, ADMIN
+  tier              String    @default("FREE") // FREE, PRO, UNLIMITED
+  monthlyTokenQuota Int       @default(50000) // Tokens per month
+  monthlyCallQuota  Int       @default(20) // API calls per month
+  tokensUsed        Int       @default(0) // Current month usage
+  callsUsed         Int       @default(0) // Current month usage
+  quotaResetDate    DateTime  @default(now()) // Next reset date
+  lastLogin         DateTime? // Last login timestamp
 
   accounts  Account[]
   sessions  Session[]
@@ -85,33 +85,36 @@ model Library {
 }
 
 model Shelf {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   name      String
   libraryId String
-  library   Library  @relation(fields: [libraryId], references: [id])
+  library   Library @relation(fields: [libraryId], references: [id])
   books     Book[]
 }
 
 model Book {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   title          String
   author         String
   isbn           String?
   coverUrl       String?
   category       String?
-  year           Int?     // Publication year
+  year           Int? // Publication year
   publisher      String?
   language       String?
-  rating         Int?     @default(0) // 0-5
+  rating         Int?      @default(0) // 0-5
   comment        String?
-  readStatus     String   @default("WANT_TO_READ") // WANT_TO_READ, READING, READ
-  metadataSource String?  @default("manual") // manual, google_books, ai_shelf_scan
+  readStatus     String    @default("WANT_TO_READ") // WANT_TO_READ, READING, READ
+  metadataSource String?   @default("manual") // manual, google_books, ai_shelf_scan
   shelfId        String
-  shelf          Shelf    @relation(fields: [shelfId], references: [id])
+  shelf          Shelf     @relation(fields: [shelfId], references: [id])
   lendings       Lending[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   tags           Tag[]
+
+  @@index([shelfId])
+  @@index([readStatus])
 }
 
 model Tag {
@@ -133,8 +136,8 @@ model Lending {
 model UsageLog {
   id               String   @id @default(uuid())
   userId           String
-  model            String   // e.g. "gpt-4o"
-  operation        String   // e.g. "analyzeBook", "analyzeShelf"
+  model            String // e.g. "gpt-4o"
+  operation        String // e.g. "analyzeBook", "analyzeShelf"
   promptTokens     Int
   completionTokens Int
   totalTokens      Int

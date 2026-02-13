@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET() {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`tags-get:${user.id}`)
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
 
         // Get tags that are used in the user's books (private tags)
         const tags = await prisma.tag.findMany({

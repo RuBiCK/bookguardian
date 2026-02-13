@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, PlusCircle, BookOpen, Settings, LogOut, Shield } from 'lucide-react'
+import { Home, PlusCircle, BookOpen, Settings, LogOut, Shield, FileText } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
@@ -34,7 +34,7 @@ export default function Navigation() {
     }
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 pb-safe pt-2 px-6 z-50 md:top-0 md:bottom-auto md:h-16 md:border-t-0 md:border-b md:flex md:items-center md:justify-between md:px-8">
+        <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 pb-safe pt-2 px-6 z-50 md:top-0 md:bottom-auto md:h-16 md:border-t-0 md:border-b md:flex md:items-center md:justify-between md:px-8">
             <div className="hidden md:flex items-center gap-3">
                 <Image src="/logo.svg" alt="Book Guardian" width={32} height={32} className="text-amber-700 dark:text-amber-500" />
                 <div className="text-xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent">
@@ -58,6 +58,11 @@ export default function Navigation() {
                     <span className="text-[10px] md:text-xs font-medium">Libraries</span>
                 </Link>
 
+                <Link href="/docs" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/docs') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                    <FileText size={24} />
+                    <span className="text-[10px] md:text-xs font-medium">Docs</span>
+                </Link>
+
                 <Link href="/settings" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/settings') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                     <Settings size={24} />
                     <span className="text-[10px] md:text-xs font-medium">Settings</span>
@@ -69,6 +74,8 @@ export default function Navigation() {
                 <div className="hidden md:block relative">
                     <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
+                        aria-label={`User menu for ${session.user.name || session.user.email}`}
+                        aria-expanded={showUserMenu}
                         className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary transition-colors"
                     >
                         {session.user.image ? (

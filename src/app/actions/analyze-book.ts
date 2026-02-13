@@ -4,9 +4,16 @@ import { getAIProvider } from '@/lib/ai/factory'
 import { searchGoogleBooks, searchGoogleBooksMultiple } from './google-books'
 import { requireAuth } from '@/lib/auth-helpers'
 import { checkQuota, logUsage, QuotaExceededError } from '@/lib/quota-helpers'
+import { validateImage } from '@/lib/ai/utils/image-processor'
 
 export async function analyzeBookImage(base64Image: string) {
     try {
+        // Validate image format and size before processing
+        const validation = validateImage(base64Image, { maxSizeMB: 5 })
+        if (!validation.valid) {
+            return { error: validation.error }
+        }
+
         // Require authentication
         const user = await requireAuth()
         const userId = user.id as string
@@ -20,6 +27,7 @@ export async function analyzeBookImage(base64Image: string) {
 
         const aiData = await aiProvider.analyzeSingleBook(base64Image, {
             compressionQuality: 0.8,
+            maxWidth: 768,
         })
 
         // Log usage from the AI response

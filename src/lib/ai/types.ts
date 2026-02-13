@@ -57,6 +57,7 @@ export interface ImageAnalysisOptions {
   maxImageSize?: number      // Tamaño máximo en bytes
   compressionQuality?: number // Calidad JPEG (0-1)
   detectionThreshold?: number // Umbral de confianza mínimo
+  maxWidth?: number           // Max image width for resize (768 for single book, 2048 for shelf)
 }
 
 // ============================================================================

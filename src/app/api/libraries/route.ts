@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { CreateLibrarySchema } from '@/lib/validation'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET() {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`libraries-get:${user.id}`)
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
 
         const libraries = await prisma.library.findMany({
             where: {
@@ -34,8 +39,19 @@ export async function POST(request: Request) {
     try {
         const user = await requireAuth()
 
+        const rl = rateLimit(`libraries-post:${user.id}`, { limit: 10 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const body = await request.json()
-        const { name, location } = body
+        const validation = CreateLibrarySchema.safeParse(body)
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error.issues },
+                { status: 400 }
+            )
+        }
+
+        const { name, location } = validation.data
 
         const library = await prisma.library.create({
             data: {

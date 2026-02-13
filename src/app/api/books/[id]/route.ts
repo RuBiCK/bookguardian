@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { UpdateBookSchema } from '@/lib/validation'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET(
     request: Request,
@@ -8,6 +10,10 @@ export async function GET(
 ) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`books-get:${user.id}`)
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const { id } = await params
 
         const book = await prisma.book.findUnique({
@@ -48,7 +54,19 @@ export async function PATCH(
     try {
         const user = await requireAuth()
         const { id } = await params
+
+        const rl = rateLimit(`books-patch:${user.id}`, { limit: 20 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const body = await request.json()
+        const validation = UpdateBookSchema.safeParse(body)
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error.issues },
+                { status: 400 }
+            )
+        }
+
         const {
             title,
             author,
@@ -62,8 +80,8 @@ export async function PATCH(
             comment,
             readStatus,
             shelfId,
-            tags, // Array of strings
-        } = body
+            tags,
+        } = validation.data
 
         // Verify book belongs to user before updating
         const existingBook = await prisma.book.findUnique({
@@ -123,10 +141,10 @@ export async function PATCH(
                 isbn,
                 coverUrl,
                 category,
-                year: year ? parseInt(year) : undefined,
+                year: year ?? undefined,
                 publisher,
                 language,
-                rating: rating ? parseInt(rating) : undefined,
+                rating: rating ?? undefined,
                 comment,
                 readStatus,
                 shelfId,
@@ -159,6 +177,10 @@ export async function DELETE(
 ) {
     try {
         const user = await requireAuth()
+
+        const rl = rateLimit(`books-delete:${user.id}`, { limit: 10 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const { id } = await params
 
         // Verify book belongs to user before deleting

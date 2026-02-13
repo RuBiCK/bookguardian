@@ -100,7 +100,32 @@ export default function AddBookCamera({ onScanComplete }: AddBookCameraProps) {
         if (file) {
             const reader = new FileReader()
             reader.onloadend = () => {
-                setImage(reader.result as string)
+                // Compress uploaded image via canvas (same as camera capture)
+                const img = new window.Image()
+                img.onload = () => {
+                    const canvas = document.createElement('canvas')
+                    const MAX_WIDTH = 800
+                    const scale = MAX_WIDTH / img.width
+                    const width = Math.min(img.width, MAX_WIDTH)
+                    const height = img.height * (scale < 1 ? scale : 1)
+
+                    canvas.width = width
+                    canvas.height = height
+
+                    const ctx = canvas.getContext('2d')
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, width, height)
+                        const compressed = canvas.toDataURL('image/jpeg', 0.8)
+                        console.log('Compressed upload size:', compressed.length)
+                        setImage(compressed)
+                    } else {
+                        setImage(reader.result as string)
+                    }
+                }
+                img.onerror = () => {
+                    setImage(reader.result as string)
+                }
+                img.src = reader.result as string
             }
             reader.readAsDataURL(file)
         }

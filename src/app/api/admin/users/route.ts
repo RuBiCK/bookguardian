@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/admin-helpers'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function GET() {
   try {
-    await requireAdmin()
+    const admin = await requireAdmin()
+
+    const rl = rateLimit(`admin-users:${admin.id}`)
+    if (!rl.success) return rateLimitResponse(rl.resetTime)
 
     const users = await prisma.user.findMany({
       select: {

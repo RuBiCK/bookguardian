@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 interface GoogleBooksVolume {
   volumeInfo: {
@@ -23,6 +24,10 @@ interface GoogleBooksVolume {
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'anonymous'
+    const rl = rateLimit(`book-search:${ip}`, { limit: 20 })
+    if (!rl.success) return rateLimitResponse(rl.resetTime)
+
     const { query } = await request.json()
 
     if (!query || typeof query !== 'string') {

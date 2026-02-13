@@ -1,13 +1,26 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
+import { CreateShelfSchema } from '@/lib/validation'
+import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
     try {
         const user = await requireAuth()
 
+        const rl = rateLimit(`shelves-post:${user.id}`, { limit: 10 })
+        if (!rl.success) return rateLimitResponse(rl.resetTime)
+
         const body = await request.json()
-        const { name, libraryId } = body
+        const validation = CreateShelfSchema.safeParse(body)
+        if (!validation.success) {
+            return NextResponse.json(
+                { error: 'Validation failed', details: validation.error.issues },
+                { status: 400 }
+            )
+        }
+
+        const { name, libraryId } = validation.data
 
         // Verify library belongs to user before creating shelf
         const library = await prisma.library.findUnique({

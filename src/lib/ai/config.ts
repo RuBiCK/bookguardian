@@ -60,7 +60,7 @@ export function getAIConfig(): AIConfig {
     imageProcessing: {
       maxSizeMB: 5,
       compressionQuality: 0.85,
-      defaultFormat: 'jpeg',
+      defaultFormat: 'webp',
     },
 
     detection: {
