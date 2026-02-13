@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Star, Search, Loader2, X, CheckCircle2 } from 'lucide-react'
 import { createSourceTag } from '@/lib/source-tags'
+import TagInput from '@/components/TagInput'
 
 const STORAGE_KEY_LIBRARY = 'bookForm_lastLibraryId'
 const STORAGE_KEY_SHELF = 'bookForm_lastShelfId'
@@ -53,6 +54,7 @@ export default function AddBookManual({ initialData, defaultShelfId, onSaveSucce
     const [usedSearch, setUsedSearch] = useState(false)
     const [multipleOptions, setMultipleOptions] = useState<BookOption[]>([])
     const [initialSourceTags, setInitialSourceTags] = useState<string[]>([])
+    const [tagSuggestions, setTagSuggestions] = useState<{ name: string; count: number }[]>([])
     const [formData, setFormData] = useState({
         title: initialData?.title || '',
         author: initialData?.author || '',
@@ -65,8 +67,23 @@ export default function AddBookManual({ initialData, defaultShelfId, onSaveSucce
         readStatus: 'WANT_TO_READ',
         rating: '0',
         comment: '',
-        tags: ''
+        tags: [] as string[]
     })
+
+    // Load tags on mount
+    useEffect(() => {
+        const fetchTags = async () => {
+            try {
+                const res = await fetch('/api/tags')
+                if (res.ok) {
+                    setTagSuggestions(await res.json())
+                }
+            } catch (error) {
+                console.error('Error loading tags:', error)
+            }
+        }
+        fetchTags()
+    }, [])
 
     // Load libraries on mount
     useEffect(() => {
@@ -259,7 +276,7 @@ export default function AddBookManual({ initialData, defaultShelfId, onSaveSucce
             readStatus: 'WANT_TO_READ',
             rating: '0',
             comment: '',
-            tags: ''
+            tags: []
         })
         setUsedSearch(false)
         setMultipleOptions([])
@@ -271,7 +288,7 @@ export default function AddBookManual({ initialData, defaultShelfId, onSaveSucce
         setLoading(true)
         try {
             // Combinar tags de usuario con tags de fuentes
-            const userTags = formData.tags.split(',').map(t => t.trim()).filter(Boolean)
+            const userTags = formData.tags.filter(Boolean)
 
             // Si hay source tags iniciales (de ISBN/Camera), usar esos
             // Si no, si se usó búsqueda manual, usar manual + google_books
@@ -479,14 +496,12 @@ export default function AddBookManual({ initialData, defaultShelfId, onSaveSucce
 
             <div>
                 <label className="block text-sm font-medium mb-1">Tags</label>
-                <input
-                    name="tags"
+                <TagInput
                     value={formData.tags}
-                    placeholder="Comma separated tags (e.g. sci-fi, favorite)"
-                    className="input-field"
-                    onChange={handleChange}
+                    onChange={(tags) => setFormData({ ...formData, tags })}
+                    suggestions={tagSuggestions}
+                    placeholder="Add a tag (e.g. sci-fi, favorite)"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
             </div>
 
             {searchError && (

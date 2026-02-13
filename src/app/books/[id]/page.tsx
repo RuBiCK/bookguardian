@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { separateTags, formatSourceName } from '@/lib/source-tags'
 import InlineEdit from '@/components/InlineEdit'
+import TagInput from '@/components/TagInput'
 
 type BookWithLending = Book & {
     lendings: Lending[]
@@ -29,8 +30,9 @@ export default function BookDetailsPage() {
         readStatus: '',
         rating: '',
         comment: '',
-        tags: ''
+        tags: [] as string[]
     })
+    const [tagSuggestions, setTagSuggestions] = useState<{ name: string; count: number }[]>([])
     const [showStatusDropdown, setShowStatusDropdown] = useState(false)
     const [showLendingInput, setShowLendingInput] = useState(false)
     const [libraries, setLibraries] = useState<any[]>([])
@@ -53,7 +55,7 @@ export default function BookDetailsPage() {
                     readStatus: data.readStatus,
                     rating: data.rating ? String(data.rating) : '0',
                     comment: data.comment || '',
-                    tags: userTags.map((t: any) => t.name).join(', ')
+                    tags: userTags.map((t: any) => t.name)
                 })
             } catch (error) {
                 console.error(error)
@@ -64,6 +66,20 @@ export default function BookDetailsPage() {
         }
         fetchBook()
     }, [params.id, router])
+
+    useEffect(() => {
+        async function fetchTags() {
+            try {
+                const res = await fetch('/api/tags')
+                if (res.ok) {
+                    setTagSuggestions(await res.json())
+                }
+            } catch (error) {
+                console.error('Error loading tags:', error)
+            }
+        }
+        fetchTags()
+    }, [])
 
     useEffect(() => {
         async function fetchLibraries() {
@@ -151,7 +167,7 @@ export default function BookDetailsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...editForm,
-                    tags: editForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+                    tags: editForm.tags.filter(Boolean)
                 }),
             })
             if (res.ok) {
@@ -290,13 +306,12 @@ export default function BookDetailsPage() {
 
                     <div>
                         <label className="block text-sm font-medium mb-1">Tags</label>
-                        <input
+                        <TagInput
                             value={editForm.tags}
-                            onChange={e => setEditForm({ ...editForm, tags: e.target.value })}
-                            placeholder="Comma separated tags"
-                            className="input-field"
+                            onChange={(tags) => setEditForm({ ...editForm, tags })}
+                            suggestions={tagSuggestions}
+                            placeholder="Add a tag..."
                         />
-                        <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
                     </div>
 
                     <div>

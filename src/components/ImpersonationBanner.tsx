@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 interface ImpersonationState {
   id: string
@@ -10,19 +11,18 @@ interface ImpersonationState {
 
 export default function ImpersonationBanner() {
   const [impersonating, setImpersonating] = useState<ImpersonationState | null>(null)
+  const pathname = usePathname()
 
   useEffect(() => {
     fetch('/api/admin/impersonate')
       .then((res) => res.json())
       .then((data) => {
-        if (data.impersonating) {
-          setImpersonating(data.impersonating)
-        }
+        setImpersonating(data.impersonating || null)
       })
       .catch(() => {
         // Ignore — user is not an admin or not logged in
       })
-  }, [])
+  }, [pathname])
 
   if (!impersonating) return null
 

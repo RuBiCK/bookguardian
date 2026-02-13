@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, unauthorizedResponse } from '@/lib/auth-helpers'
 import { rateLimit, rateLimitResponse } from '@/lib/rate-limit'
+import { isSourceTag } from '@/lib/source-tags'
 
 export async function GET() {
     try {
@@ -10,7 +11,7 @@ export async function GET() {
         const rl = rateLimit(`tags-get:${user.id}`)
         if (!rl.success) return rateLimitResponse(rl.resetTime)
 
-        // Get tags that are used in the user's books (private tags)
+        // Get tags that are used in the user's books (private tags) with book count
         const tags = await prisma.tag.findMany({
             where: {
                 books: {
@@ -23,11 +24,28 @@ export async function GET() {
                     }
                 }
             },
+            include: {
+                _count: {
+                    select: { books: true }
+                }
+            },
             orderBy: {
-                name: 'asc',
+                books: {
+                    _count: 'desc'
+                }
             },
         })
-        return NextResponse.json(tags)
+
+        // Filter out source tags and map to include count
+        const result = tags
+            .filter(tag => !isSourceTag(tag.name))
+            .map(tag => ({
+                id: tag.id,
+                name: tag.name,
+                count: tag._count.books,
+            }))
+
+        return NextResponse.json(result)
     } catch (error) {
         if (error instanceof Error && error.message === 'Unauthorized') {
             return unauthorizedResponse()
