@@ -3,7 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #2563eb;
+  --primary: #b45309;
   --primary-foreground: #ffffff;
   --secondary: #f3f4f6;
   --secondary-foreground: #1f2937;
@@ -13,7 +13,8 @@
   --card-foreground: #171717;
   --border: #e5e7eb;
   --input: #e5e7eb;
-  --ring: #2563eb;
+  --ring: #b45309;
+  --success: #16a34a;
   --radius: 0.5rem;
 }
 
@@ -21,7 +22,7 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
-    --primary: #3b82f6;
+    --primary: #f59e0b;
     --primary-foreground: #ffffff;
     --secondary: #1f2937;
     --secondary-foreground: #f3f4f6;
@@ -31,7 +32,8 @@
     --card-foreground: #ededed;
     --border: #262626;
     --input: #262626;
-    --ring: #3b82f6;
+    --ring: #f59e0b;
+    --success: #22c55e;
   }
 }
 
@@ -53,7 +55,7 @@ body {
 
 .dark .glass-panel {
   background: rgba(23, 23, 23, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.15);
 }
 
 .btn-primary {

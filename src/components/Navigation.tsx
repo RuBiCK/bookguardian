@@ -58,11 +58,6 @@ export default function Navigation() {
                     <span className="text-[10px] md:text-xs font-medium">Libraries</span>
                 </Link>
 
-                <Link href="/docs" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/docs') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-                    <FileText size={24} />
-                    <span className="text-[10px] md:text-xs font-medium">Docs</span>
-                </Link>
-
                 <Link href="/settings" className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${isActive('/settings') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
                     <Settings size={24} />
                     <span className="text-[10px] md:text-xs font-medium">Settings</span>
@@ -120,6 +115,14 @@ export default function Navigation() {
                                         Admin Dashboard
                                     </Link>
                                 )}
+                                <Link
+                                    href="/docs"
+                                    onClick={() => setShowUserMenu(false)}
+                                    className="w-full px-4 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2"
+                                >
+                                    <FileText size={16} />
+                                    Documentation
+                                </Link>
                                 <button
                                     onClick={handleSignOut}
                                     className="w-full px-4 py-2 text-sm text-left hover:bg-secondary flex items-center gap-2 text-red-600 dark:text-red-400"

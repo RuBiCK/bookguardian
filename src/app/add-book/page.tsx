@@ -17,7 +17,7 @@ export default function AddBookPage() {
     }
 
     return (
-        <div className="max-w-md mx-auto">
+        <div className="max-w-lg mx-auto">
             <h1 className="text-2xl font-bold mb-6">Add New Book</h1>
 
             <div className="flex p-1 bg-secondary rounded-xl mb-8">

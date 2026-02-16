@@ -140,7 +140,9 @@ export default function Home() {
             <header className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">My Library</h1>
-                    <p className="text-muted-foreground">Manage your collection</p>
+                    <p className="text-muted-foreground">
+                        {loading ? 'Loading...' : `${books.length} book${books.length !== 1 ? 's' : ''} in your collection`}
+                    </p>
                 </div>
                 <div className="flex gap-2 bg-secondary p-1 rounded-lg">
                     <button
@@ -181,13 +183,13 @@ export default function Home() {
             {loading ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className="aspect-[2/3] bg-muted animate-pulse rounded-xl" />
+                        <div key={i} className="aspect-[2/3] bg-amber-100/50 dark:bg-amber-900/10 animate-pulse rounded-xl" />
                     ))}
                 </div>
             ) : books.length === 0 ? (
                 <div className="text-center py-12">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                        <BookOpen size={32} className="text-muted-foreground" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-900/20 mb-4">
+                        <BookOpen size={32} className="text-amber-600" />
                     </div>
                     <h3 className="text-lg font-medium">No books found</h3>
                     <p className="text-muted-foreground mt-1 mb-4">

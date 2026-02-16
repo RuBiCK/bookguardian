@@ -36,7 +36,7 @@ export default function BookCard({ book, viewMode }: BookCardProps) {
                 className="group flex gap-3 p-3 bg-card border border-border rounded-xl hover:shadow-md hover:border-primary/30 transition-all duration-200"
             >
                 {/* Cover */}
-                <div className="relative w-16 h-24 shrink-0 overflow-hidden rounded-lg bg-muted shadow-sm">
+                <div className="relative w-16 h-24 shrink-0 overflow-hidden rounded-lg bg-amber-50 dark:bg-amber-900/10 shadow-sm">
                     {book.coverUrl ? (
                         <Image
                             src={book.coverUrl}
@@ -45,7 +45,7 @@ export default function BookCard({ book, viewMode }: BookCardProps) {
                             className="object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                     ) : (
-                        <div className="flex h-full w-full items-center justify-center text-muted-foreground/50">
+                        <div className="flex h-full w-full items-center justify-center text-amber-700/40">
                             <BookOpen size={20} />
                         </div>
                     )}
@@ -70,7 +70,7 @@ export default function BookCard({ book, viewMode }: BookCardProps) {
                                 <span>{book.rating}</span>
                             </div>
                         )}
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/80 text-secondary-foreground font-medium">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary/80 text-secondary-foreground font-medium">
                             {formatReadStatus(book.readStatus)}
                         </span>
                         {isLent && (
@@ -93,10 +93,10 @@ export default function BookCard({ book, viewMode }: BookCardProps) {
     return (
         <Link
             href={`/books/${book.id}`}
-            className="group flex flex-col h-[260px] bg-card border border-border rounded-lg hover:shadow-lg hover:border-primary/30 transition-all duration-200 overflow-hidden"
+            className="group flex flex-col h-[280px] bg-card border border-border rounded-lg hover:shadow-lg hover:border-primary/30 transition-all duration-200 overflow-hidden"
         >
             {/* Cover - altura fija */}
-            <div className="relative w-full h-[160px] overflow-hidden bg-muted shrink-0">
+            <div className="relative w-full h-[160px] overflow-hidden bg-amber-50 dark:bg-amber-900/10 shrink-0">
                 {book.coverUrl ? (
                     <Image
                         src={book.coverUrl}
@@ -105,7 +105,7 @@ export default function BookCard({ book, viewMode }: BookCardProps) {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                 ) : (
-                    <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
+                    <div className="flex h-full w-full items-center justify-center text-amber-700/40">
                         <BookOpen size={28} />
                     </div>
                 )}
@@ -129,10 +129,10 @@ export default function BookCard({ book, viewMode }: BookCardProps) {
             <div className="p-2 flex flex-col flex-1 justify-between">
                 {/* Título y autor */}
                 <div>
-                    <h3 className="text-[11px] font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    <h3 className="text-[13px] font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                         {book.title}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{book.author}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{book.author}</p>
                 </div>
 
                 {/* Bottom info */}
@@ -140,22 +140,22 @@ export default function BookCard({ book, viewMode }: BookCardProps) {
                     <div className="flex items-center gap-1 flex-wrap">
                         {(book.rating || 0) > 0 && (
                             <div className="flex items-center gap-0.5 text-yellow-500 text-[10px] font-medium">
-                                <Star size={9} fill="currentColor" />
+                                <Star size={10} fill="currentColor" />
                                 <span>{book.rating}</span>
                             </div>
                         )}
-                        <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-secondary/70 text-secondary-foreground font-medium">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary/70 text-secondary-foreground font-medium">
                             {formatReadStatus(book.readStatus, true)}
                         </span>
                         {isLent && (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 font-medium border border-amber-500/30">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 font-medium border border-amber-500/30">
                                 Lent
                             </span>
                         )}
                     </div>
 
                     {userTags.length > 0 && (
-                        <span className="text-[8px] text-muted-foreground font-medium shrink-0">
+                        <span className="text-[9px] text-muted-foreground font-medium shrink-0">
                             {userTags.length} tag{userTags.length > 1 ? 's' : ''}
                         </span>
                     )}
