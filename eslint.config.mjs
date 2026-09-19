@@ -49,7 +49,7 @@ export default tseslint.config(
 
   // Plain JS config files at the root are not part of any tsconfig project.
   {
-    files: ['*.js', '*.mjs', '*.cjs'],
+    files: ['*.js', '*.mjs', '*.cjs', 'scripts/**/*.{js,mjs,cjs}'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       ...tseslint.configs.disableTypeChecked.languageOptions,
@@ -79,6 +79,12 @@ export default tseslint.config(
         { allowConstantExport: true, allowExportNames: ['Route'] },
       ],
     },
+  },
+  {
+    // TanStack Router owns HMR for route files and code-splits only the
+    // `Route` export, so screen components stay local (not exported) there.
+    files: ['apps/web/src/routes/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   },
   {
     // Every user-facing string in UI code must go through a translation key.

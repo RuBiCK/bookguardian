@@ -6,27 +6,68 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  checks:
-    name: Lint · Typecheck · Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
+# Third-party actions are pinned to full commit SHAs (tag comments are for
+# humans); Dependabot/Renovate can bump them, a tag rewrite cannot.
 
-      - uses: pnpm/action-setup@v4
+jobs:
+  supply-chain:
+    name: Supply chain · lockfile release age
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Every locked package must be at least 7 days old
+        run: node scripts/check-release-age.mjs --days 7
+
+  checks:
+    name: Lint · Typecheck · Test (sqlite + postgres + mysql) · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: bookguardian
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: bookguardian
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -uroot -ptest"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_POSTGRES_URL: postgres://test:test@127.0.0.1:5432/bookguardian
+      TEST_MYSQL_URL: mysql://root:test@127.0.0.1:3306/bookguardian
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         # Version is read from the "packageManager" field in package.json.
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - name: Install
+      - name: Install (frozen lockfile, minimumReleaseAge enforced by pnpm)
         run: pnpm install --frozen-lockfile
 
       - name: Lint
@@ -35,21 +76,31 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test
+      - name: Unit + integration tests with coverage thresholds
+        run: pnpm test:coverage
 
       - name: Build
         run: pnpm build
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: coverage
+          path: |
+            apps/api/coverage/lcov.info
+            apps/web/coverage/lcov.info
+            packages/shared/coverage/lcov.info
+          retention-days: 7
+
   e2e:
-    name: E2E (iPhone 14 viewport)
+    name: E2E · iPhone 14 viewport (web + API)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: checks
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -65,7 +116,7 @@ jobs:
         env:
           CI: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: playwright-report

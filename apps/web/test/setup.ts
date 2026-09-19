@@ -31,3 +31,6 @@ initI18n();
 afterEach(() => {
   cleanup();
 });
+
+// jsdom does not implement scrolling; TanStack Router calls it on navigation.
+window.scrollTo = () => undefined;

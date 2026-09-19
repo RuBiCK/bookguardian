@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it } from 'vitest';
 import { createRepositories } from '../src/db/repositories';
 import { seed, SEED } from '../src/db/seed';
-import { createTestDb, type TestDb } from './helpers';
+import { describeEachAdapter, type TestDb } from './adapters';
 
-describe('seed', () => {
+describeEachAdapter('seed', (adapterCase) => {
   let db: TestDb;
   beforeEach(async () => {
-    db = await createTestDb();
+    db = await adapterCase.create();
   });
   afterEach(async () => {
     await db.cleanup();
@@ -36,5 +36,15 @@ describe('seed', () => {
       libraryId: first.libraryId,
       shelfId: first.shelfId,
     });
+  });
+
+  it('repairs a partially seeded database without duplicating rows', async () => {
+    const repos = createRepositories(db.adapter);
+    const user = await repos.users.create({ displayName: 'Existing' });
+    const result = await seed(db.adapter);
+    expect(result).toMatchObject({ created: true, userId: user.id });
+    expect(await repos.libraries.listByOwner(user.id)).toHaveLength(1);
+    expect(await repos.shelves.listByLibrary(user.id, result.libraryId)).toHaveLength(1);
+    expect(await seed(db.adapter)).toMatchObject({ created: false, userId: user.id });
   });
 });

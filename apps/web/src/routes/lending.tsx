@@ -8,7 +8,7 @@ export const Route = createFileRoute('/lending')({
   component: LendingScreen,
 });
 
-export function LendingScreen() {
+function LendingScreen() {
   const { t } = useTranslation();
   return (
     <Screen title={t('lending.title')}>

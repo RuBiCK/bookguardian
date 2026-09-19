@@ -7,7 +7,7 @@ import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiUrl = env.VITE_API_URL ?? 'http://localhost:3000';
+  const apiUrl = process.env.VITE_API_URL ?? env.VITE_API_URL ?? 'http://localhost:3000';
 
   return {
     define: {
@@ -67,6 +67,14 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./test/setup.ts'],
       include: ['test/**/*.test.{ts,tsx}'],
       css: false,
+      coverage: {
+        provider: 'v8',
+        include: ['src/**/*.{ts,tsx}'],
+        // Bootstrapping / generated files are exercised by the Playwright smoke test instead.
+        exclude: ['src/main.tsx', 'src/routeTree.gen.ts', 'src/vite-env.d.ts', 'src/i18next.d.ts'],
+        reporter: ['text', 'lcov'],
+        thresholds: { lines: 90, functions: 85, branches: 80, statements: 90 },
+      },
     },
   };
 });

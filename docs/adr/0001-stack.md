@@ -41,6 +41,13 @@ Supporting choices made while bootstrapping:
   gives the 390px viewport, touch and mobile UA; Chromium avoids WebKit system
   dependencies on CI. Switch `browserName` to `webkit` locally for Safari checks.
 
+Supply-chain rules adopted with the stack:
+
+- pnpm `minimumReleaseAge: 10080` (7 days) — no freshly published version is
+  ever resolved; `scripts/check-release-age.mjs` re-checks the lockfile in CI.
+- Lockfile is frozen in CI, lifecycle scripts are allow-listed
+  (`onlyBuiltDependencies`), GitHub Actions are pinned to commit SHAs.
+
 ## Consequences
 
 - One TypeScript toolchain and one set of Zod schemas across the stack; DTOs

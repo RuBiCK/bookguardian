@@ -11,7 +11,7 @@ export async function renderApp(path = '/') {
     history: createMemoryHistory({ initialEntries: [path] }),
   });
   const queryClient = createQueryClient();
-  queryClient.setDefaultOptions({ queries: { retry: false } });
+  queryClient.setDefaultOptions({ queries: { retry: false, retryDelay: 0 } });
   const utils = render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

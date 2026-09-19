@@ -8,7 +8,7 @@ export const Route = createFileRoute('/stats')({
   component: StatsScreen,
 });
 
-export function StatsScreen() {
+function StatsScreen() {
   const { t } = useTranslation();
   return (
     <Screen title={t('stats.title')}>

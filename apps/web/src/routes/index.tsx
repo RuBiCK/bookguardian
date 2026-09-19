@@ -7,7 +7,7 @@ export const Route = createFileRoute('/')({
   component: LibraryScreen,
 });
 
-export function LibraryScreen() {
+function LibraryScreen() {
   const { t } = useTranslation();
   return (
     <Screen title={t('library.title')}>

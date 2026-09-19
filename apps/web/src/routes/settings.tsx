@@ -8,7 +8,7 @@ export const Route = createFileRoute('/settings')({
   component: SettingsScreen,
 });
 
-export function SettingsScreen() {
+function SettingsScreen() {
   const { t } = useTranslation();
   const [theme, setTheme] = useTheme();
   const health = useHealth();

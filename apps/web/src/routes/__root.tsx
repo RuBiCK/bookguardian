@@ -4,7 +4,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Screen } from '../components/Screen';
 import { TabBar } from '../components/TabBar';
 
-export function RootLayout() {
+function RootLayout() {
   return (
     <div className="app-shell">
       <main className="app-shell__main">
@@ -15,7 +15,7 @@ export function RootLayout() {
   );
 }
 
-export function NotFound() {
+function NotFound() {
   const { t } = useTranslation();
   return (
     <Screen title={t('errors.notFound')}>

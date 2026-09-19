@@ -87,5 +87,6 @@ locally for `studio` against the SQLite schema.
 - Storing timestamps as text forgoes native date types and timezone handling in
   Postgres/MySQL; ordering and comparisons still work because ISO-8601 sorts
   lexically. Revisit with a new ADR if reporting needs native date arithmetic.
-- The Postgres and MySQL adapters compile and are wired, but only SQLite is
-  covered by automated tests at this stage.
+- Every database test runs against SQLite locally and against SQLite, Postgres
+  16 and MySQL 8.4 in CI (`describeEachAdapter` in `apps/api/test/adapters.ts`),
+  so a migration or repository change that is not portable fails the PR.

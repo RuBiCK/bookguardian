@@ -8,7 +8,7 @@ export const Route = createFileRoute('/scan')({
   component: ScanScreen,
 });
 
-export function ScanScreen() {
+function ScanScreen() {
   const { t } = useTranslation();
   return (
     <Screen title={t('scan.title')}>
