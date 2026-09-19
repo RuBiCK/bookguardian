@@ -41,6 +41,21 @@ The Vite dev server proxies `/api` to the API, so the SPA uses relative URLs.
 
 First e2e run: `pnpm --filter @bookguardian/web exec playwright install chromium`.
 
+## Supply-chain policy
+
+- **No package younger than 7 days.** `pnpm-workspace.yaml` sets
+  `minimumReleaseAge: 10080`, so pnpm refuses to resolve any version published
+  less than a week ago (compromised releases are usually caught and pulled
+  within days). `pnpm audit:age` re-verifies the committed lockfile against the
+  registry and runs as its own CI job, so a hand-edited lockfile cannot bypass
+  the rule. If a fresh release is genuinely required, wait, or add the package
+  to `minimumReleaseAgeExclude` in a reviewed PR with a justification.
+- **Frozen lockfile in CI** (`pnpm install --frozen-lockfile`).
+- **Install scripts are opt-in**: only packages listed under
+  `onlyBuiltDependencies` may run lifecycle scripts.
+- **GitHub Actions are pinned to commit SHAs**, not mutable tags.
+- Playwright browsers and Docker images used by tests are pinned by version.
+
 ## Configuration
 
 Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
@@ -66,9 +81,10 @@ DB_DRIVER=postgres DATABASE_URL=postgres://user:pass@localhost:5432/bookguardian
 DB_DRIVER=mysql DATABASE_URL=mysql://user:pass@localhost:3306/bookguardian pnpm db:migrate
 ```
 
-SQLite is exercised by the automated tests; the Postgres and MySQL adapters are
-wired and compile but are not yet covered by CI. See
-[ADR 0002](docs/adr/0002-database-adapter-layer.md) for the design.
+Only SQLite is exercised by the test suite today; Postgres/MySQL are a
+later milestone (the adapters exist so the schema and repositories stay
+portable from day one). See [ADR 0002](docs/adr/0002-database-adapter-layer.md)
+for the design.
 
 ## Project layout
 
