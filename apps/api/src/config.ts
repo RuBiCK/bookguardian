@@ -15,6 +15,9 @@ const envSchema = z.object({
   DB_DRIVER: dbDriverSchema.default('sqlite'),
   DATABASE_PATH: z.string().min(1).default('./data/bookguardian.db'),
   DATABASE_URL: z.string().min(1).optional(),
+  // Built SPA directory (`apps/web/dist`). When set, the API serves it too, so
+  // one process (the Docker image) is one origin. Unset in `pnpm dev`.
+  WEB_DIST: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -29,6 +32,8 @@ export interface AppConfig {
   env: Env['NODE_ENV'];
   port: number;
   db: DbConfig;
+  /** Absolute path of the built web app to serve, if any. */
+  webDist?: string;
 }
 
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -41,5 +46,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       sqlitePath: env.DATABASE_PATH,
       url: env.DATABASE_URL,
     },
+    webDist: env.WEB_DIST === undefined ? undefined : resolve(env.WEB_DIST),
   };
 }
