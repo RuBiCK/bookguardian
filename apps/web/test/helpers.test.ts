@@ -153,4 +153,37 @@ describe('toasts', () => {
     act(() => clearToasts()); // no-op when empty
     expect(result.current).toEqual([]);
   });
+
+  it('replaces a repeated message instead of stacking it, restarting the timer', () => {
+    const { result } = renderHook(() => useToasts());
+    act(() => {
+      showToast('Added to My Library › Default');
+    });
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    act(() => {
+      showToast('Added to My Library › Default');
+      showToast('Added to My Library › Default', 'error'); // different tone = different toast
+    });
+    expect(result.current.map((t) => t.tone)).toEqual(['info', 'error']);
+
+    // The first toast's original 3 s deadline passes without dismissing the replacement.
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(result.current.map((t) => t.tone)).toEqual(['info', 'error']);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(result.current).toEqual([]);
+
+    // clearToasts cancels pending timers so nothing fires later.
+    act(() => {
+      showToast('later');
+      clearToasts();
+      vi.advanceTimersByTime(5000);
+    });
+    expect(result.current).toEqual([]);
+  });
 });
