@@ -9,6 +9,7 @@ import {
   bookPageSchema,
   bookSchema,
   inventoryDefaultsSchema,
+  resolveReadAt,
   libraryListResponseSchema,
   libraryWithCountsSchema,
   shelfListResponseSchema,
@@ -366,7 +367,11 @@ export function useDeleteBook(callbacks: MutationCallbacks<void> = {}) {
   });
 }
 
-/** Quick read-status toggle from the detail screen. */
+/**
+ * Quick read-status toggle from the detail screen. The read date follows the
+ * same rule the API applies (`resolveReadAt`), so the optimistic book already
+ * shows today's date when "Read" is tapped and no date when it is un-read.
+ */
 export function useSetReadStatus(callbacks: MutationCallbacks<Book> = {}) {
   const update = useUpdateBook(callbacks);
   return {
@@ -374,11 +379,17 @@ export function useSetReadStatus(callbacks: MutationCallbacks<Book> = {}) {
     set: (book: Book, readStatus: ReadStatus) =>
       update.mutate({
         id: book.id,
-        input: {
-          readStatus,
-          readAt: readStatus === 'read' ? (book.readAt ?? nowIso().slice(0, 10)) : null,
-        },
+        input: { readStatus, readAt: resolveReadAt(readStatus, undefined, book.readAt) },
       }),
+    /**
+     * Correct the day a finished book was read. Resolves once the change is
+     * saved or rolled back; failures are already surfaced through `onError`.
+     */
+    setReadAt: (book: Book, readAt: string): Promise<void> =>
+      update.mutateAsync({ id: book.id, input: { readStatus: 'read', readAt } }).then(
+        () => undefined,
+        () => undefined,
+      ),
   };
 }
 

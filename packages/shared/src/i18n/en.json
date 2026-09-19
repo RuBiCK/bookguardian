@@ -133,6 +133,7 @@
     "titleRequired": "A title is required.",
     "isbnInvalid": "That doesn't look like a valid ISBN.",
     "coverUrlInvalid": "Enter a full URL (https://…).",
+    "readAtFuture": "The finish date can't be in the future.",
     "detail": {
       "pages": "{{count}} pages",
       "published": "Published {{date}}",

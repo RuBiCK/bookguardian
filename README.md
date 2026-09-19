@@ -105,6 +105,7 @@ Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 | `DATABASE_PATH` | `./data/bookguardian.db` | SQLite file (relative to `apps/api`)              |
 | `DATABASE_URL`  | —                        | Required for `postgres` / `mysql`                 |
 | `WEB_DIST`      | —                        | Built SPA dir to serve from the API (Docker)      |
+| `TZ`            | system                   | Timezone for "today" (read-date default + check)  |
 | `VITE_API_URL`  | `http://localhost:3000`  | Where Vite proxies `/api`; also baked into builds |
 
 ### Switching the database driver
@@ -149,7 +150,7 @@ apps/
     src/api/              typed fetch client + TanStack Query hooks
     e2e/                  Playwright (iPhone 14)
 packages/shared/
-  src/schemas/            Zod entities   src/dto/  API DTOs   src/i18n/  en.json
+  src/schemas/            Zod entities   src/dto/  API DTOs   src/i18n/  en.json, es.json
 docs/
   adr/                    architecture decision records
   data-model.md           ER diagram and field notes
@@ -159,7 +160,14 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 ## Conventions
 
 - Every user-facing string goes through `t('key')`; keys live in
-  `packages/shared/src/i18n/en.json`. `pnpm lint` fails on JSX literals.
+  `packages/shared/src/i18n/en.json` (source) and must exist in every other
+  dictionary (`es.json`, checked by a test). The app picks the locale from the
+  browser's language list and falls back to English. `pnpm lint` fails on JSX
+  literals.
+- Day-only fields (`readAt`, `dueAt`) are `YYYY-MM-DD` strings in the user's
+  local timezone, never `Date`s round-tripped through UTC. The API validates
+  "not in the future" against its own clock, so run it in the timezone of the
+  people using it (`TZ` in `.env` / Docker).
 - Every list has an empty state, every action is optimistic, everything must
   work with one thumb on a 390px-wide screen. Light and dark themes from day one.
 - One PR per issue, opened only after `pnpm lint && pnpm typecheck && pnpm test`

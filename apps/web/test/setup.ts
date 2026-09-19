@@ -27,7 +27,8 @@ if (globalThis.localStorage === undefined) {
   });
 }
 
-initI18n();
+// Tests assert English copy whatever the host machine's locale is.
+initI18n('en');
 
 afterEach(() => {
   cleanup();

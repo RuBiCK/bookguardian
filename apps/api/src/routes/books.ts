@@ -9,7 +9,7 @@ import {
 } from '@bookguardian/shared';
 import type { AppEnv } from '../app-env';
 import { ApiHttpError } from '../errors';
-import { createBook, moveBook, resolveDefaults } from '../inventory';
+import { createBook, moveBook, resolveDefaults, updateBook } from '../inventory';
 import { validate } from '../validation';
 
 export const bookRoutes = new Hono<AppEnv>()
@@ -50,16 +50,12 @@ export const bookRoutes = new Hono<AppEnv>()
     validate('param', idParamSchema),
     validate('json', updateBookInputSchema),
     async (c) => {
-      const { repos } = c.get('services');
-      const ownerId = c.get('ownerId');
-      const input = c.req.valid('json');
-      if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
-        throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', {
-          shelfId: input.shelfId,
-        });
-      }
-      const book = await repos.books.update(ownerId, c.req.valid('param').id, input);
-      if (!book) throw new ApiHttpError(404, 'not_found', 'Book not found');
+      const book = await updateBook(
+        c.get('services').repos,
+        c.get('ownerId'),
+        c.req.valid('param').id,
+        c.req.valid('json'),
+      );
       return c.json(book);
     },
   )

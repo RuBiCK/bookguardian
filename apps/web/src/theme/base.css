@@ -182,10 +182,12 @@ button {
 }
 
 .list__label {
+  flex-shrink: 0;
   font-weight: 600;
 }
 
 .list__value {
+  min-width: 0;
   color: var(--fg-muted);
   font-size: var(--text-sm);
 }
@@ -852,6 +854,40 @@ a.card:active {
 
 textarea.field__input {
   resize: vertical;
+}
+
+/* Inline native date picker (book detail "Finished on"). Keeps the platform
+   control so iOS opens its wheel picker; only the box is themed. */
+.date-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.date-field__input {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 16px; /* prevents iOS zoom-on-focus */
+  font-variant-numeric: tabular-nums;
+}
+
+.date-field__input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.date-field--error .date-field__input {
+  border-color: var(--danger);
+}
+
+.date-field .field__error {
+  text-align: right;
 }
 
 select.field__input {

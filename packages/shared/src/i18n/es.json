@@ -1,0 +1,182 @@
+{
+  "app": {
+    "name": "Bookguardian",
+    "tagline": "Tus estanterías, en tu bolsillo."
+  },
+  "nav": {
+    "library": "Biblioteca",
+    "scan": "Escanear",
+    "lending": "Préstamos",
+    "stats": "Estadísticas",
+    "settings": "Ajustes"
+  },
+  "common": {
+    "loading": "Cargando…",
+    "retry": "Reintentar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "delete": "Eliminar",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "edit": "Editar",
+    "add": "Añadir",
+    "done": "Hecho",
+    "manage": "Gestionar",
+    "move": "Mover",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "optional": "opcional",
+    "comingSoon": "Próximamente",
+    "search": "Buscar",
+    "clear": "Limpiar",
+    "confirm": "Confirmar",
+    "undo": "Deshacer"
+  },
+  "errors": {
+    "generic": "Algo ha ido mal.",
+    "network": "No se puede conectar con el servidor. Comprueba tu conexión.",
+    "notFound": "No encontramos esa página.",
+    "saveFailed": "No se pudo guardar. Se ha deshecho el cambio.",
+    "deleteFailed": "No se pudo eliminar. No se ha cambiado nada.",
+    "validation": "Revisa los campos marcados."
+  },
+  "count": {
+    "books_one": "{{count}} libro",
+    "books_other": "{{count}} libros",
+    "shelves_one": "{{count}} estante",
+    "shelves_other": "{{count}} estantes"
+  },
+  "readStatus": {
+    "label": "Estado de lectura",
+    "to_read": "Por leer",
+    "reading": "Leyendo",
+    "read": "Leído",
+    "all": "Todos"
+  },
+  "library": {
+    "title": "Biblioteca",
+    "empty": {
+      "title": "Aún no hay bibliotecas",
+      "body": "Crea una biblioteca por cada lugar donde guardas libros."
+    },
+    "list": "Bibliotecas",
+    "addLibrary": "Nueva biblioteca",
+    "editLibrary": "Editar biblioteca",
+    "name": "Nombre",
+    "namePlaceholder": "Mi biblioteca",
+    "location": "Ubicación",
+    "locationPlaceholder": "Salón, despacho…",
+    "deleteConfirm": "¿Eliminar «{{name}}» y sus estantes?",
+    "deleteWithBooks": "«{{name}}» aún tiene {{count}} libros. Muévelos antes a otro estante.",
+    "cannotDeleteLast": "Necesitas al menos una biblioteca.",
+    "shelves": "Estantes",
+    "shelvesEmpty": {
+      "title": "Aún no hay estantes",
+      "body": "Añade un estante para empezar a colocar libros."
+    },
+    "addShelf": "Nuevo estante",
+    "editShelf": "Editar estante",
+    "shelfName": "Nombre del estante",
+    "shelfNamePlaceholder": "Principal",
+    "deleteShelfConfirm": "¿Eliminar el estante «{{name}}»?",
+    "deleteShelfWithBooks": "«{{name}}» aún tiene {{count}} libros. Muévelos antes a otro estante.",
+    "cannotDeleteLastShelf": "Una biblioteca necesita al menos un estante.",
+    "moveBooksTo": "Mover sus libros a",
+    "reorderHint": "Usa las flechas para reordenar los estantes."
+  },
+  "books": {
+    "title": "Libros",
+    "all": "Todos los libros",
+    "searchPlaceholder": "Buscar título, autor, ISBN…",
+    "empty": {
+      "title": "Aún no hay libros aquí",
+      "body": "Toca + para añadir tu primer libro.",
+      "noResults": "Ningún libro coincide con tu búsqueda."
+    },
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "loadMore": "Cargar más",
+    "noCover": "Sin portada",
+    "unknownAuthor": "Autor desconocido",
+    "add": "Añadir libro",
+    "edit": "Editar libro",
+    "shelf": "Estante",
+    "changeShelf": "Cambiar",
+    "moveToShelf": "Mover a un estante",
+    "deleteConfirm": "¿Eliminar «{{title}}»?",
+    "deleted": "Libro eliminado",
+    "added": "Añadido a {{shelf}}",
+    "moved": "Movido a {{shelf}}",
+    "field": {
+      "title": "Título",
+      "titlePlaceholder": "Título",
+      "subtitle": "Subtítulo",
+      "authors": "Autores",
+      "authorsPlaceholder": "Separados por comas",
+      "isbn": "ISBN",
+      "isbnPlaceholder": "ISBN-10 o ISBN-13",
+      "publisher": "Editorial",
+      "year": "Año",
+      "pages": "Páginas",
+      "language": "Idioma",
+      "languagePlaceholder": "es, en, pt-BR…",
+      "categories": "Categorías",
+      "categoriesPlaceholder": "Separadas por comas",
+      "coverUrl": "URL de la portada",
+      "description": "Descripción",
+      "notes": "Notas",
+      "rating": "Valoración",
+      "readAt": "Leído el"
+    },
+    "more": "Más detalles",
+    "less": "Menos detalles",
+    "titleRequired": "El título es obligatorio.",
+    "isbnInvalid": "Eso no parece un ISBN válido.",
+    "coverUrlInvalid": "Introduce una URL completa (https://…).",
+    "readAtFuture": "La fecha de lectura no puede ser futura.",
+    "detail": {
+      "pages": "{{count}} páginas",
+      "published": "Publicado en {{date}}",
+      "publisher": "Editorial",
+      "language": "Idioma",
+      "isbn": "ISBN",
+      "notes": "Notas",
+      "description": "Descripción",
+      "rating": "{{rating}} de 5",
+      "notFound": "Ese libro ya no existe.",
+      "addedLabel": "Añadido"
+    }
+  },
+  "scan": {
+    "title": "Escanear",
+    "placeholder": "Apunta con la cámara a un código de barras para añadir un libro."
+  },
+  "lending": {
+    "title": "Préstamos",
+    "empty": {
+      "title": "Nada prestado",
+      "body": "Los libros que prestes a tus amigos aparecerán aquí."
+    },
+    "placeholder": "Lleva la cuenta de quién tiene tus libros."
+  },
+  "stats": {
+    "title": "Estadísticas",
+    "placeholder": "Aquí aparecerán tus estadísticas y gráficas de lectura."
+  },
+  "settings": {
+    "title": "Ajustes",
+    "theme": {
+      "label": "Tema",
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "apiStatus": {
+      "label": "API",
+      "checking": "Comprobando…",
+      "online": "En línea ({{driver}})",
+      "offline": "Sin conexión"
+    },
+    "version": "Versión {{version}}"
+  }
+}

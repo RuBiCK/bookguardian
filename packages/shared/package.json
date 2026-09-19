@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./i18n": "./src/i18n/index.ts",
-    "./i18n/en.json": "./src/i18n/en.json"
+    "./i18n/en.json": "./src/i18n/en.json",
+    "./i18n/es.json": "./src/i18n/es.json"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
