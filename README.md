@@ -41,6 +41,44 @@ The Vite dev server proxies `/api` to the API, so the SPA uses relative URLs.
 
 First e2e run: `pnpm --filter @bookguardian/web exec playwright install chromium`.
 
+## Run with Docker
+
+One container serves the API and the web app on the same origin, with the
+SQLite database on a `/data` volume — the easiest way to try the built app on
+a phone, and the shape the Coolify deployment will use.
+
+```bash
+cp .env.example .env      # optional: GOOGLE_BOOKS_API_KEY etc.
+mkdir -p data             # Linux: create it first so it is owned by you, not root
+docker compose up --build # http://localhost:3000
+```
+
+- **Where the database lives:** `./data/bookguardian.db` on the host (bind
+  mounted at `/data`; WAL side files `-wal`/`-shm` sit next to it). Migrations
+  and the default "My Library / Default" seed run at boot.
+- **Reset the library:** `docker compose down && rm -rf data && docker compose up`.
+- **Configuration:** the container reads the repo-root `.env` (if present);
+  `DATABASE_PATH=/data/bookguardian.db`, `PORT=3000` and `WEB_DIST=/app/web` are
+  pinned in `docker-compose.yaml` and win over `.env`. The image runs as the
+  non-root `node` user (uid 1000) and exposes a `HEALTHCHECK` on
+  `/api/health?shallow=true`.
+- **Camera on your phone needs HTTPS.** Browsers only expose `getUserMedia`
+  on secure origins, so `http://<your-laptop-ip>:3000` will show the barcode
+  and cover screens without a live camera (photo picker and typed ISBN still
+  work). For the full Scan tab, put a tunnel in front of the container:
+
+  ```bash
+  cloudflared tunnel --url http://localhost:3000
+  ```
+
+  and open the printed `https://….trycloudflare.com` URL on the phone (also
+  installable as a PWA from there).
+
+The image is built in CI on every PR (`docker build` + a health/SPA smoke run,
+no push). `WEB_DIST` is what makes the API serve the SPA (static files plus
+`index.html` fallback for client routes; `/api/*` is untouched) — leave it unset
+for `pnpm dev`, where Vite serves the app and proxies `/api`.
+
 ## Supply-chain policy
 
 - **No package younger than 7 days.** `pnpm-workspace.yaml` sets
@@ -66,6 +104,7 @@ Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 | `DB_DRIVER`     | `sqlite`                 | `sqlite` \| `postgres` \| `mysql`                 |
 | `DATABASE_PATH` | `./data/bookguardian.db` | SQLite file (relative to `apps/api`)              |
 | `DATABASE_URL`  | —                        | Required for `postgres` / `mysql`                 |
+| `WEB_DIST`      | —                        | Built SPA dir to serve from the API (Docker)      |
 | `VITE_API_URL`  | `http://localhost:3000`  | Where Vite proxies `/api`; also baked into builds |
 
 ### Switching the database driver
@@ -94,6 +133,7 @@ apps/
     drizzle/migrations/   portable SQL migrations (one set for all drivers)
     src/
       app.ts              Hono app factory (routes, error envelope)
+      web-app.ts          serves apps/web/dist + SPA fallback when WEB_DIST is set
       config.ts           env parsing (Zod)
       routes/             HTTP handlers, Zod-validated
       db/adapters/        sqlite | postgres | mysql — the only dialect-specific code
@@ -113,6 +153,7 @@ packages/shared/
 docs/
   adr/                    architecture decision records
   data-model.md           ER diagram and field notes
+Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on /data)
 ```
 
 ## Conventions

@@ -21,10 +21,12 @@ if (seeded.created) console.log('[api] seeded default user, library and shelf');
 
 const app = createApp({
   services: { adapter, repos: createRepositories(adapter), version },
+  webDist: config.webDist,
 });
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`[api] listening on http://localhost:${info.port} (db: ${adapter.driver})`);
+  if (config.webDist) console.log(`[api] serving web app from ${config.webDist}`);
 });
 
 async function shutdown(signal: string) {

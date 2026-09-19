@@ -69,6 +69,37 @@ jobs:
             packages/shared/coverage/lcov.info
           retention-days: 7
 
+  docker:
+    name: Docker · build image + smoke run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build image (multi-stage, release-age rule enforced by pnpm)
+        run: docker build --tag bookguardian:ci .
+
+      - name: Boot the container and check health + SPA + API envelope
+        run: |
+          set -euxo pipefail
+          docker run --detach --name bookguardian --publish 3000:3000 bookguardian:ci
+          for i in $(seq 1 30); do
+            if curl --fail --silent 'http://localhost:3000/api/health?shallow=true'; then break; fi
+            sleep 1
+            if [ "$i" = 30 ]; then docker logs bookguardian; exit 1; fi
+          done
+          curl --fail --silent http://localhost:3000/api/health | grep -q '"reachable":true'
+          curl --fail --silent http://localhost:3000/ | grep -q '<div id="root">'
+          curl --fail --silent http://localhost:3000/books/deep-link | grep -q '<div id="root">'
+          curl --silent http://localhost:3000/api/nope | grep -q '"code":"not_found"'
+          docker exec bookguardian test -f /data/bookguardian.db
+          docker exec bookguardian id -u | grep -qx 1000
+          docker logs bookguardian
+
+      - name: Stop the container
+        if: always()
+        run: docker rm --force bookguardian
+
   e2e:
     name: E2E · iPhone 14 viewport (web + API)
     runs-on: ubuntu-latest
