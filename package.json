@@ -1,0 +1,36 @@
+{
+  "name": "bookguardian",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mobile-first personal library manager — track books, shelves, lending, ratings and stats.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.34.1",
+  "engines": {
+    "node": ">=22 <23",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --stream run dev",
+    "build": "pnpm -r run build",
+    "lint": "eslint . && prettier --check .",
+    "lint:fix": "eslint . --fix && prettier --write .",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "test:e2e": "pnpm --filter @bookguardian/web run test:e2e",
+    "db:migrate": "pnpm --filter @bookguardian/api run db:migrate",
+    "db:seed": "pnpm --filter @bookguardian/api run db:seed",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-i18next": "^6.1.5",
+    "eslint-plugin-react-hooks": "^6.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^16.0.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0"
+  }
+}
