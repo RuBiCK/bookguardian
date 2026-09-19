@@ -7,11 +7,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createApp, type App } from '../src/app';
-import { createRepositories } from '../src/db/repositories';
 import { isApiPath, mountWebApp } from '../src/web-app';
-import { createTestDb, type TestDb } from './adapters';
-import { type ErrorBody } from './app';
+import { createTestApp, type ErrorBody, type TestApp } from './app';
 
 const INDEX_HTML = '<!doctype html><html><body><div id="root"></div></body></html>';
 const APP_JS = 'console.log("bookguardian")';
@@ -29,21 +26,17 @@ function fakeDist(): string {
 }
 
 describe('serving the web app from the API', () => {
-  let db: TestDb;
   let dist: string;
-  let app: App;
+  let served: TestApp;
+  let app: TestApp['app'];
 
   beforeAll(async () => {
-    db = await createTestDb();
     dist = fakeDist();
-    app = createApp({
-      quiet: true,
-      webDist: dist,
-      services: { adapter: db.adapter, repos: createRepositories(db.adapter), version: '0.0.0' },
-    });
+    served = await createTestApp({ webDist: dist });
+    app = served.app;
   });
   afterAll(async () => {
-    await db.cleanup();
+    await served.cleanup();
     rmSync(dist, { recursive: true, force: true });
   });
 
@@ -134,14 +127,15 @@ describe('serving the web app from the API', () => {
   });
 
   it('is off by default: without WEB_DIST the root is a JSON 404', async () => {
-    const bare = createApp({
-      quiet: true,
-      services: { adapter: db.adapter, repos: createRepositories(db.adapter), version: '0.0.0' },
-    });
-    const res = await bare.request('/');
-    expect(res.status).toBe(404);
-    const body = (await res.json()) as ErrorBody;
-    expect(body.error.code).toBe('not_found');
+    const bare = await createTestApp();
+    try {
+      const res = await bare.app.request('/');
+      expect(res.status).toBe(404);
+      const body = (await res.json()) as ErrorBody;
+      expect(body.error.code).toBe('not_found');
+    } finally {
+      await bare.cleanup();
+    }
   });
 
   it('fails fast when WEB_DIST has no index.html', () => {

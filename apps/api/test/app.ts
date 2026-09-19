@@ -15,12 +15,18 @@ export interface TestApp {
   cleanup(this: void): Promise<void>;
 }
 
-export async function createTestApp(): Promise<TestApp> {
+export interface TestAppOptions {
+  /** Also serve a built SPA from this directory (see `src/web-app.ts`). */
+  webDist?: string;
+}
+
+export async function createTestApp({ webDist }: TestAppOptions = {}): Promise<TestApp> {
   const db = await createTestDb();
   const repos = createRepositories(db.adapter);
   const base = await seed(db.adapter);
   const app = createApp({
     quiet: true,
+    webDist,
     services: { adapter: db.adapter, repos, version: '0.0.0-test' },
   });
   return { app, db, repos, base, cleanup: db.cleanup };
