@@ -1,10 +1,12 @@
 import type { DatabaseAdapter } from './db/adapters';
 import type { Repositories } from './db/repositories';
+import type { LookupService } from './lookup';
 
 /** Everything a route handler may need, injected per request via `c.get('services')`. */
 export interface Services {
   adapter: DatabaseAdapter;
   repos: Repositories;
+  lookup: LookupService;
   version: string;
 }
 

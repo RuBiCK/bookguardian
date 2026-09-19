@@ -114,7 +114,7 @@ describe('Library tab', () => {
       title: 'Neuromancer',
       shelfId: desk.id,
       isbn13: '9780441569595',
-      isbn10: null,
+      isbn10: '0441569595',
       coverUrl: 'https://covers.example.com/n.jpg',
       pages: 271,
       authors: ['William Gibson'],

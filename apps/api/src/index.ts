@@ -4,6 +4,7 @@ import { loadConfig } from './config';
 import { createAdapter } from './db/adapters';
 import { migrate } from './db/migrate';
 import { createRepositories } from './db/repositories';
+import { createDefaultLookupService } from './lookup';
 import { seed } from './db/seed';
 import { version } from './version';
 
@@ -20,7 +21,12 @@ const seeded = await seed(adapter);
 if (seeded.created) console.log('[api] seeded default user, library and shelf');
 
 const app = createApp({
-  services: { adapter, repos: createRepositories(adapter), version },
+  services: {
+    adapter,
+    repos: createRepositories(adapter),
+    lookup: createDefaultLookupService(config.lookup),
+    version,
+  },
 });
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {

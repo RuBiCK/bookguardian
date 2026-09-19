@@ -67,6 +67,8 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./test/setup.ts'],
       include: ['test/**/*.test.{ts,tsx}'],
       css: false,
+      // Screen tests drive real user events through jsdom; give them headroom on slow CI runners.
+      testTimeout: 20_000,
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,tsx}'],

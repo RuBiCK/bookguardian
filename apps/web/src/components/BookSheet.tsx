@@ -1,9 +1,10 @@
-import type { Book } from '@bookguardian/shared';
+import type { Book, BookDraft } from '@bookguardian/shared';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateBook, useDefaults, useUpdateBook } from '../api/inventory';
 import {
   bookToForm,
+  draftToForm,
   EMPTY_BOOK_FORM,
   formToInput,
   type BookFormErrors,
@@ -20,6 +21,8 @@ interface BookSheetProps {
   onClose: () => void;
   /** Editing an existing book; omit to add a new one. */
   book?: Book;
+  /** Pre-fill a new book from a catalogue result (scan / cover search) or a partial guess. */
+  draft?: Partial<BookDraft>;
   /** Where a new book should land when the sheet opens from inside a shelf/library. */
   initialShelfId?: string;
   /** Called right after the (optimistic) save, before the server confirms. */
@@ -31,7 +34,7 @@ interface BookSheetProps {
  * shelf is pre-selected (last used, or the one you are looking at) so the
  * happy path is: tap +, type a title, tap Save.
  */
-export function BookSheet({ open, onClose, book, initialShelfId, onSaved }: BookSheetProps) {
+export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved }: BookSheetProps) {
   const { t } = useTranslation();
   const formId = useId();
   const defaults = useDefaults();
@@ -45,12 +48,12 @@ export function BookSheet({ open, onClose, book, initialShelfId, onSaved }: Book
   // Reset the form each time the sheet opens.
   useEffect(() => {
     if (!open) return;
-    setValues(book ? bookToForm(book) : EMPTY_BOOK_FORM);
+    setValues(book ? bookToForm(book) : draft ? draftToForm(draft) : EMPTY_BOOK_FORM);
     setErrors({});
-    setShowMore(Boolean(book));
+    setShowMore(Boolean(book ?? draft));
     setPickingShelf(false);
     setShelfId(book?.shelfId ?? initialShelfId ?? '');
-  }, [open, book, initialShelfId]);
+  }, [open, book, draft, initialShelfId]);
 
   // Fall back to the server's "most recently used" shelf once it is known.
   useEffect(() => {

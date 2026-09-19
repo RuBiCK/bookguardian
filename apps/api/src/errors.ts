@@ -6,7 +6,7 @@ import { NotFoundError } from './db/repositories';
 
 export class ApiHttpError extends HTTPException {
   constructor(
-    status: 400 | 401 | 403 | 404 | 409 | 422 | 500,
+    status: 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503,
     public readonly code: string,
     message: string,
     public readonly details?: unknown,

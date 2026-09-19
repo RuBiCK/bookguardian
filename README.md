@@ -148,9 +148,44 @@ docs/
 | `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`)                                                                                                           |
 | `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                 |
 | `DELETE` | `/api/books/:id`                         | → 204                                                                                                                                                          |
+| `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down            |
+| `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                               |
 
 Every query is scoped to the owner resolved by `apps/api/src/owner.ts` (the single
 local user for now; the seed runs on first contact so a fresh database already
 has "My Library" with a "Default" shelf).
 
 Errors always use the shared envelope `{ error: { code, message, details? } }`.
+
+### Book metadata lookup
+
+`/api/lookup/*` asks **Open Library** first and falls back to **Google Books**
+when it has no record (`apps/api/src/lookup/`). Provider replies are normalised
+into the shared `BookDraft` schema (ISBN-10 and -13 both filled in, BCP-47
+language, https cover URL) and cached in memory per ISBN / per query
+(`LOOKUP_CACHE_TTL_SECONDS`, default one day). One provider failing is logged
+and skipped; only when all of them fail does the API answer 503 so the app can
+say "try again" instead of "unknown book". Google's anonymous quota is tiny —
+set `GOOGLE_BOOKS_API_KEY` for anything beyond local testing. Tests run against
+recorded fixtures in `apps/api/test/fixtures/lookup/`.
+
+### Scan tab (web)
+
+- **ISBN barcode** — live rear-camera scanning with `@zxing/browser`
+  (EAN-13, Bookland 978/979 prefixes only), a "choose a photo" fallback that
+  decodes a screenshot or gallery picture, and a typed-ISBN field. Camera
+  permission denied / no camera / insecure context all degrade to the photo and
+  typed paths.
+- **Book cover** — take or pick a photo, run on-device OCR with `tesseract.js`
+  (English), turn the text into search queries (`apps/web/src/lib/ocr-query.ts`)
+  and show up to five candidates. A printed ISBN on the photo short-circuits to
+  the ISBN lookup.
+- Every path ends in the same bottom sheet: one tap adds the book to the
+  default shelf, or "Edit details" opens the full add form pre-filled.
+
+`@zxing` and `tesseract.js` are loaded lazily on the Scan tab. tesseract.js
+fetches its worker, WASM core and the `eng` traineddata from its CDNs on first
+use and caches them in the browser, so cover OCR needs the network the first
+time (and the app is offline-tolerant otherwise). The e2e suite exercises real
+barcode decoding from a rendered image; the real OCR test only runs with
+`E2E_NETWORK=1`.

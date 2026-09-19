@@ -1,0 +1,224 @@
+{
+  "numFound": 118,
+  "start": 0,
+  "numFoundExact": true,
+  "num_found": 118,
+  "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+  "q": "dune frank herbert",
+  "offset": null,
+  "docs": [
+    {
+      "author_name": ["Frank Herbert"],
+      "cover_i": 11481354,
+      "first_publish_year": 1965,
+      "key": "/works/OL893414W",
+      "number_of_pages_median": 607,
+      "title": "Dune",
+      "subject": [
+        "Dune (Imaginary place)",
+        "Fiction",
+        "Fiction, science fiction, general",
+        "Dune (imaginary place), fiction",
+        "New York Times reviewed",
+        "Science fiction",
+        "Science-fiction",
+        "American literature",
+        "nyt:mass-market-monthly=2021-11-07",
+        "New York Times bestseller",
+        "award:nebula_award=novel",
+        "nyt:trade-fiction-paperback=2021-11-07",
+        "Hugo Award Winner",
+        "award:hugo_award=1966",
+        "award:hugo_award=novel",
+        "American Science fiction",
+        "Long Now Manual for Civilization",
+        "Ecology",
+        "Fantasy fiction",
+        "Large type books"
+      ],
+      "editions": {
+        "numFound": 161,
+        "start": 0,
+        "numFoundExact": true,
+        "docs": [
+          {
+            "key": "/books/OL7500941M",
+            "title": "Dune",
+            "cover_i": 9705237,
+            "language": ["eng"],
+            "publisher": ["Berkley"],
+            "publish_date": ["August 1, 1978"],
+            "isbn": ["9780425038918", "0425038912"]
+          }
+        ]
+      }
+    },
+    {
+      "author_name": ["Frank Herbert"],
+      "cover_i": 980253,
+      "first_publish_year": 1969,
+      "key": "/works/OL893461W",
+      "number_of_pages_median": 279,
+      "title": "Dune Messiah",
+      "subject": [
+        "American Science fiction",
+        "Dune (Imaginary place)",
+        "Fiction",
+        "Imaginary places",
+        "Science Fiction",
+        "Translations into Russian",
+        "Novela",
+        "Dune (Lugar imaginario)",
+        "Lectures et morceaux choisis",
+        "Anglais (langue)",
+        "Roman ame ricain",
+        "Science-fiction ame ricaine",
+        "Long Now Manual for Civilization",
+        "Roman américain",
+        "Science-fiction américaine",
+        "Dune (imaginary place), fiction",
+        "Fiction, science fiction, general",
+        "American fiction",
+        "Translations into Vietnamese"
+      ],
+      "editions": {
+        "numFound": 101,
+        "start": 0,
+        "numFoundExact": true,
+        "docs": [
+          {
+            "key": "/books/OL7525229M",
+            "title": "Dune Messiah",
+            "subtitle": "Dune Chronicles, Book 2",
+            "cover_i": 15209757,
+            "language": ["eng"],
+            "publisher": ["Ace"],
+            "publish_date": ["July 15, 1987"],
+            "isbn": ["9780441172696", "0441172695"]
+          }
+        ]
+      }
+    },
+    {
+      "author_name": ["Frank Herbert"],
+      "cover_i": 6976407,
+      "first_publish_year": 1976,
+      "key": "/works/OL893516W",
+      "number_of_pages_median": 504,
+      "title": "Children of Dune",
+      "subject": [
+        "Dune (Imaginary place)",
+        "Fiction",
+        "Fiction in English",
+        "Science Fiction",
+        "Dune (imaginary place), fiction",
+        "Fiction, science fiction, general",
+        "Fiction, fantasy, general",
+        "American Science fiction",
+        "Reading Level-Grade 7",
+        "Reading Level-Grade 9",
+        "Reading Level-Grade 8",
+        "Reading Level-Grade 11",
+        "Reading Level-Grade 10",
+        "Reading Level-Grade 12",
+        "American literature"
+      ],
+      "editions": {
+        "numFound": 77,
+        "start": 0,
+        "numFoundExact": true,
+        "docs": [
+          {
+            "key": "/books/OL7524870M",
+            "title": "Children of Dune (Dune Chronicles, Book 3)",
+            "cover_i": 284479,
+            "language": ["eng"],
+            "publisher": ["Ace"],
+            "publish_date": ["May 15, 1987"],
+            "isbn": ["9780441104024", "0441104029"]
+          }
+        ]
+      }
+    },
+    {
+      "author_name": ["Frank Herbert"],
+      "cover_i": 6711531,
+      "first_publish_year": 1981,
+      "key": "/works/OL893515W",
+      "number_of_pages_median": 475,
+      "title": "God Emperor of Dune",
+      "subject": [
+        "American Science fiction",
+        "Dune (imaginary place), fiction",
+        "Fiction, science fiction, general",
+        "Dune (Imaginary place)",
+        "Fiction",
+        "Science fiction",
+        "Roman",
+        "Science-fiction",
+        "Littérature fantastique",
+        "Français (langue)",
+        "Lectures et morceaux choisis",
+        "American literature"
+      ],
+      "editions": {
+        "numFound": 47,
+        "start": 0,
+        "numFoundExact": true,
+        "docs": [
+          {
+            "key": "/books/OL7501667M",
+            "title": "God Emperor of Dune (Dune Chronicles, Book 4)",
+            "cover_i": 14612739,
+            "language": ["eng"],
+            "publisher": ["Berkley"],
+            "publish_date": ["May 1, 1983"],
+            "isbn": ["9780425062333", "0425062333"]
+          }
+        ]
+      }
+    },
+    {
+      "author_name": ["Frank Herbert"],
+      "cover_i": 284530,
+      "first_publish_year": 1984,
+      "key": "/works/OL893502W",
+      "number_of_pages_median": 512,
+      "title": "Heretics of Dune",
+      "subject": [
+        "Science Fiction",
+        "Fiction",
+        "Dune (Imaginary place)",
+        "Anglais (langue)",
+        "Roman américain",
+        "Science-fiction américaine",
+        "Fiction, science fiction, general",
+        "Dune (imaginary place), fiction",
+        "Imaginary places",
+        "Dune (Lieu imaginaire)",
+        "Romans, nouvelles",
+        "American Science fiction",
+        "American literature",
+        "scifi",
+        "ficção científica",
+        "Space Opera"
+      ],
+      "editions": {
+        "numFound": 48,
+        "start": 0,
+        "numFoundExact": true,
+        "docs": [
+          {
+            "key": "/books/OL7525590M",
+            "title": "Heretics of Dune (Dune Chronicles, Book 5)",
+            "cover_i": 284530,
+            "language": ["eng"],
+            "publisher": ["Ace"],
+            "publish_date": ["August 15, 1987"],
+            "isbn": ["9780441328000", "0441328008"]
+          }
+        ]
+      }
+    }
+  ]
+}

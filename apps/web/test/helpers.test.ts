@@ -1,8 +1,77 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { bookToForm, EMPTY_BOOK_FORM, formToInput } from '../src/lib/book-form';
+import {
+  bookToForm,
+  draftToForm,
+  draftToInput,
+  EMPTY_BOOK_FORM,
+  formToInput,
+} from '../src/lib/book-form';
 import { emptyToNull, formatDate, joinList, parseIsbn, splitList } from '../src/lib/format';
 import { clearToasts, dismissToast, showToast, useToasts } from '../src/lib/toast';
+
+describe('catalogue drafts', () => {
+  const draft = {
+    isbn10: '0441013597',
+    isbn13: '9780441013593',
+    title: 'Dune',
+    subtitle: 'Book one',
+    authors: ['Frank Herbert'],
+    publisher: 'Ace',
+    publishedDate: '1965',
+    pages: 412,
+    language: 'en',
+    coverUrl: 'https://c/x.jpg',
+    categories: ['Sci-Fi', 'Classics'],
+    description: 'Desert.',
+    source: 'open_library' as const,
+    sourceId: null,
+  };
+
+  it('pre-fills the form from a full draft and from partial guesses', () => {
+    expect(draftToForm(draft)).toEqual({
+      title: 'Dune',
+      authors: 'Frank Herbert',
+      isbn: '9780441013593',
+      subtitle: 'Book one',
+      publisher: 'Ace',
+      year: '1965',
+      pages: '412',
+      language: 'en',
+      categories: 'Sci-Fi, Classics',
+      coverUrl: 'https://c/x.jpg',
+      description: 'Desert.',
+      notes: '',
+    });
+    expect(draftToForm({ isbn10: '0441013597' })).toEqual({
+      ...EMPTY_BOOK_FORM,
+      isbn: '0441013597',
+    });
+    expect(draftToForm({ title: 'Guess' })).toEqual({ ...EMPTY_BOOK_FORM, title: 'Guess' });
+    expect(draftToForm({ ...draft, subtitle: null, pages: null, coverUrl: null })).toMatchObject({
+      subtitle: '',
+      pages: '',
+      coverUrl: '',
+    });
+  });
+
+  it('turns a draft straight into a create payload', () => {
+    expect(draftToInput(draft)).toEqual({
+      title: 'Dune',
+      subtitle: 'Book one',
+      authors: ['Frank Herbert'],
+      isbn10: '0441013597',
+      isbn13: '9780441013593',
+      publisher: 'Ace',
+      publishedDate: '1965',
+      pages: 412,
+      language: 'en',
+      coverUrl: 'https://c/x.jpg',
+      categories: ['Sci-Fi', 'Classics'],
+      description: 'Desert.',
+    });
+  });
+});
 
 describe('format helpers', () => {
   it('splits comma lists, trimming and de-duplicating', () => {
@@ -13,11 +82,16 @@ describe('format helpers', () => {
 
   it('parses ISBN-10 / ISBN-13 with separators and flags junk', () => {
     expect(parseIsbn('')).toBeNull();
-    expect(parseIsbn('0-441-01359-7')).toEqual({ isbn10: '0441013597', isbn13: null });
-    expect(parseIsbn('045100 401x')).toEqual({ isbn10: '045100401X', isbn13: null });
-    expect(parseIsbn('978 0 441 01359 3')).toEqual({ isbn10: null, isbn13: '9780441013593' });
+    expect(parseIsbn('0-441-01359-7')).toEqual({ isbn10: '0441013597', isbn13: '9780441013593' });
+    expect(parseIsbn('080442 957x')).toEqual({ isbn10: '080442957X', isbn13: '9780804429573' });
+    expect(parseIsbn('978 0 441 01359 3')).toEqual({
+      isbn10: '0441013597',
+      isbn13: '9780441013593',
+    });
+    expect(parseIsbn('979-12-3456-789-6')).toEqual({ isbn10: null, isbn13: '9791234567896' });
     expect(parseIsbn('12345')).toBe('invalid');
     expect(parseIsbn('9770441013593')).toBe('invalid');
+    expect(parseIsbn('0441013598')).toBe('invalid'); // bad check digit
   });
 
   it('nulls empty strings and formats dates', () => {
@@ -64,7 +138,7 @@ describe('book form', () => {
         title: 'Dune',
         authors: ['Frank Herbert'],
         isbn10: '0441013597',
-        isbn13: null,
+        isbn13: '9780441013593',
         subtitle: null,
         publisher: null,
         publishedDate: null,
