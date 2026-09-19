@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { EmptyState } from '../components/EmptyState';
 import { Screen } from '../components/Screen';
 import { TabBar } from '../components/TabBar';
+import { Toaster } from '../components/Toaster';
 
 function RootLayout() {
   return (
@@ -10,6 +11,7 @@ function RootLayout() {
       <main className="app-shell__main">
         <Outlet />
       </main>
+      <Toaster />
       <TabBar />
     </div>
   );

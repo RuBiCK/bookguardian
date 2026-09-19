@@ -11,5 +11,7 @@ export interface Services {
 export interface AppEnv {
   Variables: {
     services: Services;
+    /** Id of the user whose data this request may touch (see `owner.ts`). */
+    ownerId: string;
   };
 }

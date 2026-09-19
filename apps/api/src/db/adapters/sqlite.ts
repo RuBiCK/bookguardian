@@ -1,10 +1,17 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
-import { sql, type SQL, type Table } from 'drizzle-orm';
+import { count, sql, type Column, type SQL, type Table } from 'drizzle-orm';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { sqliteSchema } from '../schema/sqlite';
-import type { DatabaseAdapter, DialectKit, InsertRow, QueryOptions } from './types';
+import {
+  likePattern,
+  type DatabaseAdapter,
+  type DialectKit,
+  type InsertRow,
+  type QueryOptions,
+} from './types';
 
 export interface SqliteAdapterOptions {
   /** File path, or `:memory:` for an ephemeral database (tests). */
@@ -22,6 +29,22 @@ function createKit(db: BetterSQLite3Database): DialectKit {
         .limit(options.limit ?? -1)
         .offset(options.offset ?? 0);
       return await query;
+    },
+    async count(table: Table, where?: SQL) {
+      const [row] = await db.select({ value: count() }).from(table).where(where);
+      return row?.value ?? 0;
+    },
+    async countBy(table: Table, column: Column, where?: SQL) {
+      const rows = await db
+        .select({ key: column as unknown as SQLiteColumn, count: count() })
+        .from(table)
+        .where(where)
+        .groupBy(column as unknown as SQLiteColumn);
+      return rows.map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    contains(column: Column, needle: string) {
+      // SQLite has no default LIKE escape character, so declare one.
+      return sql`lower(${column}) like ${likePattern(needle)} escape '\\'`;
     },
     async insert<T extends Table>(table: T, values: InsertRow<T> | InsertRow<T>[]) {
       const rows = Array.isArray(values) ? values : [values];

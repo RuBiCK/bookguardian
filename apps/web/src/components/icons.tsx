@@ -51,3 +51,72 @@ export const BookIcon = (props: IconProps) => (
     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
   </svg>
 );
+
+export const PlusIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const ChevronRightIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M9 6l6 6-6 6" />
+  </svg>
+);
+
+export const ChevronLeftIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M15 6l-6 6 6 6" />
+  </svg>
+);
+
+export const ArrowUpIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+
+export const ArrowDownIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M12 5v14M5 12l7 7 7-7" />
+  </svg>
+);
+
+export const SearchIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20 20l-3.5-3.5" />
+  </svg>
+);
+
+export const CloseIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
+export const ShelfIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M3 5h18M3 12h18M3 19h18" />
+    <path d="M6 5v7M10 5v7M15 12v7M19 12v7" />
+  </svg>
+);
+
+export const TrashIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+  </svg>
+);
+
+export const PencilIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17z" />
+    <path d="M13.5 6.5l3 3" />
+  </svg>
+);
+
+export const StarIcon = ({ filled = false, ...props }: IconProps & { filled?: boolean }) => (
+  <svg {...base} {...props} fill={filled ? 'currentColor' : 'none'}>
+    <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z" />
+  </svg>
+);

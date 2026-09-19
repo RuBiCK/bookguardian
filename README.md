@@ -99,10 +99,12 @@ apps/
       db/adapters/        sqlite | postgres | mysql — the only dialect-specific code
       db/schema/          Drizzle tables per dialect (kept in parity by a test)
       db/repositories/    dialect-agnostic data access
+      inventory.ts        library/shelf/book use-cases (defaults, cascade rules)
+      owner.ts            resolves the owner every query is scoped by
       db/migrate.ts       migration runner    db/seed.ts  seed
   web/
-    src/routes/           TanStack file routes (one per bottom tab)
-    src/components/       app shell pieces (TabBar, Screen, EmptyState)
+    src/routes/           TanStack file routes (tabs + libraries/$id, shelves/$id, books/$id)
+    src/components/       app shell + inventory UI (Sheet, BookSheet, BookGrid, ShelfPicker…)
     src/theme/            CSS variables (light/dark) + theme hook
     src/api/              typed fetch client + TanStack Query hooks
     e2e/                  Playwright (iPhone 14)
@@ -125,8 +127,30 @@ docs/
 
 ## API
 
-| Method | Path          | Description                                                                                               |
-| ------ | ------------- | --------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/api/health` | `{ status, version, uptimeSeconds, database: { driver, reachable } }` (`?shallow=true` skips the DB ping) |
+| Method   | Path                                     | Description                                                                                                                                                    |
+| -------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/health`                            | `{ status, version, uptimeSeconds, database: { driver, reachable } }` (`?shallow=true` skips the DB ping)                                                      |
+| `GET`    | `/api/defaults`                          | `{ libraryId, shelfId }` — where a new book lands when no shelf is given (most recently used shelf, else the first one)                                        |
+| `GET`    | `/api/libraries`                         | `{ items: LibraryWithCounts[] }` (`shelfCount`, `bookCount`)                                                                                                   |
+| `POST`   | `/api/libraries`                         | Create `{ name, location? }` → 201                                                                                                                             |
+| `GET`    | `/api/libraries/:id`                     | One library with counts                                                                                                                                        |
+| `PATCH`  | `/api/libraries/:id`                     | Update `{ name?, location? }`                                                                                                                                  |
+| `DELETE` | `/api/libraries/:id[?moveBooksTo=shelf]` | Delete library + shelves. 409 `library_not_empty` if it holds books and no destination is given; 409 `last_library` for the only library → `{ movedBooks }`    |
+| `GET`    | `/api/shelves[?libraryId=]`              | `{ items: ShelfWithCount[] }` ordered by `sortOrder`                                                                                                           |
+| `POST`   | `/api/shelves`                           | Create `{ libraryId, name, sortOrder? }` (appends by default) → 201                                                                                            |
+| `POST`   | `/api/shelves/reorder`                   | `{ libraryId, shelfIds }` — must list every shelf of the library once                                                                                          |
+| `GET`    | `/api/shelves/:id`                       | One shelf with `bookCount`                                                                                                                                     |
+| `PATCH`  | `/api/shelves/:id`                       | Update `{ name?, sortOrder? }`                                                                                                                                 |
+| `DELETE` | `/api/shelves/:id[?moveBooksTo=shelf]`   | Delete shelf. 409 `shelf_not_empty` without a destination; 409 `last_shelf` for a library's only shelf → `{ movedBooks }`                                      |
+| `GET`    | `/api/books`                             | `{ items, total, limit, offset }`. Filters: `q` (title/subtitle/authors/publisher/ISBN), `libraryId`, `shelfId`, `readStatus`, `category`, `sort=added\|title` |
+| `POST`   | `/api/books`                             | Create; only `title` is required, `shelfId` defaults to `/api/defaults` → 201                                                                                  |
+| `GET`    | `/api/books/:id`                         | One book                                                                                                                                                       |
+| `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`)                                                                                                           |
+| `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                 |
+| `DELETE` | `/api/books/:id`                         | → 204                                                                                                                                                          |
+
+Every query is scoped to the owner resolved by `apps/api/src/owner.ts` (the single
+local user for now; the seed runs on first contact so a fresh database already
+has "My Library" with a "Default" shelf).
 
 Errors always use the shared envelope `{ error: { code, message, details? } }`.

@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { initI18n } from '../src/i18n';
+import { clearToasts } from '../src/lib/toast';
 
 // Node >= 25 defines a `localStorage` global that stays `undefined` unless the
 // process runs with --localstorage-file, and vitest's jsdom environment does
@@ -30,6 +31,7 @@ initI18n();
 
 afterEach(() => {
   cleanup();
+  clearToasts();
 });
 
 // jsdom does not implement scrolling; TanStack Router calls it on navigation.
