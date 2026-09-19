@@ -1,0 +1,230 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---- App shell -------------------------------------------------------- */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.app-shell__main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + var(--space-4)) var(--space-4)
+    calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-6));
+}
+
+.screen__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.screen__title {
+  font-size: var(--text-xl);
+}
+
+/* ---- Tab bar ---------------------------------------------------------- */
+
+.tabbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  height: calc(var(--tabbar-height) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-top: 1px solid var(--border);
+}
+
+.tabbar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: var(--space-1) 0;
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 120ms var(--ease);
+}
+
+.tabbar__item svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tabbar__item[aria-current='page'] {
+  color: var(--accent);
+}
+
+.tabbar__item:active {
+  opacity: 0.7;
+}
+
+/* ---- Placeholder / empty state --------------------------------------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--fg-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+}
+
+.empty__icon {
+  width: 40px;
+  height: 40px;
+  color: var(--accent);
+}
+
+.empty__title {
+  color: var(--fg);
+  font-size: var(--text-lg);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* ---- Settings list ---------------------------------------------------- */
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.list__row + .list__row {
+  border-top: 1px solid var(--border);
+}
+
+.list__label {
+  font-weight: 600;
+}
+
+.list__value {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+}
+
+.segmented__option {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+.segmented__option[aria-pressed='true'] {
+  background: var(--bg-elevated);
+  color: var(--fg);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-subtle);
+}
+
+.status-dot--ok {
+  background: var(--success);
+}
+
+.status-dot--down {
+  background: var(--danger);
+}

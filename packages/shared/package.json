@@ -1,0 +1,24 @@
+{
+  "name": "@bookguardian/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Zod schemas, TypeScript types, API DTOs and i18n dictionaries for Bookguardian.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./i18n": "./src/i18n/index.ts",
+    "./i18n/en.json": "./src/i18n/en.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

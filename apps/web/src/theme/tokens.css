@@ -1,0 +1,105 @@
+/*
+ * Design tokens. Light is the default; dark overrides live on
+ * [data-theme="dark"] and are also applied automatically when the OS prefers
+ * dark and the user has not forced a theme ([data-theme="system"]).
+ */
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #f7f4ee;
+  --bg-elevated: #fffdf8;
+  --bg-sunken: #ede8df;
+  --border: #dcd5c7;
+
+  /* text */
+  --fg: #1d1a15;
+  --fg-muted: #6b655a;
+  --fg-subtle: #9c9587;
+
+  /* brand */
+  --accent: #b5542d;
+  --accent-strong: #953f1d;
+  --accent-contrast: #fff8f2;
+  --accent-soft: #f4dccf;
+
+  /* semantic */
+  --success: #2f7d4f;
+  --warning: #b7791f;
+  --danger: #b3261e;
+
+  /* shape & motion */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --shadow-sm: 0 1px 2px rgb(29 26 21 / 8%);
+  --shadow-md: 0 6px 20px rgb(29 26 21 / 10%);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* spacing scale (4pt) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* layout */
+  --tabbar-height: 56px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --content-max: 640px;
+
+  /* type */
+  --font-sans:
+    ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #15130f;
+  --bg-elevated: #1f1c16;
+  --bg-sunken: #0f0d0a;
+  --border: #33302a;
+  --fg: #f1ece2;
+  --fg-muted: #b3ab9c;
+  --fg-subtle: #7d766a;
+  --accent: #e07a4f;
+  --accent-strong: #f0956f;
+  --accent-contrast: #1a0f08;
+  --accent-soft: #3b2417;
+  --success: #6cc08b;
+  --warning: #e0a94a;
+  --danger: #f2705f;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 6px 20px rgb(0 0 0 / 45%);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] {
+    color-scheme: dark;
+    --bg: #15130f;
+    --bg-elevated: #1f1c16;
+    --bg-sunken: #0f0d0a;
+    --border: #33302a;
+    --fg: #f1ece2;
+    --fg-muted: #b3ab9c;
+    --fg-subtle: #7d766a;
+    --accent: #e07a4f;
+    --accent-strong: #f0956f;
+    --accent-contrast: #1a0f08;
+    --accent-soft: #3b2417;
+    --success: #6cc08b;
+    --warning: #e0a94a;
+    --danger: #f2705f;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-md: 0 6px 20px rgb(0 0 0 / 45%);
+  }
+}

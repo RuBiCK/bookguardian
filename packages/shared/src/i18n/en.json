@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "Bookguardian",
+    "tagline": "Your shelves, in your pocket."
+  },
+  "nav": {
+    "library": "Library",
+    "scan": "Scan",
+    "lending": "Lending",
+    "stats": "Stats",
+    "settings": "Settings"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "close": "Close",
+    "comingSoon": "Coming soon"
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "network": "Can't reach the server. Check your connection.",
+    "notFound": "We couldn't find that page."
+  },
+  "library": {
+    "title": "Library",
+    "empty": {
+      "title": "No books yet",
+      "body": "Scan a barcode or add a book by hand to start your library."
+    },
+    "placeholder": "Your books, shelves and libraries will live here."
+  },
+  "scan": {
+    "title": "Scan",
+    "placeholder": "Point your camera at a barcode to add a book."
+  },
+  "lending": {
+    "title": "Lending",
+    "empty": {
+      "title": "Nothing lent out",
+      "body": "Books you lend to friends will show up here."
+    },
+    "placeholder": "Keep track of who has your books."
+  },
+  "stats": {
+    "title": "Stats",
+    "placeholder": "Reading stats and charts will appear here."
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": {
+      "label": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "apiStatus": {
+      "label": "API",
+      "checking": "Checking…",
+      "online": "Online ({{driver}})",
+      "offline": "Offline"
+    },
+    "version": "Version {{version}}"
+  }
+}

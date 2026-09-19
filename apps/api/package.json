@@ -1,0 +1,36 @@
+{
+  "name": "@bookguardian/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bookguardian REST API (Hono + Drizzle).",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "db:migrate": "tsx src/cli/migrate.ts",
+    "db:seed": "tsx src/cli/seed.ts"
+  },
+  "dependencies": {
+    "@bookguardian/shared": "workspace:*",
+    "@hono/node-server": "^1.19.0",
+    "@hono/zod-validator": "^0.7.6",
+    "better-sqlite3": "^12.4.0",
+    "dotenv": "^17.2.0",
+    "drizzle-orm": "^0.44.7",
+    "hono": "^4.9.0",
+    "mysql2": "^3.15.0",
+    "postgres": "^3.4.7",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.18.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
