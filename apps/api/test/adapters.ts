@@ -1,8 +1,8 @@
 /**
  * Test helpers that run a suite against every database adapter available in
- * the environment. SQLite always runs (temp file). Postgres and MySQL run when
- * `TEST_POSTGRES_URL` / `TEST_MYSQL_URL` are set (CI provides service
- * containers; locally see README "Testing against Postgres/MySQL").
+ * the environment. SQLite always runs (temp file). Postgres and MySQL run only
+ * when `TEST_POSTGRES_URL` / `TEST_MYSQL_URL` point at disposable databases —
+ * dormant until that milestone is picked up; CI does not set them.
  */
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

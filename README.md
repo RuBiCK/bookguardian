@@ -41,25 +41,6 @@ The Vite dev server proxies `/api` to the API, so the SPA uses relative URLs.
 
 First e2e run: `pnpm --filter @bookguardian/web exec playwright install chromium`.
 
-### Testing against Postgres and MySQL
-
-The API test suite runs every database test on SQLite, and additionally on
-Postgres and MySQL when these variables point at empty, disposable databases
-(the suite drops and recreates all tables):
-
-```bash
-docker run -d --name bg-pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test \
-  -e POSTGRES_DB=bookguardian -p 55432:5432 postgres:16-alpine
-docker run -d --name bg-mysql -e MYSQL_ROOT_PASSWORD=test \
-  -e MYSQL_DATABASE=bookguardian -p 53306:3306 mysql:8.4
-
-TEST_POSTGRES_URL=postgres://test:test@127.0.0.1:55432/bookguardian \
-TEST_MYSQL_URL=mysql://root:test@127.0.0.1:53306/bookguardian \
-pnpm --filter @bookguardian/api test
-```
-
-CI provides both as service containers, so every PR exercises all three drivers.
-
 ## Supply-chain policy
 
 - **No package younger than 7 days.** `pnpm-workspace.yaml` sets
@@ -100,8 +81,9 @@ DB_DRIVER=postgres DATABASE_URL=postgres://user:pass@localhost:5432/bookguardian
 DB_DRIVER=mysql DATABASE_URL=mysql://user:pass@localhost:3306/bookguardian pnpm db:migrate
 ```
 
-All three drivers run the same test suite in CI (see "Testing against Postgres
-and MySQL" above). See [ADR 0002](docs/adr/0002-database-adapter-layer.md)
+Only SQLite is exercised by the test suite today; Postgres/MySQL are a
+later milestone (the adapters exist so the schema and repositories stay
+portable from day one). See [ADR 0002](docs/adr/0002-database-adapter-layer.md)
 for the design.
 
 ## Project layout

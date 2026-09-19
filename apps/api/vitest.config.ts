@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
-    // Postgres/MySQL suites share one database, so files must not interleave.
+    // Optional Postgres/MySQL runs share one database, so files must not interleave.
     fileParallelism: false,
     coverage: {
       provider: 'v8',
@@ -12,8 +12,8 @@ export default defineConfig({
       // whose shape is asserted by test/schema-parity.test.ts.
       exclude: ['src/index.ts', 'src/cli/**', 'src/db/schema/**'],
       reporter: ['text', 'lcov'],
-      // Postgres/MySQL kits are only executed when TEST_*_URL is set (CI does),
-      // so the function threshold leaves room for a SQLite-only local run.
+      // Postgres/MySQL kits only execute when TEST_*_URL is set (not in CI yet),
+      // so the function threshold is calibrated for a SQLite-only run.
       thresholds: { lines: 90, functions: 80, branches: 85, statements: 90 },
     },
   },
