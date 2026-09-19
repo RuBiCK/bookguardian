@@ -2,12 +2,18 @@
  * MySQL adapter — wired but not yet exercised by an automated test.
  * Set `DB_DRIVER=mysql` and `DATABASE_URL=mysql://…` to use it.
  */
-import { sql, type SQL, type Table } from 'drizzle-orm';
-import type { MySqlTable } from 'drizzle-orm/mysql-core';
+import { count, sql, type Column, type SQL, type Table } from 'drizzle-orm';
+import type { MySqlColumn, MySqlTable } from 'drizzle-orm/mysql-core';
 import { drizzle, type MySql2Database } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 import { mysqlSchema } from '../schema/mysql';
-import type { DatabaseAdapter, DialectKit, InsertRow, QueryOptions } from './types';
+import {
+  likePattern,
+  type DatabaseAdapter,
+  type DialectKit,
+  type InsertRow,
+  type QueryOptions,
+} from './types';
 
 export interface MysqlAdapterOptions {
   url: string;
@@ -25,6 +31,25 @@ function createKit(db: MySql2Database): DialectKit {
       if (options.limit !== undefined) query = query.limit(options.limit);
       if (options.offset !== undefined) query = query.offset(options.offset);
       return await query;
+    },
+    async count(table: Table, where?: SQL) {
+      const [row] = await db
+        .select({ value: count() })
+        .from(table as unknown as MySqlTable)
+        .where(where);
+      return row?.value ?? 0;
+    },
+    async countBy(table: Table, column: Column, where?: SQL) {
+      const rows = await db
+        .select({ key: column as unknown as MySqlColumn, count: count() })
+        .from(table as unknown as MySqlTable)
+        .where(where)
+        .groupBy(column as unknown as MySqlColumn);
+      return rows.map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    contains(column: Column, needle: string) {
+      // MySQL's default LIKE escape character is already `\`.
+      return sql`lower(${column}) like ${likePattern(needle)}`;
     },
     async insert<T extends Table>(table: T, values: InsertRow<T> | InsertRow<T>[]) {
       const rows = Array.isArray(values) ? values : [values];

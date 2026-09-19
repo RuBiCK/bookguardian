@@ -14,6 +14,9 @@ import { Route as LendingRouteImport } from './routes/lending'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
+import { Route as BooksBookIdRouteImport } from './routes/books.$bookId'
+import { Route as LibrariesLibraryIdRouteImport } from './routes/libraries.$libraryId'
+import { Route as ShelvesShelfIdRouteImport } from './routes/shelves.$shelfId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +43,21 @@ const StatsRoute = StatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BooksBookIdRoute = BooksBookIdRouteImport.update({
+  id: '/books/$bookId',
+  path: '/books/$bookId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibrariesLibraryIdRoute = LibrariesLibraryIdRouteImport.update({
+  id: '/libraries/$libraryId',
+  path: '/libraries/$libraryId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShelvesShelfIdRoute = ShelvesShelfIdRouteImport.update({
+  id: '/shelves/$shelfId',
+  path: '/shelves/$shelfId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +65,9 @@ export interface FileRoutesByFullPath {
   '/scan': typeof ScanRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/books/$bookId': typeof BooksBookIdRoute
+  '/libraries/$libraryId': typeof LibrariesLibraryIdRoute
+  '/shelves/$shelfId': typeof ShelvesShelfIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +75,9 @@ export interface FileRoutesByTo {
   '/scan': typeof ScanRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/books/$bookId': typeof BooksBookIdRoute
+  '/libraries/$libraryId': typeof LibrariesLibraryIdRoute
+  '/shelves/$shelfId': typeof ShelvesShelfIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +86,41 @@ export interface FileRoutesById {
   '/scan': typeof ScanRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
+  '/books/$bookId': typeof BooksBookIdRoute
+  '/libraries/$libraryId': typeof LibrariesLibraryIdRoute
+  '/shelves/$shelfId': typeof ShelvesShelfIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/lending' | '/scan' | '/settings' | '/stats'
+  fullPaths:
+    | '/'
+    | '/lending'
+    | '/scan'
+    | '/settings'
+    | '/stats'
+    | '/books/$bookId'
+    | '/libraries/$libraryId'
+    | '/shelves/$shelfId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/lending' | '/scan' | '/settings' | '/stats'
-  id: '__root__' | '/' | '/lending' | '/scan' | '/settings' | '/stats'
+  to:
+    | '/'
+    | '/lending'
+    | '/scan'
+    | '/settings'
+    | '/stats'
+    | '/books/$bookId'
+    | '/libraries/$libraryId'
+    | '/shelves/$shelfId'
+  id:
+    | '__root__'
+    | '/'
+    | '/lending'
+    | '/scan'
+    | '/settings'
+    | '/stats'
+    | '/books/$bookId'
+    | '/libraries/$libraryId'
+    | '/shelves/$shelfId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +129,9 @@ export interface RootRouteChildren {
   ScanRoute: typeof ScanRoute
   SettingsRoute: typeof SettingsRoute
   StatsRoute: typeof StatsRoute
+  BooksBookIdRoute: typeof BooksBookIdRoute
+  LibrariesLibraryIdRoute: typeof LibrariesLibraryIdRoute
+  ShelvesShelfIdRoute: typeof ShelvesShelfIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +171,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/books/$bookId': {
+      id: '/books/$bookId'
+      path: '/books/$bookId'
+      fullPath: '/books/$bookId'
+      preLoaderRoute: typeof BooksBookIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/libraries/$libraryId': {
+      id: '/libraries/$libraryId'
+      path: '/libraries/$libraryId'
+      fullPath: '/libraries/$libraryId'
+      preLoaderRoute: typeof LibrariesLibraryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shelves/$shelfId': {
+      id: '/shelves/$shelfId'
+      path: '/shelves/$shelfId'
+      fullPath: '/shelves/$shelfId'
+      preLoaderRoute: typeof ShelvesShelfIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   ScanRoute: ScanRoute,
   SettingsRoute: SettingsRoute,
   StatsRoute: StatsRoute,
+  BooksBookIdRoute: BooksBookIdRoute,
+  LibrariesLibraryIdRoute: LibrariesLibraryIdRoute,
+  ShelvesShelfIdRoute: ShelvesShelfIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
