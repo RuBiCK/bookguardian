@@ -11,6 +11,8 @@ coverage/
 # SQLite database files
 apps/api/data/*.db
 apps/api/data/*.db-*
+# Docker compose bind mount (./data:/data)
+/data/
 
 # Vite / TanStack generated
 apps/web/dev-dist/

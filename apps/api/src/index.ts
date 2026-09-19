@@ -27,10 +27,12 @@ const app = createApp({
     lookup: createDefaultLookupService(config.lookup),
     version,
   },
+  webDist: config.webDist,
 });
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`[api] listening on http://localhost:${info.port} (db: ${adapter.driver})`);
+  if (config.webDist) console.log(`[api] serving web app from ${config.webDist}`);
 });
 
 async function shutdown(signal: string) {

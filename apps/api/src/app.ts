@@ -10,14 +10,17 @@ import { healthRoutes } from './routes/health';
 import { libraryRoutes } from './routes/libraries';
 import { lookupRoutes } from './routes/lookup';
 import { shelfRoutes } from './routes/shelves';
+import { mountWebApp } from './web-app';
 
 export interface CreateAppOptions {
   services: Services;
   /** Disable request logging (tests). */
   quiet?: boolean;
+  /** Absolute path of the built SPA to serve next to the API (see `web-app.ts`). */
+  webDist?: string;
 }
 
-export function createApp({ services, quiet = false }: CreateAppOptions) {
+export function createApp({ services, quiet = false, webDist }: CreateAppOptions) {
   const app = new Hono<AppEnv>();
 
   if (!quiet) app.use(logger());
@@ -38,6 +41,7 @@ export function createApp({ services, quiet = false }: CreateAppOptions) {
     .route('/lookup', lookupRoutes);
 
   app.route('/api', api);
+  if (webDist) mountWebApp(app, webDist);
   app.notFound(notFound);
   app.onError(onError);
 

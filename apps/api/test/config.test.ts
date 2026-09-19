@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config';
 
@@ -15,6 +16,7 @@ describe('loadConfig', () => {
         timeoutMs: 8000,
         cacheTtlMs: 86_400_000,
       },
+      webDist: undefined,
     });
   });
 
@@ -30,6 +32,7 @@ describe('loadConfig', () => {
       GOOGLE_BOOKS_API_KEY: 'secret',
       LOOKUP_TIMEOUT_MS: '2000',
       LOOKUP_CACHE_TTL_SECONDS: '60',
+      WEB_DIST: '/srv/web',
     });
     expect(config).toEqual({
       env: 'production',
@@ -42,7 +45,12 @@ describe('loadConfig', () => {
         timeoutMs: 2000,
         cacheTtlMs: 60_000,
       },
+      webDist: '/srv/web',
     });
+  });
+
+  it('resolves a relative WEB_DIST against the working directory', () => {
+    expect(loadConfig({ WEB_DIST: '../web/dist' }).webDist).toBe(resolve('../web/dist'));
   });
 
   it('rejects unknown drivers and invalid ports', () => {

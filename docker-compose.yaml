@@ -1,0 +1,26 @@
+# Local single-container run: API + web app on http://localhost:3000, SQLite in ./data.
+#
+#   docker compose up --build
+#
+# Configuration comes from a repo-root `.env` (copy `.env.example`), e.g.
+# GOOGLE_BOOKS_API_KEY. Container-specific values below win over `.env`.
+services:
+  bookguardian:
+    build: .
+    image: bookguardian:local
+    ports:
+      - '3000:3000'
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      DB_DRIVER: sqlite
+      DATABASE_PATH: /data/bookguardian.db
+      WEB_DIST: /app/web
+    volumes:
+      # On Linux create ./data first (mkdir -p data) so it is owned by you, not root;
+      # the container runs as uid 1000 (node).
+      - ./data:/data
+    restart: unless-stopped
