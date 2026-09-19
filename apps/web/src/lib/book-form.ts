@@ -1,4 +1,9 @@
-import { createBookInputSchema, type Book, type CreateBookInput } from '@bookguardian/shared';
+import {
+  createBookInputSchema,
+  type Book,
+  type BookDraft,
+  type CreateBookInput,
+} from '@bookguardian/shared';
 import { emptyToNull, joinList, parseIsbn, splitList } from './format';
 
 /** What the add/edit sheet edits: plain strings so every field is a simple input. */
@@ -49,6 +54,46 @@ export function bookToForm(book: Book): BookFormValues {
     coverUrl: book.coverUrl ?? '',
     description: book.description ?? '',
     notes: book.notes ?? '',
+  };
+}
+
+/**
+ * Pre-fill the add form from a catalogue result (ISBN scan / cover search),
+ * or from whatever partial facts a failed scan left behind (just the ISBN,
+ * an OCR title guess).
+ */
+export function draftToForm(draft: Partial<BookDraft>): BookFormValues {
+  return {
+    title: draft.title ?? '',
+    authors: joinList(draft.authors ?? []),
+    isbn: draft.isbn13 ?? draft.isbn10 ?? '',
+    subtitle: draft.subtitle ?? '',
+    publisher: draft.publisher ?? '',
+    year: draft.publishedDate ?? '',
+    pages: draft.pages?.toString() ?? '',
+    language: draft.language ?? '',
+    categories: joinList(draft.categories ?? []),
+    coverUrl: draft.coverUrl ?? '',
+    description: draft.description ?? '',
+    notes: '',
+  };
+}
+
+/** The API payload for a one-tap "Add" straight from a catalogue result. */
+export function draftToInput(draft: BookDraft): CreateBookInput {
+  return {
+    title: draft.title,
+    subtitle: draft.subtitle,
+    authors: draft.authors,
+    isbn10: draft.isbn10,
+    isbn13: draft.isbn13,
+    publisher: draft.publisher,
+    publishedDate: draft.publishedDate,
+    pages: draft.pages,
+    language: draft.language,
+    coverUrl: draft.coverUrl,
+    categories: draft.categories,
+    description: draft.description,
   };
 }
 

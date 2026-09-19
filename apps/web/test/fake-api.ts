@@ -3,7 +3,7 @@
  * Mirrors the routes, defaults and cascade rules the real Hono app exposes so
  * screens can be exercised end-to-end without a database.
  */
-import type { Book, LibraryWithCounts, ShelfWithCount } from '@bookguardian/shared';
+import type { Book, BookDraft, LibraryWithCounts, ShelfWithCount } from '@bookguardian/shared';
 import { vi } from 'vitest';
 
 const OWNER = '11111111-1111-4111-8111-111111111111';
@@ -25,6 +25,11 @@ export interface FakeApi {
   calls: { method: string; path: string; body?: unknown }[];
   /** Make the next matching request fail with this status. */
   failNext(matcher: { method?: string; path?: RegExp }, status?: number): void;
+  /** Catalogue stand-in for `/api/lookup/*`: drafts by ISBN-13 and free-text results. */
+  drafts: Record<string, BookDraft>;
+  searchResults: BookDraft[];
+  /** Answer every lookup with 503 (providers down). */
+  lookupDown: boolean;
   addLibrary(name: string, location?: string | null): Library;
   addShelf(libraryId: string, name: string, sortOrder?: number): Shelf;
   addBook(input: Partial<Book> & { title: string; shelfId?: string }): Book;
@@ -46,6 +51,11 @@ export function installFakeApi(): FakeApi {
   const books: Book[] = [];
   const calls: FakeApi['calls'] = [];
   let failure: { matcher: { method?: string; path?: RegExp }; status: number } | null = null;
+  const lookup = {
+    drafts: {} as Record<string, BookDraft>,
+    searchResults: [] as BookDraft[],
+    down: false,
+  };
 
   const addLibrary: FakeApi['addLibrary'] = (name, location = null) => {
     const ts = now();
@@ -133,6 +143,23 @@ export function installFakeApi(): FakeApi {
         database: { driver: 'sqlite', reachable: true },
       });
     if (path === '/api/defaults') return json(defaults());
+
+    // Lookup
+    if (path.startsWith('/api/lookup/')) {
+      if (lookup.down) return error(503, 'lookup_unavailable');
+      if ((m = match(/^\/api\/lookup\/isbn\/([^/]+)$/))) {
+        const draft = lookup.drafts[m[1]!];
+        return draft ? json(draft) : error(404, 'isbn_not_found', { isbn: m[1] });
+      }
+      if (path === '/api/lookup/search') {
+        const needle = q.get('q')?.toLowerCase() ?? '';
+        const limit = Number(q.get('limit') ?? 5);
+        const items = lookup.searchResults
+          .filter((d) => [d.title, ...d.authors].join(' ').toLowerCase().includes(needle))
+          .slice(0, limit);
+        return json({ items });
+      }
+    }
 
     // Libraries
     if (path === '/api/libraries' && method === 'GET')
@@ -311,6 +338,24 @@ export function installFakeApi(): FakeApi {
     addLibrary,
     addShelf,
     addBook,
+    get drafts() {
+      return lookup.drafts;
+    },
+    set drafts(value) {
+      lookup.drafts = value;
+    },
+    get searchResults() {
+      return lookup.searchResults;
+    },
+    set searchResults(value) {
+      lookup.searchResults = value;
+    },
+    get lookupDown() {
+      return lookup.down;
+    },
+    set lookupDown(value) {
+      lookup.down = value;
+    },
     restore: () => spy.mockRestore(),
   };
 }

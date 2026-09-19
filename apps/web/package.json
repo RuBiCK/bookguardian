@@ -17,10 +17,13 @@
     "@bookguardian/shared": "workspace:*",
     "@tanstack/react-query": "^5.90.0",
     "@tanstack/react-router": "^1.132.0",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "i18next": "^25.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^16.0.0",
+    "tesseract.js": "^7.0.0",
     "workbox-window": "^7.4.1",
     "zod": "^4.1.0"
   },

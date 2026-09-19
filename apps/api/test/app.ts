@@ -6,12 +6,15 @@ import { createApp, type App } from '../src/app';
 import { createRepositories, type Repositories } from '../src/db/repositories';
 import { seed, type SeedResult } from '../src/db/seed';
 import { createTestDb, type TestDb } from './adapters';
+import { fixtureLookup } from './lookup-fixtures';
 
 export interface TestApp {
   app: App;
   db: TestDb;
   repos: Repositories;
   base: SeedResult;
+  /** Recorded-fixture metadata lookup (see `lookup-fixtures.ts`). */
+  lookup: ReturnType<typeof fixtureLookup>;
   cleanup(this: void): Promise<void>;
 }
 
@@ -24,12 +27,13 @@ export async function createTestApp({ webDist }: TestAppOptions = {}): Promise<T
   const db = await createTestDb();
   const repos = createRepositories(db.adapter);
   const base = await seed(db.adapter);
+  const lookup = fixtureLookup();
   const app = createApp({
     quiet: true,
     webDist,
-    services: { adapter: db.adapter, repos, version: '0.0.0-test' },
+    services: { adapter: db.adapter, repos, lookup: lookup.service, version: '0.0.0-test' },
   });
-  return { app, db, repos, base, cleanup: db.cleanup };
+  return { app, db, repos, base, lookup, cleanup: db.cleanup };
 }
 
 export interface JsonResponse<T = unknown> {

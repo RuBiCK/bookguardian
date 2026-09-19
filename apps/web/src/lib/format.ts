@@ -1,3 +1,5 @@
+import { cleanIsbn, parseIsbn as parseSharedIsbn, type IsbnPair } from '@bookguardian/shared';
+
 /** Split a comma-separated field into trimmed, non-empty, de-duplicated entries. */
 export function splitList(value: string): string[] {
   const seen = new Set<string>();
@@ -12,15 +14,13 @@ export function joinList(values: readonly string[]): string {
   return values.join(', ');
 }
 
-/** Strip separators from a typed ISBN; returns `{ isbn10 }`, `{ isbn13 }` or `null` when malformed. */
-export function parseIsbn(
-  raw: string,
-): { isbn10: string; isbn13: null } | { isbn10: null; isbn13: string } | 'invalid' | null {
-  const digits = raw.replace(/[\s-]/g, '').toUpperCase();
-  if (digits === '') return null;
-  if (/^[0-9]{9}[0-9X]$/.test(digits)) return { isbn10: digits, isbn13: null };
-  if (/^97[89][0-9]{10}$/.test(digits)) return { isbn10: null, isbn13: digits };
-  return 'invalid';
+/**
+ * Parse a typed ISBN into both forms (check digit verified); `null` for an
+ * empty field, `'invalid'` for anything that is not a real ISBN.
+ */
+export function parseIsbn(raw: string): IsbnPair | 'invalid' | null {
+  if (cleanIsbn(raw) === '') return null;
+  return parseSharedIsbn(raw) ?? 'invalid';
 }
 
 /** Turn an empty/whitespace string into `null`, otherwise the trimmed value. */

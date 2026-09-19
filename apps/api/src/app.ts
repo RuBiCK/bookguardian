@@ -8,6 +8,7 @@ import { ownerMiddleware } from './owner';
 import { bookRoutes, defaultsRoutes } from './routes/books';
 import { healthRoutes } from './routes/health';
 import { libraryRoutes } from './routes/libraries';
+import { lookupRoutes } from './routes/lookup';
 import { shelfRoutes } from './routes/shelves';
 import { mountWebApp } from './web-app';
 
@@ -36,7 +37,8 @@ export function createApp({ services, quiet = false, webDist }: CreateAppOptions
     .route('/libraries', libraryRoutes)
     .route('/shelves', shelfRoutes)
     .route('/books', bookRoutes)
-    .route('/defaults', defaultsRoutes);
+    .route('/defaults', defaultsRoutes)
+    .route('/lookup', lookupRoutes);
 
   app.route('/api', api);
   if (webDist) mountWebApp(app, webDist);

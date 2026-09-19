@@ -148,7 +148,56 @@
   },
   "scan": {
     "title": "Scan",
-    "placeholder": "Point your camera at a barcode to add a book."
+    "mode": {
+      "label": "Capture mode",
+      "isbn": "ISBN barcode",
+      "cover": "Book cover"
+    },
+    "camera": {
+      "starting": "Starting camera…",
+      "ready": "Point the camera at the barcode",
+      "denied": "Camera access was denied. Allow it in your browser settings, or pick a photo instead.",
+      "unavailable": "No camera available here. Pick a photo of the barcode instead.",
+      "failed": "The camera could not be started. Pick a photo of the barcode instead.",
+      "preview": "Camera preview",
+      "stopped": "Scanner paused",
+      "resume": "Scan again"
+    },
+    "pickPhoto": "Choose a photo",
+    "takePhoto": "Take a photo",
+    "manual": {
+      "label": "Or type the ISBN",
+      "placeholder": "978…",
+      "submit": "Look up"
+    },
+    "lookingUp": "Looking up {{isbn}}…",
+    "detected": "Barcode {{isbn}} detected",
+    "noBarcode": "No barcode found in that image. Try a sharper, closer photo.",
+    "cover": {
+      "hint": "Photograph the front cover (or the back with the ISBN) and we'll find the book.",
+      "loadingOcr": "Loading text recognition ({{percent}}%)…",
+      "reading": "Reading the cover ({{percent}}%)…",
+      "searching": "Searching for matches…",
+      "noText": "Couldn't read any text on that cover. Try better light or a closer shot.",
+      "noMatches": "No matches for “{{query}}”.",
+      "candidates": "Is it one of these?",
+      "ocrFailed": "Text recognition failed. Check your connection and try again.",
+      "tryAgain": "Try again"
+    },
+    "result": {
+      "title": "Book found",
+      "addTo": "Add to {{shelf}}",
+      "edit": "Edit details",
+      "notFound": "No book found for ISBN {{isbn}}.",
+      "notFoundTitle": "Not in the catalogues",
+      "addManually": "Add it manually",
+      "lookupFailed": "Book catalogues are unreachable right now. Try again in a moment.",
+      "source": {
+        "open_library": "Open Library",
+        "google_books": "Google Books"
+      },
+      "via": "via {{source}}"
+    }
   },
   "lending": {
     "title": "Lending",

@@ -5,7 +5,6 @@ import { renderApp } from './render';
 
 describe('routes', () => {
   it.each([
-    ['/scan', en.scan.title, en.scan.placeholder],
     ['/lending', en.lending.title, en.lending.empty.title],
     ['/stats', en.stats.title, en.stats.placeholder],
   ])('%s renders its placeholder screen', async (path, title, text) => {

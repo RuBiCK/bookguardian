@@ -21,8 +21,8 @@ and the reasoning, so later deviations are made consciously (as new ADRs).
 | Backend          | Hono on `@hono/node-server`, REST JSON, Zod validation via `@hono/zod-validator`   |
 | Validation/types | Zod 4 schemas in `packages/shared`, inferred TS types, shared by web and api       |
 | Data             | Drizzle ORM behind a repository layer; SQLite default, Postgres/MySQL selectable   |
-| Book metadata    | Open Library first, Google Books fallback (future issue)                           |
-| Scanning         | `@zxing/browser` for ISBN barcodes, `tesseract.js` for on-device OCR (future)      |
+| Book metadata    | Open Library first, Google Books fallback (`apps/api/src/lookup`)                  |
+| Scanning         | `@zxing/browser` for ISBN barcodes, `tesseract.js` for on-device OCR (lazy-loaded) |
 | Tooling          | ESLint 9 (flat config, type-aware) + Prettier, Vitest, Playwright, GitHub Actions  |
 
 Supporting choices made while bootstrapping:

@@ -120,3 +120,18 @@ export const StarIcon = ({ filled = false, ...props }: IconProps & { filled?: bo
     <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z" />
   </svg>
 );
+
+export const CameraIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </svg>
+);
+
+export const ImageIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="M21 16l-5-5-7 7M13 14l-2-2-5 5" />
+  </svg>
+);
