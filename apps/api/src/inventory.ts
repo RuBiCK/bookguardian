@@ -3,12 +3,14 @@
  * listings, default-shelf resolution and the cascade rules for deleting
  * containers. Routes validate and translate to HTTP; the rules live here.
  */
-import type {
-  Book,
-  CreateBookRequest,
-  InventoryDefaults,
-  LibraryWithCounts,
-  ShelfWithCount,
+import {
+  resolveReadAt,
+  type Book,
+  type CreateBookRequest,
+  type InventoryDefaults,
+  type LibraryWithCounts,
+  type ShelfWithCount,
+  type UpdateBookInput,
 } from '@bookguardian/shared';
 import type { Services } from './app-env';
 import type { DatabaseAdapter } from './db/adapters';
@@ -116,7 +118,38 @@ export async function createBook(
   if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
     throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId: input.shelfId });
   }
-  return repos.books.create(ownerId, { ...input, shelfId });
+  const readStatus = input.readStatus ?? 'to_read';
+  const readAt = resolveReadAt(readStatus, input.readAt);
+  return repos.books.create(ownerId, { ...input, shelfId, readStatus, readAt });
+}
+
+/**
+ * Patch a book. The read date follows the read status: `readStatus=read`
+ * without a `readAt` stamps today (an existing date is kept), and any other
+ * status clears it — so `readAt` is only ever set on a finished book.
+ */
+export async function updateBook(
+  repos: Repositories,
+  ownerId: string,
+  id: string,
+  input: UpdateBookInput,
+): Promise<Book> {
+  const current = await repos.books.findById(ownerId, id);
+  if (!current) throw notFound('Book');
+  if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
+    throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId: input.shelfId });
+  }
+  const patch = { ...input };
+  if (input.readStatus !== undefined || input.readAt !== undefined) {
+    patch.readAt = resolveReadAt(
+      input.readStatus ?? current.readStatus,
+      input.readAt,
+      current.readAt,
+    );
+  }
+  const book = await repos.books.update(ownerId, id, patch);
+  if (!book) throw notFound('Book');
+  return book;
 }
 
 export async function moveBook(

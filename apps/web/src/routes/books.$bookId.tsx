@@ -1,12 +1,13 @@
 import { READ_STATUSES } from '@bookguardian/shared';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBook, useDeleteBook, useMoveBook, useSetReadStatus } from '../api/inventory';
 import { BookSheet } from '../components/BookSheet';
 import { ConfirmSheet } from '../components/ConfirmSheet';
 import { EmptyState } from '../components/EmptyState';
 import { BookIcon, PencilIcon, StarIcon, TrashIcon } from '../components/icons';
+import { ReadDateField } from '../components/ReadDateField';
 import { Screen } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
 import { useShelfLabel } from '../api/shelf-label';
@@ -18,11 +19,12 @@ export const Route = createFileRoute('/books/$bookId')({
   component: BookDetailScreen,
 });
 
-/** Book detail: cover, metadata, quick read-status toggle, move / edit / delete. */
+/** Book detail: cover, metadata, quick read-status toggle + read date, move / edit / delete. */
 function BookDetailScreen() {
   const { t, i18n } = useTranslation();
   const { bookId } = Route.useParams();
   const navigate = useNavigate();
+  const readAtId = useId();
   const book = useBook(bookId);
   const shelfLabel = useShelfLabel(book.data?.shelfId);
   const [editing, setEditing] = useState(false);
@@ -158,7 +160,21 @@ function BookDetailScreen() {
             </li>
           ) : null,
         )}
-        {b.readAt ? (
+        {b.readStatus === 'read' && b.readAt ? (
+          // Tapping "Read" stamps today; this is where that day gets corrected.
+          <li className="list__row">
+            <label className="list__label" htmlFor={readAtId}>
+              {t('books.field.readAt')}
+            </label>
+            <span className="list__value">
+              <ReadDateField
+                id={readAtId}
+                value={b.readAt}
+                onChange={(readAt) => readStatus.setReadAt(b, readAt)}
+              />
+            </span>
+          </li>
+        ) : b.readAt ? (
           <li className="list__row">
             <span className="list__label">{t('books.field.readAt')}</span>
             <span className="list__value">{formatDate(b.readAt, i18n.language)}</span>

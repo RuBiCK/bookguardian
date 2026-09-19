@@ -96,7 +96,11 @@ erDiagram
   `viewer` only for now. Read-only sharing means a grantee can list a library's
   shelves and books but never write.
 - **Reading state.** `read_status` is one of `to_read`, `reading`, `read`;
-  `read_at` is only meaningful when the status is `read`.
+  `read_at` is a local calendar day (`YYYY-MM-DD`, no time, no UTC shift) and
+  is only ever set when the status is `read`: marking a book read without a
+  date stamps today, an existing date survives re-marking, and any other
+  status clears it (`resolveReadAt` in `packages/shared`). Future dates are
+  rejected by the shared `readAtSchema`, on the API and in the web form alike.
 - **Lending.** A lending is open while `returned_at` is `NULL`; the
   `(owner_id, returned_at)` index serves the "what's lent out" list.
 - **Deletes cascade** down the hierarchy (user → library → shelf → book →

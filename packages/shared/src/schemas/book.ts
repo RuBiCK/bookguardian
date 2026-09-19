@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isFutureDate, localDate } from '../dates';
 import {
   idSchema,
   isoDateSchema,
@@ -10,6 +11,26 @@ import {
 export const READ_STATUSES = ['to_read', 'reading', 'read'] as const;
 export const readStatusSchema = z.enum(READ_STATUSES);
 export type ReadStatus = z.infer<typeof readStatusSchema>;
+
+/** The day a book was finished: any past day or today, never the future. */
+export const readAtSchema = isoDateSchema.refine((date) => !isFutureDate(date), {
+  message: 'Read date cannot be in the future',
+});
+
+/**
+ * The read date a book carries after a status or date change. Only a finished
+ * book has one: marking it read without a date stamps today (an existing date
+ * survives), and going back to "to read" / "reading" clears it.
+ */
+export function resolveReadAt(
+  readStatus: ReadStatus,
+  readAt: string | null | undefined,
+  current: string | null = null,
+  today: string = localDate(),
+): string | null {
+  if (readStatus !== 'read') return null;
+  return readAt ?? current ?? today;
+}
 
 const isbn10Schema = z
   .string()
@@ -41,7 +62,7 @@ export const bookSchema = z
     notes: z.string().max(10_000).nullable(),
     rating: z.number().int().min(0).max(5).nullable(),
     readStatus: readStatusSchema,
-    readAt: isoDateSchema.nullable(),
+    readAt: readAtSchema.nullable(),
     addedAt: isoDateTimeSchema,
   })
   .extend(ownedSchema.shape)

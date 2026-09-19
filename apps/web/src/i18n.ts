@@ -1,8 +1,15 @@
-import { resources, SOURCE_LOCALE } from '@bookguardian/shared/i18n';
+import { resolveLocale, resources, SOURCE_LOCALE, type Locale } from '@bookguardian/shared/i18n';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-export function initI18n(lng: string = SOURCE_LOCALE) {
+/** The best supported match for the browser's language preferences. */
+export function detectLocale(): Locale {
+  const preferred =
+    typeof navigator === 'undefined' ? [] : (navigator.languages ?? [navigator.language]);
+  return resolveLocale(preferred);
+}
+
+export function initI18n(lng: string = detectLocale()) {
   if (i18next.isInitialized) return i18next;
   void i18next.use(initReactI18next).init({
     resources,
