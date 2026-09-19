@@ -1,0 +1,18 @@
+# HTTPS front for testing on a phone over the LAN (docker-compose.lan.yaml).
+#
+# Browsers only expose the camera on secure origins, so the app must be
+# reached over https even at home. Caddy's internal CA signs a certificate for
+# the laptop's LAN IP and Bonjour name; the phone accepts it once.
+#
+# LAN_IP / LAN_HOSTNAME come from the environment (see README "Test on your
+# phone over the LAN").
+{
+	auto_https disable_redirects
+	# Phones hitting the raw IP send no SNI; serve the IP certificate then.
+	default_sni {$LAN_IP}
+}
+
+https://{$LAN_IP}:8443, https://{$LAN_HOSTNAME}:8443 {
+	tls internal
+	reverse_proxy bookguardian:3000
+}

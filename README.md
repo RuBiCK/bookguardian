@@ -74,6 +74,27 @@ docker compose up --build # http://localhost:3000
   and open the printed `https://….trycloudflare.com` URL on the phone (also
   installable as a PWA from there).
 
+### Test on your phone over the LAN
+
+For the camera on a phone at home without a tunnel, put the bundled Caddy
+front in place of the plain port: it terminates HTTPS with a self-signed
+certificate for your laptop's LAN address (`docker-compose.lan.yaml`,
+`deploy/lan/Caddyfile`).
+
+```bash
+# macOS; on Linux use e.g. LAN_IP=$(hostname -I | cut -d' ' -f1) LAN_HOSTNAME=$(hostname).local
+LAN_IP=$(ipconfig getifaddr en0) LAN_HOSTNAME=$(scutil --get LocalHostName).local \
+docker compose -f docker-compose.yaml -f docker-compose.lan.yaml up -d --build
+```
+
+Then, on the phone (same Wi-Fi): `https://<LAN_IP>:8443` (or
+`https://<hostname>.local:8443`). The first visit shows a **certificate warning
+— Safari: Show details → Visit this website; Chrome: Advanced → Proceed**. After
+that the page is a secure context, the live scanner starts, and it can be
+installed as a PWA. Only `:8443` is exposed to the LAN; `:3000` stays on
+`127.0.0.1`. Stop with `docker compose -f docker-compose.yaml -f docker-compose.lan.yaml down`
+(`-v` also drops Caddy's local CA; the database stays in `./data`).
+
 The image is built in CI on every PR (`docker build` + a health/SPA smoke run,
 no push). `WEB_DIST` is what makes the API serve the SPA (static files plus
 `index.html` fallback for client routes; `/api/*` is untouched) — leave it unset
