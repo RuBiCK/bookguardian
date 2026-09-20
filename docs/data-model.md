@@ -9,8 +9,15 @@ and **IsbnCover**, which maps an ISBN-13 to the shared **CoverAsset** every
 book with that ISBN shows ([ADR 0004](adr/0004-cover-assets.md)). Cover images
 themselves are files on disk; the tables only describe them.
 
+Accounts ([ADR 0005](adr/0005-authentication.md)): a **User** is one person,
+identified by a unique, lower-cased email; **AuthIdentity** rows map a
+provider's stable id (Google's `sub`) to that user, and **Session** rows back
+the `bg_session` cookie (only the SHA-256 of the token is stored).
+
 ```mermaid
 erDiagram
+    USERS ||--o{ AUTH_IDENTITIES : "signs in as"
+    USERS ||--o{ SESSIONS : "is signed in via"
     USERS ||--o{ LIBRARIES : owns
     USERS ||--o{ SHELVES : owns
     USERS ||--o{ BOOKS : owns
@@ -27,9 +34,29 @@ erDiagram
     USERS {
         varchar(36) id PK
         varchar(120) display_name
-        varchar(254) email "nullable"
+        varchar(254) email "unique, lower-case; NULL only for an unclaimed pre-accounts local user"
+        int email_verified "0/1"
+        varchar(2048) avatar_url "nullable"
+        varchar(32) last_login_at "nullable"
         varchar(32) created_at "ISO-8601"
         varchar(32) updated_at "ISO-8601"
+    }
+    AUTH_IDENTITIES {
+        varchar(36) id PK
+        varchar(36) user_id FK
+        varchar(32) provider "google | test"
+        varchar(255) provider_subject "unique with provider"
+        varchar(254) email_at_link "nullable"
+        varchar(32) created_at
+    }
+    SESSIONS {
+        varchar(36) id PK
+        varchar(36) user_id FK "indexed"
+        varchar(64) token_hash "unique, SHA-256 of the cookie token"
+        varchar(32) created_at
+        varchar(32) expires_at "sliding"
+        varchar(32) last_seen_at
+        varchar(512) user_agent "nullable"
     }
     LIBRARIES {
         varchar(36) id PK
@@ -133,6 +160,14 @@ erDiagram
 
 ## Notes
 
+- **Accounts.** A user is one person and one email (`users.email`,
+  lower-cased, unique). `auth_identities` holds the provider ids that map to
+  that user — a Google `sub` today, other providers later without a schema
+  change — and signing in with a new identity whose verified email already
+  belongs to a user links to that user instead of creating another. `email`
+  is `NULL` only on the local user of a database seeded before accounts,
+  until the first sign-in claims it. `sessions` stores the SHA-256 of the
+  cookie token, never the token; rows expire (sliding) and are purged daily.
 - **Ownership.** `owner_id` on libraries, shelves, books and lendings is
   denormalised on purpose: every repository query filters by owner without a
   join, and a future multi-user API can enforce tenancy in one place.

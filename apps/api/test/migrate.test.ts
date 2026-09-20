@@ -93,6 +93,7 @@ describe('migrate (sqlite file inspection)', () => {
         .map((r) => r.name)
         .sort();
       expect(indexes).toEqual([
+        'idx_auth_identities_user',
         'idx_books_cover_asset',
         'idx_books_isbn13',
         'idx_books_owner',
@@ -103,7 +104,9 @@ describe('migrate (sqlite file inspection)', () => {
         'idx_lendings_open',
         'idx_libraries_owner',
         'idx_library_shares_grantee',
+        'idx_sessions_user',
         'idx_shelves_library',
+        'uq_users_email',
       ]);
       // The UNIQUE constraint becomes an sqlite autoindex on (library_id, grantee_id).
       const unique = (

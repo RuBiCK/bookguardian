@@ -389,27 +389,3 @@ describe('/api/books', () => {
     });
   });
 });
-
-describe('owner resolution', () => {
-  it('seeds the local user, library and shelf on first contact with an empty database', async () => {
-    const t = await createTestApp();
-    try {
-      // Wipe the seed to simulate a database that was migrated but never seeded.
-      await t.db.adapter.kit.delete(
-        t.db.adapter.tables.users,
-        (await import('drizzle-orm')).sql`1 = 1`,
-      );
-      expect(await t.repos.users.findFirst()).toBeNull();
-
-      const res = await json<Book>(t.app, 'POST', '/api/books', { title: 'Hello' });
-      expect(res.status).toBe(201);
-      const user = await t.repos.users.findFirst();
-      expect(user).not.toBeNull();
-      expect(res.body.ownerId).toBe(user!.id);
-      const libraries = await t.repos.libraries.listByOwner(user!.id);
-      expect(libraries.map((l) => l.name)).toEqual(['My Library']);
-    } finally {
-      await t.cleanup();
-    }
-  });
-});

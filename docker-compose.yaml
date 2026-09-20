@@ -21,6 +21,15 @@ services:
       WEB_DIST: /app/web
       # "Today" for read dates; override in .env or the shell (TZ=Europe/Madrid).
       TZ: ${TZ:-UTC}
+      # Google sign-in — runtime variables, never baked into the image. Put the
+      # values in .env (or the Coolify/host environment); see README "Google sign-in".
+      # GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      # GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      # Public origin; register ${AUTH_BASE_URL}/api/auth/google/callback in Google Cloud.
+      # AUTH_BASE_URL: ${AUTH_BASE_URL:-http://localhost:3000}
+      # AUTH_COOKIE_SECRET: ${AUTH_COOKIE_SECRET}
+      # AUTH_ALLOWED_EMAILS: ${AUTH_ALLOWED_EMAILS}
+      # AUTH_SESSION_DAYS: ${AUTH_SESSION_DAYS:-30}
     volumes:
       # On Linux create ./data first (mkdir -p data) so it is owned by you, not root;
       # the container runs as uid 1000 (node).

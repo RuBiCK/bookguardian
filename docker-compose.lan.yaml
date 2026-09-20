@@ -10,6 +10,10 @@ services:
   bookguardian:
     ports: !override
       - '127.0.0.1:3000:3000'
+    # Sign-in through Caddy: the public origin is the https one the phone opens,
+    # so the callback registered in Google Cloud must be
+    # https://<LAN_IP>:8443/api/auth/google/callback (Google accepts private IPs
+    # over https). Set AUTH_BASE_URL=https://<LAN_IP>:8443 in .env.
 
   https:
     image: caddy:2.10-alpine

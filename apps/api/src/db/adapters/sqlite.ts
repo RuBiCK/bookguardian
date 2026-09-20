@@ -18,8 +18,28 @@ export interface SqliteAdapterOptions {
   path: string;
 }
 
-function createKit(db: BetterSQLite3Database): DialectKit {
-  return {
+/**
+ * One connection, one transaction at a time. `BEGIN` while another async
+ * callback is still between its awaits would fail ("cannot start a transaction
+ * within a transaction"), so callers queue up behind the previous commit —
+ * which is also what makes two concurrent sign-ins with the same email land on
+ * one user (see `auth/account.ts`).
+ */
+function createTransactionQueue() {
+  let tail: Promise<unknown> = Promise.resolve();
+  return <R>(run: () => Promise<R>): Promise<R> => {
+    const next = tail.then(run, run);
+    tail = next.catch(() => undefined);
+    return next;
+  };
+}
+
+function createKit(
+  db: BetterSQLite3Database,
+  enqueue = createTransactionQueue(),
+  inTransaction = false,
+): DialectKit {
+  const kit: DialectKit = {
     async select<T extends Table>(table: T, options: QueryOptions = {}) {
       const query = db
         .select()
@@ -60,21 +80,26 @@ function createKit(db: BetterSQLite3Database): DialectKit {
     async execute(statement: string) {
       db.run(sql.raw(statement));
     },
-    async transaction<R>(fn: (tx: DialectKit) => Promise<R>): Promise<R> {
+    transaction<R>(fn: (tx: DialectKit) => Promise<R>): Promise<R> {
       // better-sqlite3 transactions are synchronous; drizzle's async wrapper
       // would deadlock on awaited promises, so emulate with SAVEPOINT-free
-      // BEGIN/COMMIT around the async callback.
-      db.run(sql.raw('BEGIN'));
-      try {
-        const result = await fn(createKit(db));
-        db.run(sql.raw('COMMIT'));
-        return result;
-      } catch (error) {
-        db.run(sql.raw('ROLLBACK'));
-        throw error;
-      }
+      // BEGIN/COMMIT around the async callback, serialised per connection.
+      // A nested call joins the transaction it is already in.
+      if (inTransaction) return fn(kit);
+      return enqueue(async () => {
+        db.run(sql.raw('BEGIN'));
+        try {
+          const result = await fn(createKit(db, enqueue, true));
+          db.run(sql.raw('COMMIT'));
+          return result;
+        } catch (error) {
+          db.run(sql.raw('ROLLBACK'));
+          throw error;
+        }
+      });
     },
   };
+  return kit;
 }
 
 export function createSqliteAdapter(options: SqliteAdapterOptions): DatabaseAdapter {

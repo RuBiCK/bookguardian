@@ -7,7 +7,14 @@ import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiUrl = process.env.VITE_API_URL ?? env.VITE_API_URL ?? 'http://localhost:3000';
+  // Where `/api` is proxied in dev/preview. `API_PROXY_TARGET` only moves the
+  // proxy; `VITE_API_URL` is also baked into the bundle, which makes the SPA
+  // call the API cross-origin, without its session cookie.
+  const apiUrl =
+    process.env.API_PROXY_TARGET ??
+    process.env.VITE_API_URL ??
+    env.VITE_API_URL ??
+    'http://localhost:3000';
 
   return {
     define: {

@@ -50,6 +50,9 @@ export const users = sqliteTable('users', {
   id: id(),
   displayName: text('display_name').notNull(),
   email: text('email'),
+  emailVerified: intBoolean('email_verified').notNull().default(false),
+  avatarUrl: text('avatar_url'),
+  lastLoginAt: text('last_login_at'),
   ...timestamps,
 });
 
@@ -221,6 +224,49 @@ export const isbnCovers = sqliteTable(
   (t) => [index('idx_isbn_covers_asset').on(t.coverAssetId)],
 );
 
+/**
+ * A provider identity (`google` + the `sub` claim) and the user it maps to.
+ * See `0004_auth.sql` and ADR 0005: one account per email, a user may hold
+ * several identities, an identity belongs to exactly one user.
+ */
+export const authIdentities = sqliteTable(
+  'auth_identities',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    providerSubject: text('provider_subject').notNull(),
+    emailAtLink: text('email_at_link'),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_auth_identities_subject').on(t.provider, t.providerSubject),
+    index('idx_auth_identities_user').on(t.userId),
+  ],
+);
+
+/** Server-side sessions; only the SHA-256 of the cookie token is stored. */
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    createdAt: text('created_at').notNull(),
+    expiresAt: text('expires_at').notNull(),
+    lastSeenAt: text('last_seen_at').notNull(),
+    userAgent: text('user_agent'),
+  },
+  (t) => [
+    uniqueIndex('uq_sessions_token_hash').on(t.tokenHash),
+    index('idx_sessions_user').on(t.userId),
+  ],
+);
+
 export const sqliteSchema = {
   schemaMigrations,
   users,
@@ -232,4 +278,6 @@ export const sqliteSchema = {
   catalogBooks,
   coverAssets,
   isbnCovers,
+  authIdentities,
+  sessions,
 };

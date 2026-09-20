@@ -4,3 +4,4 @@ export * from './inventory';
 export * from './lending';
 export * from './lookup';
 export * from './covers';
+export * from './auth';

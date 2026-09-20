@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRepositories, type BookRecord, type Repositories } from '../src/db/repositories';
-import { seed, type SeedResult } from '../src/db/seed';
+import { seedLocalUser, type SeedResult } from '../src/db/seed';
 import { createTestDb, type TestDb } from './adapters';
 import {
   coverJpeg,
@@ -44,7 +44,7 @@ describe('cover service', () => {
     clock = T0;
     db = await createTestDb();
     repos = createRepositories(db.adapter);
-    base = await seed(db.adapter);
+    base = await seedLocalUser(db.adapter);
   });
   afterEach(async () => {
     await fx.service.close();
