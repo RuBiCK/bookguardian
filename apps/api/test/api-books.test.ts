@@ -45,7 +45,6 @@ describe('/api/books', () => {
       notes: 'Gift',
       rating: 5,
       readStatus: 'read',
-      startedAt: '2020-01-02',
       readAt: '2020-01-15',
     };
     const res = await add(full);
@@ -62,7 +61,7 @@ describe('/api/books', () => {
       { title: 'X', rating: -1 },
       { title: 'X', rating: 4.5 },
       { title: 'X', readAt: '15/01/2020' },
-      { title: 'X', startedAt: '2020-1-2' },
+      { title: 'X', readStatus: 'read', readAt: '2020-1-2' },
       { title: 'X', coverUrl: 'not a url' },
       { title: 'X', readStatus: 'burned' },
       { title: 'X', pages: -1 },
@@ -164,11 +163,11 @@ describe('/api/books', () => {
 
     it('marking a book read stamps today as the finished date, editable afterwards', async () => {
       const book = (await add({ title: 'Dune' })).body;
-      expect(book).toMatchObject({ readStatus: 'to_read', startedAt: null, readAt: null });
+      expect(book).toMatchObject({ readStatus: 'to_read', readAt: null });
 
       const read = await patch(book.id, { readStatus: 'read' });
       expect(read.status).toBe(200);
-      expect(read.body).toMatchObject({ readStatus: 'read', readAt: today(), startedAt: null });
+      expect(read.body).toMatchObject({ readStatus: 'read', readAt: today() });
 
       const edited = await patch(book.id, { readAt: '2024-05-01' });
       expect(edited.body.readAt).toBe('2024-05-01');
@@ -179,51 +178,39 @@ describe('/api/books', () => {
         readStatus: 'read',
         readAt: null,
       });
+      // An explicit date on creation wins over today.
+      const created = (await add({ title: 'Emma', readStatus: 'read', readAt: '2024-01-10' })).body;
+      expect(created.readAt).toBe('2024-01-10');
     });
 
-    it('marking a book as reading stamps the started date and clears the finished one', async () => {
+    it('moving away from read clears the finished date', async () => {
       const book = (await add({ title: 'Emma', readStatus: 'read', readAt: '2024-01-10' })).body;
-      expect(book.readAt).toBe('2024-01-10');
       const reading = await patch(book.id, { readStatus: 'reading' });
-      expect(reading.body).toMatchObject({
-        readStatus: 'reading',
-        startedAt: today(),
-        readAt: null,
-      });
+      expect(reading.body).toMatchObject({ readStatus: 'reading', readAt: null });
+
+      const finished = await patch(book.id, { readStatus: 'read' });
+      expect(finished.body).toMatchObject({ readStatus: 'read', readAt: today() });
 
       const back = await patch(book.id, { readStatus: 'to_read' });
-      expect(back.body).toMatchObject({ readStatus: 'to_read', startedAt: null, readAt: null });
-
-      const explicit = await patch(book.id, { readStatus: 'reading', startedAt: '2024-02-01' });
-      expect(explicit.body).toMatchObject({ readStatus: 'reading', startedAt: '2024-02-01' });
-      const finished = await patch(book.id, { readStatus: 'read' });
-      expect(finished.body).toMatchObject({ startedAt: '2024-02-01', readAt: today() });
+      expect(back.body).toMatchObject({ readStatus: 'to_read', readAt: null });
     });
 
-    it('rejects dates that contradict the status or each other', async () => {
+    it('rejects a finished date that contradicts the status', async () => {
       const book = (await add({ title: 'Zorba' })).body;
-      const cases: [Record<string, unknown>, string][] = [
-        [{ readAt: '2024-01-01' }, 'read_at_requires_read'],
-        [{ startedAt: '2024-01-01' }, 'started_at_requires_started'],
-        [{ readStatus: 'reading', readAt: '2024-01-01' }, 'read_at_requires_read'],
-        [
-          { readStatus: 'read', startedAt: '2024-02-01', readAt: '2024-01-01' },
-          'read_before_start',
-        ],
+      const cases: Record<string, unknown>[] = [
+        { readAt: '2024-01-01' },
+        { readStatus: 'reading', readAt: '2024-01-01' },
+        { readStatus: 'to_read', readAt: '2024-01-01' },
       ];
-      for (const [body, reason] of cases) {
+      for (const body of cases) {
         const res = await json<ErrorBody>(t.app, 'PATCH', `/api/books/${book.id}`, body);
         expect(res.status, JSON.stringify(body)).toBe(422);
         expect(res.body.error.code).toBe('invalid_reading_dates');
-        expect(res.body.error.details).toEqual({ reason });
+        expect(res.body.error.details).toEqual({ reason: 'read_at_requires_read' });
       }
       // Nothing was persisted by the refused patches.
       const unchanged = await json<Book>(t.app, 'GET', `/api/books/${book.id}`);
-      expect(unchanged.body).toMatchObject({
-        readStatus: 'to_read',
-        startedAt: null,
-        readAt: null,
-      });
+      expect(unchanged.body).toMatchObject({ readStatus: 'to_read', readAt: null });
 
       const onCreate = await json<ErrorBody>(t.app, 'POST', '/api/books', {
         title: 'X',

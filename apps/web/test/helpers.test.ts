@@ -173,7 +173,6 @@ describe('book form', () => {
       notes: 'n',
       rating: 5,
       readStatus: 'read',
-      startedAt: null,
       readAt: '2020-01-01',
       addedAt: now,
       createdAt: now,

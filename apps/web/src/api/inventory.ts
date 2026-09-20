@@ -231,7 +231,6 @@ export function optimisticBook(input: CreateBookRequest & { shelfId: string }): 
     notes: input.notes ?? null,
     rating: normaliseRating(input.rating) ?? null,
     readStatus: input.readStatus ?? 'to_read',
-    startedAt: input.startedAt ?? null,
     readAt: input.readAt ?? null,
     addedAt: now,
     createdAt: now,
@@ -375,10 +374,10 @@ export function useDeleteBook(callbacks: MutationCallbacks<void> = {}) {
 export type ReadingActions = ReturnType<typeof useUpdateBook> & {
   /** 0 clears the rating. */
   setRating(book: Book, rating: number): void;
-  /** Change the status; dates follow the shared reading rules (today stamped where needed). */
+  /** Change the status; the finished date follows the shared reading rules (today stamped on read). */
   setStatus(book: Book, readStatus: ReadStatus): void;
-  /** Edit the started / finished dates of a book (null clears). */
-  setDates(book: Book, dates: Pick<ReadingPatch, 'startedAt' | 'readAt'>): void;
+  /** Edit the finished date of a read book (null clears). */
+  setReadAt(book: Book, readAt: string | null): void;
 };
 
 /**
@@ -390,7 +389,7 @@ export function useSetReading(callbacks: MutationCallbacks<Book> = {}): ReadingA
   const update = useUpdateBook(callbacks);
   const apply = (book: Book, patch: ReadingPatch) => {
     const result = applyReadingRules(book, patch, todayIso());
-    // Contradictory dates are caught by the controls; nothing to send otherwise.
+    // A contradictory date cannot come from the controls; report it rather than send it.
     if (!result.ok) {
       callbacks.onError?.(new Error(result.error));
       return;
@@ -402,7 +401,7 @@ export function useSetReading(callbacks: MutationCallbacks<Book> = {}): ReadingA
     setRating: (book, rating) =>
       update.mutate({ id: book.id, input: { rating: normaliseRating(rating) ?? null } }),
     setStatus: (book, readStatus) => apply(book, { readStatus }),
-    setDates: (book, dates) => apply(book, dates),
+    setReadAt: (book, readAt) => apply(book, { readAt }),
   };
 }
 

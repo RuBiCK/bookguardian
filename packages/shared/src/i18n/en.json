@@ -39,8 +39,7 @@
     "notFound": "We couldn't find that page.",
     "saveFailed": "Couldn't save. Your change was undone.",
     "deleteFailed": "Couldn't delete. Nothing was changed.",
-    "validation": "Please check the highlighted fields.",
-    "readingDates": "The finished date can't be before the started date."
+    "validation": "Please check the highlighted fields."
   },
   "count": {
     "books_one": "{{count}} book",
@@ -131,8 +130,7 @@
       "description": "Description",
       "notes": "Notes",
       "rating": "Rating",
-      "readAt": "Finished on",
-      "startedAt": "Started on"
+      "readAt": "Finished on"
     },
     "more": "More details",
     "less": "Fewer details",
@@ -238,7 +236,6 @@
     "stars_one": "{{count}} star",
     "stars_other": "{{count}} stars",
     "unrated": "Not rated",
-    "startedAt": "Started",
     "readAt": "Finished",
     "longPressHint": "Long-press a cover for quick actions"
   },

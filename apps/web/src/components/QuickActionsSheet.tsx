@@ -35,12 +35,7 @@ export function QuickActionsSheet({ book, onClose }: QuickActionsSheetProps) {
       }
     >
       <p className="sheet__text muted">{authors}</p>
-      <ReadingPanel
-        book={book}
-        actions={actions}
-        compact
-        onInvalidDates={() => showToast(t('errors.readingDates'), 'error')}
-      />
+      <ReadingPanel book={book} actions={actions} compact />
     </Sheet>
   );
 }

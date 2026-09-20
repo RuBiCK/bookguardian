@@ -5,11 +5,9 @@
  */
 import type { ReadStatus } from '../schemas/book';
 
-/** The three fields that describe where a book is in its reading life. */
+/** The two fields that describe where a book is in its reading life. */
 export interface ReadingFields {
   readStatus: ReadStatus;
-  /** YYYY-MM-DD, only meaningful once the book is `reading` or `read`. */
-  startedAt: string | null;
   /** YYYY-MM-DD, only meaningful once the book is `read`. */
   readAt: string | null;
 }
@@ -19,17 +17,13 @@ export type ReadingPatch = Partial<ReadingFields>;
 
 export type ReadingRuleError =
   /** A finished date was given while the status is not `read`. */
-  | 'read_at_requires_read'
-  /** A started date was given while the status is `to_read`. */
-  | 'started_at_requires_started'
-  /** The finished date is earlier than the started date. */
-  | 'read_before_start';
+  'read_at_requires_read';
 
 export type ReadingResult =
   { ok: true; value: ReadingFields } | { ok: false; error: ReadingRuleError };
 
-/** A book that was never touched: to read, no dates. */
-export const UNREAD: ReadingFields = { readStatus: 'to_read', startedAt: null, readAt: null };
+/** A book that was never touched: to read, no date. */
+export const UNREAD: ReadingFields = { readStatus: 'to_read', readAt: null };
 
 /** Today's calendar date in the caller's timezone (the browser's for the web, the server's for the API). */
 export function todayIso(now: Date = new Date()): string {
@@ -43,10 +37,9 @@ export function todayIso(now: Date = new Date()): string {
  * Merge `patch` into `current` and apply the reading rules:
  *
  * - moving to `read` stamps `readAt` with `today` unless a date was given;
- * - moving to `reading` stamps `startedAt` with `today` unless given;
- * - moving back to `to_read` clears both dates, `reading` clears `readAt`;
- * - a date that contradicts the resulting status is rejected rather than
- *   silently dropped, and `readAt` can never precede `startedAt`.
+ * - moving away from `read` clears `readAt`;
+ * - a `readAt` sent for a book that is not `read` is rejected rather than
+ *   silently dropped.
  *
  * Pass `current = null` for a brand-new book (treated as {@link UNREAD}).
  */
@@ -58,7 +51,6 @@ export function applyReadingRules(
   const base = current ?? UNREAD;
   const merged: ReadingFields = {
     readStatus: patch.readStatus ?? base.readStatus,
-    startedAt: patch.startedAt === undefined ? base.startedAt : patch.startedAt,
     readAt: patch.readAt === undefined ? base.readAt : patch.readAt,
   };
   const changed = merged.readStatus !== base.readStatus;
@@ -66,19 +58,8 @@ export function applyReadingRules(
   if (merged.readStatus !== 'read') {
     if (patch.readAt) return { ok: false, error: 'read_at_requires_read' };
     merged.readAt = null;
-  }
-  if (merged.readStatus === 'to_read') {
-    if (patch.startedAt) return { ok: false, error: 'started_at_requires_started' };
-    merged.startedAt = null;
-  }
-  if (merged.readStatus === 'reading' && changed && !merged.startedAt) {
-    merged.startedAt = today;
-  }
-  if (merged.readStatus === 'read' && changed && !merged.readAt) {
+  } else if (changed && !merged.readAt) {
     merged.readAt = today;
-  }
-  if (merged.startedAt && merged.readAt && merged.readAt < merged.startedAt) {
-    return { ok: false, error: 'read_before_start' };
   }
   return { ok: true, value: merged };
 }

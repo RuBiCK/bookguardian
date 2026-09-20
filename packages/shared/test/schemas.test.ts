@@ -71,7 +71,6 @@ describe('shared schemas', () => {
       notes: null,
       rating: 5,
       readStatus: 'read',
-      startedAt: '2020-01-02',
       readAt: '2020-01-15',
       addedAt: now,
       createdAt: now,
@@ -81,8 +80,8 @@ describe('shared schemas', () => {
     expect(bookSchema.safeParse({ ...base, isbn13: '123' }).success).toBe(false);
     expect(bookSchema.safeParse({ ...base, rating: 6 }).success).toBe(false);
     expect(bookSchema.safeParse({ ...base, readStatus: 'done' }).success).toBe(false);
-    expect(bookSchema.safeParse({ ...base, startedAt: '2020-1-2' }).success).toBe(false);
-    expect(bookSchema.safeParse({ ...base, startedAt: null }).success).toBe(true);
+    expect(bookSchema.safeParse({ ...base, readAt: '2020-1-2' }).success).toBe(false);
+    expect(bookSchema.safeParse({ ...base, readAt: null }).success).toBe(true);
   });
 
   it('only requires a title to create a book', () => {

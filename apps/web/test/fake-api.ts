@@ -111,7 +111,6 @@ export function installFakeApi(): FakeApi {
       notes: null,
       rating: null,
       readStatus: 'to_read',
-      startedAt: null,
       readAt: null,
       addedAt: ts,
       createdAt: ts,

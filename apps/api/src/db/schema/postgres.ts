@@ -94,7 +94,6 @@ export const books = pgTable(
     notes: text('notes'),
     rating: integer('rating'),
     readStatus: varchar('read_status', { length: 16 }).notNull().default('to_read'),
-    startedAt: varchar('started_at', { length: 10 }),
     readAt: varchar('read_at', { length: 10 }),
     addedAt: ts('added_at').notNull(),
     ...timestamps,

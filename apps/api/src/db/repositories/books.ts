@@ -165,7 +165,6 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
         notes: input.notes ?? null,
         rating: input.rating ?? null,
         readStatus: input.readStatus ?? 'to_read',
-        startedAt: input.startedAt ?? null,
         readAt: input.readAt ?? null,
         addedAt: now,
         createdAt: now,

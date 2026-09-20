@@ -11,7 +11,6 @@ interface ApiBook {
   shelfId: string;
   rating: number | null;
   readStatus: string;
-  startedAt: string | null;
   readAt: string | null;
 }
 
@@ -79,10 +78,10 @@ test.describe('reading life', () => {
     await expect(sheet).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Default' })).toBeVisible();
     await sheet.getByRole('button', { name: en.readStatus.reading }).tap();
-    await expect(sheet.getByLabel(en.reading.startedAt)).toHaveValue(today());
+    await expect(sheet.getByLabel(en.reading.readAt)).toHaveCount(0);
     await expect
       .poll(async () => (await (await request.get(`/api/books/${book.id}`)).json()) as ApiBook)
-      .toMatchObject({ readStatus: 'reading', startedAt: today(), readAt: null });
+      .toMatchObject({ readStatus: 'reading', readAt: null });
 
     // No horizontal overflow with the sheet open.
     const overflow = await page.evaluate(
@@ -99,11 +98,11 @@ test.describe('reading life', () => {
     const tooHigh = await request.patch(`/api/books/${book.id}`, { data: { rating: 6 } });
     expect(tooHigh.status()).toBe(422);
 
-    const early = await request.patch(`/api/books/${book.id}`, {
-      data: { readStatus: 'read', startedAt: '2024-02-01', readAt: '2024-01-01' },
+    const contradictory = await request.patch(`/api/books/${book.id}`, {
+      data: { readStatus: 'reading', readAt: '2024-01-01' },
     });
-    expect(early.status()).toBe(422);
-    expect(((await early.json()) as { error: { code: string } }).error.code).toBe(
+    expect(contradictory.status()).toBe(422);
+    expect(((await contradictory.json()) as { error: { code: string } }).error.code).toBe(
       'invalid_reading_dates',
     );
 

@@ -1020,12 +1020,6 @@ select.field__input {
   margin-bottom: 0;
 }
 
-.reading__dates {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-}
-
 .field--inline .field__input {
   min-height: 44px;
 }

@@ -201,18 +201,15 @@ Errors always use the shared envelope `{ error: { code, message, details? } }`.
 ### Reading life
 
 `rating` is 1–5 stars; sending `0` (or `null`) clears it and the API always
-returns `null` for an unrated book. `readStatus`, `startedAt` and `readAt`
-follow the rules in `packages/shared/src/lib/reading.ts` (shared with the web
-app so optimistic updates match the server):
+returns `null` for an unrated book. `readStatus` and `readAt` follow the rules
+in `packages/shared/src/lib/reading.ts` (shared with the web app so optimistic
+updates match the server):
 
-- moving to `read` stamps `readAt` with today unless a date is sent; moving to
-  `reading` stamps `startedAt` the same way. Dates are editable afterwards and
-  never re-stamped by unrelated edits;
-- moving back to `reading` clears `readAt`; back to `to_read` clears both;
-- a date that contradicts the resulting status (`readAt` on a book that is not
-  `read`, `startedAt` on a `to_read` book) or a `readAt` earlier than
-  `startedAt` is refused with 422 `invalid_reading_dates` and
-  `details.reason` ∈ `read_at_requires_read | started_at_requires_started | read_before_start`.
+- moving to `read` stamps `readAt` with today unless a date is sent. The date
+  is editable afterwards and never re-stamped by unrelated edits;
+- moving back to `reading` or `to_read` clears `readAt`;
+- a `readAt` sent for a book that is not `read` is refused with 422
+  `invalid_reading_dates` (`details.reason` = `read_at_requires_read`).
 
 `sort=read` lists the most recently finished book first (never-finished books
 last); `sort=rating` lists the best-rated first (unrated last).

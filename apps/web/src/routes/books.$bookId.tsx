@@ -111,11 +111,7 @@ function BookDetailScreen() {
         </button>
       }
     >
-      <ReadingPanel
-        book={b}
-        actions={reading}
-        onInvalidDates={() => showToast(t('errors.readingDates'), 'error')}
-      />
+      <ReadingPanel book={b} actions={reading} />
 
       {b.description ? (
         <section className="prose">

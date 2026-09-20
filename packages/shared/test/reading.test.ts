@@ -2,45 +2,32 @@ import { describe, expect, it } from 'vitest';
 import { applyReadingRules, normaliseRating, todayIso, UNREAD, type ReadingFields } from '../src';
 
 const TODAY = '2026-09-19';
-const READING: ReadingFields = { readStatus: 'reading', startedAt: '2026-09-01', readAt: null };
-const READ: ReadingFields = { readStatus: 'read', startedAt: '2026-09-01', readAt: '2026-09-10' };
+const READING: ReadingFields = { readStatus: 'reading', readAt: null };
+const READ: ReadingFields = { readStatus: 'read', readAt: '2026-09-10' };
 
 describe('applyReadingRules', () => {
   it('stamps today when a book is marked read without a date', () => {
     expect(applyReadingRules(UNREAD, { readStatus: 'read' }, TODAY)).toEqual({
       ok: true,
-      value: { readStatus: 'read', startedAt: null, readAt: TODAY },
+      value: { readStatus: 'read', readAt: TODAY },
     });
     // A new book created straight as "read" gets the same default.
     expect(applyReadingRules(null, { readStatus: 'read' }, TODAY)).toEqual({
       ok: true,
-      value: { readStatus: 'read', startedAt: null, readAt: TODAY },
+      value: { readStatus: 'read', readAt: TODAY },
     });
   });
 
-  it('keeps an explicit finished date and an existing started date', () => {
+  it('keeps an explicit finished date', () => {
     expect(applyReadingRules(READING, { readStatus: 'read', readAt: '2026-09-15' }, TODAY)).toEqual(
-      { ok: true, value: { readStatus: 'read', startedAt: '2026-09-01', readAt: '2026-09-15' } },
+      { ok: true, value: { readStatus: 'read', readAt: '2026-09-15' } },
     );
   });
 
-  it('stamps the started date when a book moves to reading', () => {
-    expect(applyReadingRules(UNREAD, { readStatus: 'reading' }, TODAY)).toEqual({
-      ok: true,
-      value: { readStatus: 'reading', startedAt: TODAY, readAt: null },
-    });
-    expect(
-      applyReadingRules(UNREAD, { readStatus: 'reading', startedAt: '2026-08-01' }, TODAY),
-    ).toEqual({
-      ok: true,
-      value: { readStatus: 'reading', startedAt: '2026-08-01', readAt: null },
-    });
-  });
-
-  it('clears dates that no longer apply when moving backwards', () => {
+  it('clears the finished date when moving away from read', () => {
     expect(applyReadingRules(READ, { readStatus: 'reading' }, TODAY)).toEqual({
       ok: true,
-      value: { readStatus: 'reading', startedAt: '2026-09-01', readAt: null },
+      value: READING,
     });
     expect(applyReadingRules(READ, { readStatus: 'to_read' }, TODAY)).toEqual({
       ok: true,
@@ -48,8 +35,8 @@ describe('applyReadingRules', () => {
     });
   });
 
-  it('does not re-stamp dates when the status is unchanged', () => {
-    const cleared: ReadingFields = { readStatus: 'read', startedAt: null, readAt: null };
+  it('does not re-stamp the date when the status is unchanged', () => {
+    const cleared: ReadingFields = { readStatus: 'read', readAt: null };
     // Editing an unrelated field (empty patch) leaves a cleared finished date alone.
     expect(applyReadingRules(cleared, {}, TODAY)).toEqual({ ok: true, value: cleared });
     // Explicitly clearing the finished date of a read book is allowed.
@@ -57,9 +44,14 @@ describe('applyReadingRules', () => {
       ok: true,
       value: { ...READ, readAt: null },
     });
+    // Editing the date of a read book keeps the new value.
+    expect(applyReadingRules(READ, { readAt: '2026-09-12' }, TODAY)).toEqual({
+      ok: true,
+      value: { readStatus: 'read', readAt: '2026-09-12' },
+    });
   });
 
-  it('rejects dates that contradict the status instead of dropping them', () => {
+  it('rejects a finished date that contradicts the status instead of dropping it', () => {
     expect(applyReadingRules(UNREAD, { readAt: '2026-09-10' }, TODAY)).toEqual({
       ok: false,
       error: 'read_at_requires_read',
@@ -67,26 +59,8 @@ describe('applyReadingRules', () => {
     expect(applyReadingRules(READ, { readStatus: 'reading', readAt: '2026-09-10' }, TODAY)).toEqual(
       { ok: false, error: 'read_at_requires_read' },
     );
-    expect(applyReadingRules(UNREAD, { startedAt: '2026-09-10' }, TODAY)).toEqual({
-      ok: false,
-      error: 'started_at_requires_started',
-    });
-    expect(
-      applyReadingRules(READING, { readStatus: 'to_read', startedAt: '2026-09-10' }, TODAY),
-    ).toEqual({ ok: false, error: 'started_at_requires_started' });
-  });
-
-  it('never lets a book finish before it was started', () => {
-    expect(applyReadingRules(READ, { startedAt: '2026-09-11' }, TODAY)).toEqual({
-      ok: false,
-      error: 'read_before_start',
-    });
-    expect(applyReadingRules(READING, { readStatus: 'read', readAt: '2026-08-31' }, TODAY)).toEqual(
-      { ok: false, error: 'read_before_start' },
-    );
-    // Same day is fine.
-    expect(applyReadingRules(READING, { readStatus: 'read', readAt: '2026-09-01' }, TODAY).ok).toBe(
-      true,
+    expect(applyReadingRules(null, { readStatus: 'to_read', readAt: '2026-09-10' }, TODAY)).toEqual(
+      { ok: false, error: 'read_at_requires_read' },
     );
   });
 });

@@ -60,7 +60,6 @@ erDiagram
         text notes "nullable"
         int rating "nullable, 0-5"
         varchar(16) read_status "to_read | reading | read"
-        varchar(10) started_at "nullable, YYYY-MM-DD"
         varchar(10) read_at "nullable, YYYY-MM-DD"
         varchar(32) added_at
         varchar(32) created_at
@@ -97,14 +96,15 @@ erDiagram
   `viewer` only for now. Read-only sharing means a grantee can list a library's
   shelves and books but never write.
 - **Reading state.** `read_status` is one of `to_read`, `reading`, `read`;
-  `started_at` is only meaningful once the book is `reading` or `read`, and
-  `read_at` only when it is `read`. `rating` is 1–5 (`NULL` = unrated; the API
+  `read_at` is the date the book was finished and is only meaningful when the
+  status is `read` (the API stamps today when a book becomes read and clears
+  it when it stops being read). `rating` is 1–5 (`NULL` = unrated; the API
   maps `0` to `NULL`). The transition rules live in
   `packages/shared/src/lib/reading.ts`.
-- **Re-reads are not modelled yet.** A book carries a single start/finish pair.
-  When re-reading matters, add a `book_reads (id, book_id, started_at, read_at)`
-  history table and keep `books.started_at` / `books.read_at` as the latest
-  pair — no rewrite of the existing columns is needed.
+- **Re-reads are not modelled yet.** A book carries a single finished date.
+  When re-reading matters, add a `book_reads (id, book_id, read_at)` history
+  table and keep `books.read_at` as the latest one — no rewrite of the
+  existing column is needed.
 - **Lending.** A lending is open while `returned_at` is `NULL`; the
   `(owner_id, returned_at)` index serves the "what's lent out" list.
 - **Deletes cascade** down the hierarchy (user → library → shelf → book →

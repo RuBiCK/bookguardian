@@ -42,8 +42,6 @@ export const bookSchema = z
     /** 1–5 stars; `0` on input means "clear", stored and returned as `null`. */
     rating: z.number().int().min(0).max(5).nullable(),
     readStatus: readStatusSchema,
-    /** Date the book was started (YYYY-MM-DD); set when it moves to `reading`. */
-    startedAt: isoDateSchema.nullable(),
     /** Date the book was finished (YYYY-MM-DD); set when it moves to `read`. */
     readAt: isoDateSchema.nullable(),
     addedAt: isoDateTimeSchema,

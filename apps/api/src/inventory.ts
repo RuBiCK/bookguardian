@@ -113,14 +113,14 @@ export async function resolveDefaults(
 
 /**
  * Apply the reading-life rules (shared with the web app) to an incoming
- * create/update payload: default dates on status changes, clear stale ones,
- * refuse contradictory dates (422 `invalid_reading_dates`), and store a
- * 0-star rating as "unrated".
+ * create/update payload: stamp `readAt` when a book becomes read, clear it
+ * when it stops being read, refuse a contradictory date (422
+ * `invalid_reading_dates`), and store a 0-star rating as "unrated".
  */
 function withReadingRules<T extends UpdateBookInput>(current: Book | null, input: T): T {
   const result = applyReadingRules(current, input, todayIso());
   if (!result.ok) {
-    throw new ApiHttpError(422, 'invalid_reading_dates', 'Reading dates contradict the status', {
+    throw new ApiHttpError(422, 'invalid_reading_dates', 'Finished date contradicts the status', {
       reason: result.error,
     });
   }
