@@ -129,3 +129,123 @@ describe('settings · missing covers', () => {
     api.restore();
   });
 });
+
+describe('settings · account', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows who is signed in', async () => {
+    const { installFakeApi, seedFakeApi } = await import('./fake-api');
+    const api = installFakeApi();
+    seedFakeApi(api);
+    await renderApp('/settings');
+    expect(await screen.findByTestId('account-email')).toHaveTextContent(
+      'Signed in as ada@example.test',
+    );
+    expect(
+      screen.getByRole('button', { name: en.settings.account.deleteAccount }),
+    ).toBeInTheDocument();
+    api.restore();
+  });
+
+  it('hides the section without a session', async () => {
+    const { installFakeApi, seedFakeApi } = await import('./fake-api');
+    const api = installFakeApi();
+    seedFakeApi(api);
+    api.account = null;
+    await renderApp('/settings');
+    await screen.findByRole('group', { name: en.settings.theme.label });
+    await waitFor(() => expect(api.calls.some((c) => c.path === '/api/auth/me')).toBe(true));
+    expect(screen.queryByTestId('account-row')).not.toBeInTheDocument();
+    api.restore();
+  });
+
+  it('deletes the account only after a warning and the email typed back', async () => {
+    const { installFakeApi, seedFakeApi } = await import('./fake-api');
+    const api = installFakeApi();
+    seedFakeApi(api);
+    const user = userEvent.setup();
+    const { router } = await renderApp('/settings');
+
+    await user.click(
+      await screen.findByRole('button', { name: en.settings.account.deleteAccount }),
+    );
+    const warning = await screen.findByRole('dialog', { name: en.settings.account.deleteTitle });
+    expect(warning).toHaveTextContent(en.settings.account.deleteBody);
+    // Nothing has been sent yet.
+    expect(api.calls.some((c) => c.method === 'DELETE')).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: en.settings.account.deleteContinue }));
+    const confirm = await screen.findByRole('dialog', { name: en.settings.account.confirmTitle });
+    const final = screen.getByRole('button', { name: en.settings.account.deleteFinal });
+    expect(final).toBeDisabled();
+
+    const input = screen.getByLabelText(en.settings.account.confirmEmailLabel);
+    await user.type(input, 'someone-else@example.test');
+    expect(final).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(en.settings.account.mismatch);
+
+    await user.clear(input);
+    await user.type(input, 'Ada@Example.test');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(final).toBeEnabled();
+    await user.click(final);
+
+    await waitFor(() => expect(confirm).not.toBeInTheDocument());
+    const call = api.calls.find((c) => c.method === 'DELETE' && c.path === '/api/auth/me');
+    expect(call?.body).toEqual({ confirmEmail: 'Ada@Example.test' });
+    expect(api.account).toBeNull();
+    expect(await screen.findByText(en.settings.account.deleted)).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    api.restore();
+  });
+
+  it('cancelling either step sends nothing', async () => {
+    const { installFakeApi, seedFakeApi } = await import('./fake-api');
+    const api = installFakeApi();
+    seedFakeApi(api);
+    const user = userEvent.setup();
+    await renderApp('/settings');
+
+    await user.click(
+      await screen.findByRole('button', { name: en.settings.account.deleteAccount }),
+    );
+    await user.click(screen.getByRole('button', { name: en.common.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: en.settings.account.deleteAccount }));
+    await user.click(screen.getByRole('button', { name: en.settings.account.deleteContinue }));
+    await user.type(
+      screen.getByLabelText(en.settings.account.confirmEmailLabel),
+      'ada@example.test',
+    );
+    await user.click(screen.getByRole('button', { name: en.common.cancel }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(api.calls.some((c) => c.method === 'DELETE')).toBe(false);
+    expect(api.account).not.toBeNull();
+    api.restore();
+  });
+
+  it('reports a failed deletion and keeps the account', async () => {
+    const { installFakeApi, seedFakeApi } = await import('./fake-api');
+    const api = installFakeApi();
+    seedFakeApi(api);
+    const user = userEvent.setup();
+    await renderApp('/settings');
+
+    await user.click(
+      await screen.findByRole('button', { name: en.settings.account.deleteAccount }),
+    );
+    await user.click(screen.getByRole('button', { name: en.settings.account.deleteContinue }));
+    await user.type(
+      screen.getByLabelText(en.settings.account.confirmEmailLabel),
+      'ada@example.test',
+    );
+    api.failNext({ method: 'DELETE', path: /^\/api\/auth\/me$/ }, 500);
+    await user.click(screen.getByRole('button', { name: en.settings.account.deleteFinal }));
+    expect(await screen.findByText(en.settings.account.failed)).toBeInTheDocument();
+    expect(api.account).not.toBeNull();
+    api.restore();
+  });
+});

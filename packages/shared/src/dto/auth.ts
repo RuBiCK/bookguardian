@@ -11,6 +11,15 @@ export const authMeResponseSchema = z.object({
 });
 export type AuthMeResponse = z.infer<typeof authMeResponseSchema>;
 
+/**
+ * `DELETE /api/auth/me`: the account's own email, typed by the user, so a
+ * stray request cannot wipe a library. Compared case-insensitively.
+ */
+export const deleteAccountInputSchema = z.object({
+  confirmEmail: z.string().trim().min(1).max(254),
+});
+export type DeleteAccountInput = z.infer<typeof deleteAccountInputSchema>;
+
 /** `POST /api/auth/test-login` (NODE_ENV=test only): sign in as any email without Google. */
 export const testLoginInputSchema = z.object({
   email: z.email().max(254),
@@ -26,5 +35,6 @@ export const AUTH_ERROR_CODES = [
   'email_not_verified',
   'not_allowed',
   'oauth_error',
+  'confirm_email_mismatch',
 ] as const;
 export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];

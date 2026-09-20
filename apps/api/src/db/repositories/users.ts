@@ -27,6 +27,8 @@ export interface UserRepository {
   listWithoutEmail(): Promise<User[]>;
   create(data: CreateUserData): Promise<User>;
   update(id: string, patch: UserPatch): Promise<User | null>;
+  /** Remove the user; the schema cascades to everything they own (see `auth/account.ts`). */
+  delete(id: string): Promise<void>;
 }
 
 export function createUserRepository(kit: DialectKit, tables: Tables): UserRepository {
@@ -65,6 +67,9 @@ export function createUserRepository(kit: DialectKit, tables: Tables): UserRepos
     async update(id, patch) {
       await kit.update(users, { ...patch, updatedAt: nowIso() }, eq(users.id, id));
       return this.findById(id);
+    },
+    async delete(id) {
+      await kit.delete(users, eq(users.id, id));
     },
   };
 }

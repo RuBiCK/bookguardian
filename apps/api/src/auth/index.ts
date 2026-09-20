@@ -1,10 +1,12 @@
 export {
   AccountNotAllowedError,
+  deleteAccount,
   EmailNotVerifiedError,
   normalizeEmail,
   parseAllowedEmails,
   resolveAccount,
   type AccountOutcome,
+  type DeletedAccount,
   type ProviderProfile,
   type ResolveAccountOptions,
   type ResolvedAccount,

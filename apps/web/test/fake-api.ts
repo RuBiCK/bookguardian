@@ -8,6 +8,7 @@ import {
   isOverdue,
   normaliseRating,
   resolveReadAt,
+  type AuthMeResponse,
   type Book,
   type BookDraft,
   type CoverBackfillStatus,
@@ -55,6 +56,8 @@ export interface FakeApi {
   backfillQueued: number;
   /** Give a book a stored cover (an asset id), as the API's cascade would. */
   setCover(bookId: string, assetId: string | null, override?: boolean): void;
+  /** The signed-in account behind `/api/auth/me`; `null` answers 401. Deleted by `DELETE`. */
+  account: AuthMeResponse | null;
   addLibrary(name: string, location?: string | null): Library;
   addShelf(libraryId: string, name: string, sortOrder?: number): Shelf;
   addBook(input: Partial<Book> & { title: string; shelfId?: string }): Book;
@@ -87,6 +90,14 @@ export function installFakeApi(): FakeApi {
   const covers = {
     backfill: { queued: 0, pending: 0, done: 0, found: 0, failed: 0 },
     backfillQueued: 0,
+  };
+  const auth: { account: AuthMeResponse | null } = {
+    account: {
+      id: OWNER,
+      displayName: 'Ada',
+      email: 'ada@example.test',
+      avatarUrl: null,
+    },
   };
   let assetCounter = 0;
   const newAssetId = () => {
@@ -256,6 +267,22 @@ export function installFakeApi(): FakeApi {
       }
     }
 
+    if (path === '/api/auth/me') {
+      if (!auth.account) return error(401, 'unauthenticated');
+      if (method === 'GET') return json(auth.account);
+      if (method === 'DELETE') {
+        const { confirmEmail } = body as { confirmEmail?: string };
+        if ((confirmEmail ?? '').trim().toLowerCase() !== auth.account.email) {
+          return error(422, 'confirm_email_mismatch');
+        }
+        auth.account = null;
+        libraries.length = 0;
+        shelves.length = 0;
+        books.length = 0;
+        lendings.length = 0;
+        return json(undefined, 204);
+      }
+    }
     if (path === '/api/health')
       return json({
         status: 'ok',
@@ -597,6 +624,12 @@ export function installFakeApi(): FakeApi {
       covers.backfillQueued = value;
     },
     setCover,
+    get account() {
+      return auth.account;
+    },
+    set account(value) {
+      auth.account = value;
+    },
     restore: () => spy.mockRestore(),
   };
 }

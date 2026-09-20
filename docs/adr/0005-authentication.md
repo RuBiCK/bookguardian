@@ -100,6 +100,36 @@ adapter (one transaction at a time per connection); on any engine the UNIQUE
 index is the backstop, and a sign-in that trips it is retried once and lands
 on step 2.
 
+### Every account is provisioned; isolation is `404`, not `403`
+
+`resolveAccount` ends by calling `provisionUser`, in the same transaction:
+an account with no library gets "My Library" with a "Default" shelf, so a
+first sign-in can add a book with only a title. It is idempotent (a user who
+owns any library is untouched), which is also why the seed delegates to it.
+The names are English literals: the API has no i18n layer and the rows are
+the user's own to rename.
+
+Tenancy is enforced in the repositories: every method on an owned aggregate
+scopes by `owner_id`, reads by id included, so another user's id is a
+`404 not_found` (or a `422 unknown_*` when passed as a relation) exactly like
+an id that does not exist. `403` would confirm that the thing exists. The
+shared tables (`catalog_books`, `isbn_covers`, shared `cover_assets`) carry no
+owner and are meant to be common. `library_shares` stays unused: nothing
+writes it, and the only reader (the private-cover check from ADR 0004) grants
+nothing while it is empty; the viewer role will extend that check to
+libraries, shelves and books when it arrives.
+
+### Accounts can delete themselves
+
+`DELETE /api/auth/me { confirmEmail }` deletes the user row and lets the
+foreign keys cascade (sessions, identities, libraries, shelves, books,
+lendings, shares, private covers). The typed-back email is the server-side
+confirmation; the SPA adds a two-step sheet. Private cover _files_ are removed
+by the API in the same request: their rows go with the cascade, so the GC
+would never see them again, and flipping them to shared to keep the rows
+would make a personal photo public. Shared covers and the catalogue are
+nobody's and stay.
+
 ### `users.email` stays nullable in DDL
 
 The rule is "every account has an email", but the column is declared `NULL`

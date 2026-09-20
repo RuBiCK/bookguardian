@@ -106,6 +106,13 @@ Also on the API:
   `401 unauthenticated`.
 - `POST /api/auth/logout` → deletes the `sessions` row and clears the cookie,
   `204`.
+- `DELETE /api/auth/me { confirmEmail }` → deletes the account and everything
+  it owns (sessions, identities, libraries, shelves, books, lendings, private
+  covers), clears the cookie, `204`. `confirmEmail` must equal the account's
+  email (case-insensitive) or the answer is `422 confirm_email_mismatch` and
+  nothing changes; without a session, `401`. Shared covers and the ISBN
+  catalogue belong to nobody and are untouched. The SPA asks twice (a warning,
+  then the email typed back) in Settings → Account.
 - Sessions slide: a request made with less than half the lifetime left pushes
   `expires_at` out by `AUTH_SESSION_DAYS` again and re-issues the cookie.
   Expired rows are purged on the daily maintenance timer (the one the cover GC
@@ -129,6 +136,30 @@ transaction:
 4. `AUTH_ALLOWED_EMAILS` set and the email not on it → `403 not_allowed`,
    nothing written (this also guards step 3).
 5. Otherwise create the user and the identity.
+
+Whatever the outcome, `provisionUser` (`apps/api/src/provisioning.ts`) runs in
+the same transaction and gives an account with no library a "My Library" with
+a "Default" shelf — so a first sign-in lands somewhere a book can be added
+with a single field. It is idempotent: a user who already owns a library
+(renamed or not) is left alone. The names are English literals; the API has
+no i18n layer and the rows are the user's own, editable like any other.
+
+### Isolation between users
+
+Every repository method that touches an owned aggregate (`libraries`,
+`shelves`, `books`, `lendings`) takes `ownerId` and scopes the `WHERE` by
+`owner_id` — reads by id included, not only listings — so another user's id
+behaves exactly like a non-existent one: `404 not_found` on get / update /
+delete / move / return, `422 unknown_library` / `unknown_shelf` /
+`unknown_book` when a foreign id is passed as a relation (creating a shelf in
+someone's library, adding or moving a book onto their shelf, lending their
+book), never `403` — existence is not revealed. Private covers
+(`cover_assets.owner_id` set) are served only to their owner; shared ones
+(`owner_id` NULL) and the ISBN catalogue / `lookup` are common to everyone by
+design. `library_shares` is not written by any route yet; the only reader is
+the private-cover check (ADR 0004), which grants nothing while the table is
+empty. `apps/api/test/api-multiuser.test.ts` is the endpoint × operation
+table that pins all of this down.
 
 ## Security: what each parameter protects
 

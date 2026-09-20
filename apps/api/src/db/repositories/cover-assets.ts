@@ -35,6 +35,8 @@ export interface CoverAssetRepository {
   listAll(): Promise<CoverAsset[]>;
   /** Shared assets only (`ownerId` NULL). */
   listShared(): Promise<CoverAsset[]>;
+  /** One user's private assets (photos / pasted URLs). */
+  listByOwner(ownerId: string): Promise<CoverAsset[]>;
   delete(ids: string[]): Promise<void>;
   count(): Promise<number>;
 }
@@ -85,6 +87,13 @@ export function createCoverAssetRepository(kit: DialectKit, tables: Tables): Cov
     async listShared() {
       const rows = await kit.select(coverAssets, {
         where: isNull(coverAssets.ownerId),
+        orderBy: [asc(coverAssets.createdAt)],
+      });
+      return rows.map(toAsset);
+    },
+    async listByOwner(ownerId) {
+      const rows = await kit.select(coverAssets, {
+        where: eq(coverAssets.ownerId, ownerId),
         orderBy: [asc(coverAssets.createdAt)],
       });
       return rows.map(toAsset);

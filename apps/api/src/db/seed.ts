@@ -1,21 +1,23 @@
 /**
- * Idempotent seed: a "My Library" library with a "Default" shelf for the
- * first user, so an install can add a book without picking anything.
+ * Idempotent development seed: makes sure the first user has "My Library"
+ * with a "Default" shelf, so an install can add a book without picking
+ * anything.
  *
  * Since accounts arrived (BOOK-13) the seed no longer invents a user on its
- * own: people come in through Google and per-user provisioning gives each
- * account its defaults. `localUser: true` still creates the email-less
- * "Local user" — tests and `pnpm db:seed --local-user` in development use it,
- * and the first Google sign-in claims that user together with its library
- * (see `auth/account.ts`).
+ * own: people come in through Google and `provisionUser` gives each new
+ * account its defaults in the same transaction that creates it. `localUser:
+ * true` still creates the email-less "Local user" — tests and `pnpm db:seed
+ * --local-user` in development use it, and the first Google sign-in claims
+ * that user together with its library (see `auth/account.ts`).
  */
+import { DEFAULT_LIBRARY_NAME, DEFAULT_SHELF_NAME, provisionUser } from '../provisioning';
 import type { DatabaseAdapter } from './adapters';
 import { createRepositories } from './repositories';
 
 export const SEED = {
   user: { displayName: 'Local user' },
-  library: { name: 'My Library' },
-  shelf: { name: 'Default' },
+  library: { name: DEFAULT_LIBRARY_NAME },
+  shelf: { name: DEFAULT_SHELF_NAME },
 } as const;
 
 export interface SeedOptions {
@@ -46,23 +48,13 @@ export async function seed(
       created = true;
     }
 
-    let [library] = await repos.libraries.listByOwner(user.id);
-    if (!library) {
-      library = await repos.libraries.create(user.id, { name: SEED.library.name });
-      created = true;
-    }
-
-    let [shelf] = await repos.shelves.listByLibrary(user.id, library.id);
-    if (!shelf) {
-      shelf = await repos.shelves.create(user.id, {
-        libraryId: library.id,
-        name: SEED.shelf.name,
-        sortOrder: 0,
-      });
-      created = true;
-    }
-
-    return { created, userId: user.id, libraryId: library.id, shelfId: shelf.id };
+    const provisioned = await provisionUser(repos, user.id);
+    return {
+      created: created || provisioned.created,
+      userId: user.id,
+      libraryId: provisioned.libraryId,
+      shelfId: provisioned.shelfId,
+    };
   });
 }
 

@@ -237,8 +237,16 @@ and the email is not on it (`403 not_allowed`, nothing created).
 user without an email and all the books. The **first** Google sign-in on that
 instance claims it — the user gets the email, name and avatar, and its
 libraries stay exactly where they are. Later sign-ins with other emails get
-their own empty account. `pnpm db:seed --local-user` recreates that local user
-on an empty development database.
+their own account, provisioned with an empty "My Library › Default" so the
+first book needs only a title. `pnpm db:seed --local-user` recreates that
+local user on an empty development database.
+
+**Isolation and deletion:** every user sees and edits only their own
+libraries, shelves, books, lendings and uploaded covers; anything of someone
+else's is a `404`. Covers resolved by ISBN and the ISBN catalogue are shared
+by design. Settings → Account → "Delete account" (a warning, then the email
+typed back) calls `DELETE /api/auth/me` and removes the account with
+everything it owns. Details in [docs/auth.md](docs/auth.md).
 
 ### Switching the database driver
 

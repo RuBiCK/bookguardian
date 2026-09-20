@@ -88,6 +88,12 @@ export interface CoverService {
   backfillStatus(ownerId: string): CoverBackfillStatus;
   /** Delete unreferenced private assets, and unreferenced shared ones past the grace period. */
   gc(): Promise<GcResult>;
+  /**
+   * Remove the files of assets whose rows are already gone (a deleted
+   * account's private covers went with the `users` cascade, out of the GC's
+   * sight). Rows that still exist are left alone.
+   */
+  removeOrphanFiles(assetIds: string[]): Promise<void>;
   /** Boot: GC, backfill everyone, start the daily GC timer. */
   start(): Promise<void>;
   /** Resolves once the queue is empty (tests, shutdown). */
@@ -404,6 +410,12 @@ export function createCoverService({
       }
       if (removed.length > 0) log(`gc removed ${removed.length} unreferenced cover(s)`);
       return { removed };
+    },
+    async removeOrphanFiles(assetIds) {
+      for (const id of assetIds) {
+        if (await repos.coverAssets.find(id)) continue;
+        await store.remove(id);
+      }
     },
     async start() {
       await sweep();

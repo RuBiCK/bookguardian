@@ -12,6 +12,10 @@
  *      `AccountNotAllowedError`, nothing is written;
  *   5. otherwise create the user and the identity.
  *
+ * Whatever the outcome, the user leaves with somewhere to put a book:
+ * `provisionUser` (idempotent) creates "My Library / Default" for an account
+ * that has no library yet, in the same transaction.
+ *
  * Everything runs in one transaction. Two concurrent sign-ins with the same
  * new email are serialised by the SQLite adapter; on engines that are not,
  * the UNIQUE index on `users.email` is the safety net and the loser retries
@@ -20,6 +24,7 @@
 import type { User } from '@bookguardian/shared';
 import type { DatabaseAdapter } from '../db/adapters';
 import { createRepositories, type Repositories } from '../db/repositories';
+import { provisionUser } from '../provisioning';
 
 /** What a provider asserted about the person signing in (already verified upstream). */
 export interface ProviderProfile {
@@ -103,6 +108,18 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 async function resolveOnce(
+  repos: Repositories,
+  profile: ProviderProfile,
+  options: ResolveAccountOptions,
+): Promise<ResolvedAccount> {
+  const resolved = await resolveUser(repos, profile, options);
+  // Cheap for a returning user (one indexed read), and a new or claimed
+  // account lands in a library that is ready for its first book.
+  await provisionUser(repos, resolved.user.id);
+  return resolved;
+}
+
+async function resolveUser(
   repos: Repositories,
   profile: ProviderProfile,
   options: ResolveAccountOptions,
@@ -198,4 +215,31 @@ export async function resolveAccount(
     if (!isUniqueViolation(error)) throw error;
     return run();
   }
+}
+
+export interface DeletedAccount {
+  /** Private cover assets that went with the user; their files still need removing. */
+  privateCoverAssetIds: string[];
+}
+
+/**
+ * Delete a user and everything they own. The schema cascades from `users`
+ * to sessions, identities, libraries, shelves, books, lendings, library
+ * shares and the user's *private* cover assets; shared covers (no owner) and
+ * the ISBN catalogue are untouched because they belong to nobody. The caller
+ * removes the files of the returned assets (rows are already gone, so the
+ * GC cannot find them).
+ */
+export async function deleteAccount(
+  adapter: DatabaseAdapter,
+  userId: string,
+): Promise<DeletedAccount | null> {
+  return adapter.kit.transaction(async (tx) => {
+    const repos = createRepositories({ ...adapter, kit: tx });
+    const user = await repos.users.findById(userId);
+    if (!user) return null;
+    const privateCoverAssetIds = (await repos.coverAssets.listByOwner(userId)).map((a) => a.id);
+    await repos.users.delete(userId);
+    return { privateCoverAssetIds };
+  });
 }

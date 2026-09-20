@@ -170,10 +170,24 @@ erDiagram
   cookie token, never the token; rows expire (sliding) and are purged daily.
 - **Ownership.** `owner_id` on libraries, shelves, books and lendings is
   denormalised on purpose: every repository query filters by owner without a
-  join, and a future multi-user API can enforce tenancy in one place.
+  join — reads by id included — so a foreign id is indistinguishable from a
+  missing one (`404`, never `403`). Every new account is provisioned with a
+  "My Library" library and a "Default" shelf in the transaction that creates
+  it (`apps/api/src/provisioning.ts`). See "Isolation between users" in
+  [auth.md](auth.md).
+- **Shared by design (no `owner_id`).** `catalog_books` (ISBN metadata),
+  `isbn_covers` and the shared rows of `cover_assets` (`owner_id` NULL) are
+  common to every user: an ISBN's description or cover is not anyone's data.
+  `/api/lookup/*` reads and fills that catalogue for whoever is signed in.
 - **Sharing.** `library_shares(library_id, grantee_id)` is unique; `role` is
   `viewer` only for now. Read-only sharing means a grantee can list a library's
-  shelves and books but never write.
+  shelves and books but never write. No route writes the table yet; the only
+  code that reads it is the private-cover check, so today it grants nothing.
+- **Account deletion.** `DELETE /api/auth/me` removes the `users` row; the
+  foreign keys cascade to sessions, identities, libraries, shelves, books,
+  lendings, library shares and the user's private `cover_assets` (whose files
+  the API removes right away, since the GC can no longer see the rows). Shared
+  covers and the catalogue stay.
 - **Reading state.** `read_status` is one of `to_read`, `reading`, `read`;
   `read_at` is a local calendar day (`YYYY-MM-DD`, no time, no UTC shift) and
   is only ever set when the status is `read`: marking a book read without a

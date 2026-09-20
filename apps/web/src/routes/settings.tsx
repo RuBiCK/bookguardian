@@ -1,7 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDeleteAccount, useSession } from '../api/auth';
 import { useBackfillStatus, useStartBackfill } from '../api/covers';
 import { useHealth } from '../api/health';
+import { DeleteAccountSheet } from '../components/DeleteAccountSheet';
 import { Screen } from '../components/Screen';
 import { showToast } from '../lib/toast';
 import { THEMES, useTheme } from '../theme/useTheme';
@@ -12,8 +15,20 @@ export const Route = createFileRoute('/settings')({
 
 function SettingsScreen() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
   const health = useHealth();
+  const session = useSession();
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccount = useDeleteAccount({
+    onSuccess: () => {
+      setDeleting(false);
+      showToast(t('settings.account.deleted'));
+      // The cache is already empty; the session guard takes it from here.
+      void navigate({ to: '/' });
+    },
+    onError: () => showToast(t('settings.account.failed'), 'error'),
+  });
   const backfill = useBackfillStatus();
   const startBackfill = useStartBackfill({
     onSuccess: ({ queued }) => {
@@ -89,11 +104,37 @@ function SettingsScreen() {
             </span>
           ) : null}
         </li>
+        {session.data?.email ? (
+          <li className="list__row list__row--stacked" data-testid="account-row">
+            <span className="list__label">{t('settings.account.label')}</span>
+            <span className="list__value">
+              <button
+                type="button"
+                className="button button--small button--danger-ghost"
+                onClick={() => setDeleting(true)}
+              >
+                {t('settings.account.deleteAccount')}
+              </button>
+            </span>
+            <span className="muted list__note" data-testid="account-email">
+              {t('settings.account.signedInAs', { email: session.data.email })}
+            </span>
+          </li>
+        ) : null}
         <li className="list__row">
           <span className="list__label">{t('app.name')}</span>
           <span className="list__value">{t('settings.version', { version: __APP_VERSION__ })}</span>
         </li>
       </ul>
+      {session.data?.email ? (
+        <DeleteAccountSheet
+          open={deleting}
+          email={session.data.email}
+          busy={deleteAccount.isPending}
+          onClose={() => setDeleting(false)}
+          onConfirm={(confirmEmail) => deleteAccount.mutate({ confirmEmail })}
+        />
+      ) : null}
     </Screen>
   );
 }

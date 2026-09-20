@@ -73,6 +73,12 @@ describeEachAdapter('resolveAccount', (adapterCase) => {
       providerSubject: 'sub-ana',
       emailAtLink: 'ana@example.com',
     });
+    // Provisioned in the same transaction: a library with one shelf, ready for a book.
+    const libraries = await repos.libraries.listByOwner(user.id);
+    expect(libraries.map((l) => l.name)).toEqual(['My Library']);
+    expect(
+      (await repos.shelves.listByLibrary(user.id, libraries[0]!.id)).map((s) => s.name),
+    ).toEqual(['Default']);
   });
 
   it('falls back to the local part of the email as display name', async () => {
@@ -202,7 +208,11 @@ describeEachAdapter('resolveAccount', (adapterCase) => {
       });
       expect(bob.outcome).toBe('created');
       expect(bob.user.id).not.toBe(base.userId);
-      expect(await repos.libraries.listByOwner(bob.user.id)).toHaveLength(0);
+      // Bob gets his own fresh "My Library", not the seeded one.
+      const bobs = await repos.libraries.listByOwner(bob.user.id);
+      expect(bobs.map((l) => l.name)).toEqual(['My Library']);
+      expect(bobs[0]!.id).not.toBe(base.libraryId);
+      expect(await repos.libraries.listByOwner(base.userId)).toHaveLength(1);
     });
 
     it('does not claim when an identity already exists, even with an orphan around', async () => {
