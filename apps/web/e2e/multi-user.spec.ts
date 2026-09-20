@@ -1,5 +1,6 @@
-import { devices, expect, test, type Page } from '@playwright/test';
+import { devices } from '@playwright/test';
 import { en } from '@bookguardian/shared/i18n';
+import { expect, NO_SESSION, signIn, test } from './fixtures';
 
 /**
  * Two people, one instance. A brand-new account lands in its own empty
@@ -7,20 +8,11 @@ import { en } from '@bookguardian/shared/i18n';
  * account never sees that book; and an account can delete itself from
  * Settings after typing its email back.
  *
- * These tests start signed out (no shared storage state) and sign in through
- * the NODE_ENV=test seam with fresh emails, so each one is a new account.
+ * These tests start signed out (`fixtures.ts`) and sign in through the
+ * NODE_ENV=test seam with fresh emails, so each one is a new account.
  */
-test.use({ storageState: { cookies: [], origins: [] } });
-
 const freshEmail = (tag: string) =>
   `${tag}-${test.info().workerIndex}-${Date.now()}@bookguardian.test`;
-
-/** Sign the page's context in as `email` (a new email = a new, provisioned account). */
-async function signIn(page: Page, email: string, name: string) {
-  const res = await page.request.post('/api/auth/test-login', { data: { email, name } });
-  expect(res.ok()).toBe(true);
-  return (await res.json()) as { id: string; email: string };
-}
 
 test.describe('multi-user', () => {
   test('a new account gets an empty "My Library › Default", adds a book by title, and another account cannot see it', async ({
@@ -28,7 +20,7 @@ test.describe('multi-user', () => {
     browser,
   }) => {
     const me = freshEmail('new');
-    await signIn(page, me, 'Newcomer');
+    await signIn(page, { email: me, name: 'Newcomer' });
 
     // The library is there, empty.
     await page.goto('/');
@@ -65,11 +57,11 @@ test.describe('multi-user', () => {
     const otherContext = await browser.newContext({
       ...devices['iPhone 14'],
       baseURL: test.info().project.use.baseURL,
-      storageState: { cookies: [], origins: [] },
+      storageState: NO_SESSION,
     });
     try {
       const other = await otherContext.newPage();
-      await signIn(other, freshEmail('other'), 'Someone else');
+      await signIn(other, { email: freshEmail('other'), name: 'Someone else' });
       await other.goto('/');
       const theirLibraries = other.getByTestId('library-list');
       await expect(theirLibraries.getByRole('link', { name: /My Library/ })).toBeVisible();
@@ -98,12 +90,12 @@ test.describe('multi-user', () => {
     page,
   }) => {
     const email = freshEmail('leaver');
-    await signIn(page, email, 'Leaver');
+    await signIn(page, { email, name: 'Leaver' });
     await page.request.post('/api/books', { data: { title: 'Soon gone' } });
 
     await page.goto('/settings');
-    await expect(page.getByTestId('account-email')).toContainText(email);
-    await page.getByRole('button', { name: en.settings.account.deleteAccount }).tap();
+    await expect(page.getByTestId('account-email')).toHaveText(email);
+    await page.getByTestId('delete-account').tap();
 
     const warning = page.getByRole('dialog', { name: en.settings.account.deleteTitle });
     await expect(warning).toBeVisible();
@@ -121,14 +113,17 @@ test.describe('multi-user', () => {
     await final.tap();
 
     await expect(page.getByText(en.settings.account.deleted)).toBeVisible();
-    await expect(page).toHaveURL(/\/$/);
+    // Signed out for good: the login screen, no tab bar.
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByTestId('login')).toBeVisible();
+    await expect(page.getByTestId('tabbar')).toHaveCount(0);
 
     // The session is gone on the server side too.
     expect((await page.request.get('/api/auth/me')).status()).toBe(401);
     expect((await page.request.get('/api/books')).status()).toBe(401);
 
     // Signing in again with the same email is a fresh, empty account.
-    await signIn(page, email, 'Leaver');
+    await signIn(page, { email, name: 'Leaver' });
     const books = await page.request.get('/api/books');
     expect(((await books.json()) as { items: unknown[] }).items).toEqual([]);
   });

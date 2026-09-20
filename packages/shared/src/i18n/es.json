@@ -41,6 +41,20 @@
     "deleteFailed": "No se pudo eliminar. No se ha cambiado nada.",
     "validation": "Revisa los campos marcados."
   },
+  "auth": {
+    "title": "Acceder",
+    "tagline": "Tus estanterías, en tu bolsillo.",
+    "hint": "Entra con tu cuenta de Google para ver tu biblioteca en todos tus dispositivos.",
+    "google": "Continuar con Google",
+    "loading": "Entrando…",
+    "error": {
+      "title": "No hemos podido iniciar sesión",
+      "not_allowed": "Esta cuenta de Google no está permitida en este Bookguardian. Pide a quien lo administra que añada tu email.",
+      "email_not_verified": "Google aún no ha verificado el email de esa cuenta. Verifícalo en Google y vuelve a intentarlo.",
+      "auth_not_configured": "El acceso todavía no está configurado en este servidor (faltan las credenciales de Google).",
+      "generic": "Algo ha fallado al iniciar sesión. Vuelve a intentarlo."
+    }
+  },
   "count": {
     "books_one": "{{count}} libro",
     "books_other": "{{count}} libros",
@@ -287,7 +301,11 @@
     },
     "account": {
       "label": "Cuenta",
-      "signedInAs": "Sesión iniciada como {{email}}",
+      "signedInAs": "Sesión iniciada con Google",
+      "noEmail": "Sin email todavía",
+      "signOut": "Cerrar sesión",
+      "signingOut": "Cerrando sesión…",
+      "signOutFailed": "No se pudo cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.",
       "deleteAccount": "Eliminar cuenta",
       "deleteTitle": "¿Eliminar tu cuenta?",
       "deleteBody": "Se borrarán para siempre tus bibliotecas, estanterías, libros, historial de préstamos y portadas subidas. No se puede deshacer.",

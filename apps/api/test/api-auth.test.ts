@@ -392,6 +392,67 @@ describe('Google sign-in', () => {
     // Health still answers.
     expect((await t.app.request('/api/health?shallow=true')).status).toBe(200);
   });
+
+  describe('browser navigations land on /login with the error code', () => {
+    const HTML = { accept: 'text/html,application/xhtml+xml,*/*;q=0.8' };
+
+    it('auth_not_configured, keeping the page the person wanted', async () => {
+      await t.cleanup();
+      t = await createAuthApp(google, { configured: false });
+      const res = await t.app.request('/api/auth/google?return_to=%2Fshelves%2F7', {
+        headers: HTML,
+      });
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe(
+        '/login?error=auth_not_configured&redirect=%2Fshelves%2F7',
+      );
+      expect(await res.text()).toBe('');
+    });
+
+    it('invalid_state on the callback, and no session is created', async () => {
+      const { code, oauthCookie } = await startSignIn(t, google, '/books/1');
+      const res = await t.app.request(`/api/auth/google/callback?code=${code}&state=nope`, {
+        headers: { ...HTML, cookie: oauthCookie },
+      });
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe('/login?error=invalid_state&redirect=%2Fbooks%2F1');
+      expect(parseSetCookies(res)[SESSION_COOKIE]).toBeUndefined();
+      expect(await t.repos.sessions.listByUser(t.base.userId)).toHaveLength(0);
+    });
+
+    it('not_allowed and email_not_verified from account resolution', async () => {
+      await t.cleanup();
+      t = await createAuthApp(google, { allowedEmails: new Set(['someone.else@example.com']) });
+      let { code, state, oauthCookie } = await startSignIn(t, google);
+      let res = await t.app.request(
+        `/api/auth/google/callback?code=${code}&state=${encodeURIComponent(state)}`,
+        { headers: { ...HTML, cookie: oauthCookie } },
+      );
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe('/login?error=not_allowed');
+
+      google.user.email_verified = false;
+      ({ code, state, oauthCookie } = await startSignIn(t, google));
+      res = await t.app.request(
+        `/api/auth/google/callback?code=${code}&state=${encodeURIComponent(state)}`,
+        { headers: { ...HTML, cookie: oauthCookie } },
+      );
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe('/login?error=email_not_verified');
+      expect(await t.repos.authIdentities.count()).toBe(0);
+    });
+
+    it('a browser that signs in fine is still redirected to return_to', async () => {
+      const { code, state, oauthCookie } = await startSignIn(t, google, '/lending');
+      const res = await t.app.request(
+        `/api/auth/google/callback?code=${code}&state=${encodeURIComponent(state)}`,
+        { headers: { ...HTML, cookie: oauthCookie } },
+      );
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe('/lending');
+      expect(parseSetCookies(res)[SESSION_COOKIE]).toBeDefined();
+    });
+  });
 });
 
 describe('sessions', () => {

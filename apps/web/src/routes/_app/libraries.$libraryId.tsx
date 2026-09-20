@@ -11,12 +11,12 @@ import {
   useShelves,
   useUpdateLibrary,
   useUpdateShelf,
-} from '../api/inventory';
-import { BookList } from '../components/BookList';
-import { BookSheet } from '../components/BookSheet';
-import { ConfirmSheet } from '../components/ConfirmSheet';
-import { EmptyState } from '../components/EmptyState';
-import { Fab } from '../components/Fab';
+} from '../../api/inventory';
+import { BookList } from '../../components/BookList';
+import { BookSheet } from '../../components/BookSheet';
+import { ConfirmSheet } from '../../components/ConfirmSheet';
+import { EmptyState } from '../../components/EmptyState';
+import { Fab } from '../../components/Fab';
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -25,12 +25,12 @@ import {
   PlusIcon,
   ShelfIcon,
   TrashIcon,
-} from '../components/icons';
-import { NameSheet } from '../components/NameSheet';
-import { Screen } from '../components/Screen';
-import { showToast } from '../lib/toast';
+} from '../../components/icons';
+import { NameSheet } from '../../components/NameSheet';
+import { Screen } from '../../components/Screen';
+import { showToast } from '../../lib/toast';
 
-export const Route = createFileRoute('/libraries/$libraryId')({
+export const Route = createFileRoute('/_app/libraries/$libraryId')({
   component: LibraryDetailScreen,
 });
 

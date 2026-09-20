@@ -56,8 +56,8 @@ export interface FakeApi {
   backfillQueued: number;
   /** Give a book a stored cover (an asset id), as the API's cascade would. */
   setCover(bookId: string, assetId: string | null, override?: boolean): void;
-  /** The signed-in account behind `/api/auth/me`; `null` answers 401. Deleted by `DELETE`. */
-  account: AuthMeResponse | null;
+  /** Who `/api/auth/me` answers with; `null` makes every protected route a 401. */
+  user: AuthMeResponse | null;
   addLibrary(name: string, location?: string | null): Library;
   addShelf(libraryId: string, name: string, sortOrder?: number): Shelf;
   addBook(input: Partial<Book> & { title: string; shelfId?: string }): Book;
@@ -91,11 +91,11 @@ export function installFakeApi(): FakeApi {
     backfill: { queued: 0, pending: 0, done: 0, found: 0, failed: 0 },
     backfillQueued: 0,
   };
-  const auth: { account: AuthMeResponse | null } = {
-    account: {
+  const auth: { user: AuthMeResponse | null } = {
+    user: {
       id: OWNER,
-      displayName: 'Ada',
-      email: 'ada@example.test',
+      displayName: 'Ana Lector',
+      email: 'ana@example.com',
       avatarUrl: null,
     },
   };
@@ -236,6 +236,37 @@ export function installFakeApi(): FakeApi {
     const match = (re: RegExp) => re.exec(path);
     let m: RegExpExecArray | null;
 
+    // Auth: the session, and everything else needs one (like `authMiddleware`).
+    if (path === '/api/auth/me') {
+      if (!auth.user) return error(401, 'unauthenticated');
+      if (method === 'DELETE') {
+        const { confirmEmail } = body as { confirmEmail?: string };
+        if ((confirmEmail ?? '').trim().toLowerCase() !== auth.user.email) {
+          return error(422, 'confirm_email_mismatch');
+        }
+        auth.user = null;
+        libraries.length = 0;
+        shelves.length = 0;
+        books.length = 0;
+        lendings.length = 0;
+        return new Response(null, { status: 204 });
+      }
+      return json(auth.user);
+    }
+    if (path === '/api/auth/logout' && method === 'POST') {
+      auth.user = null;
+      return new Response(null, { status: 204 });
+    }
+    if (path === '/api/health') {
+      return json({
+        status: 'ok',
+        version: 't',
+        uptimeSeconds: 0,
+        database: { driver: 'sqlite', reachable: true },
+      });
+    }
+    if (!auth.user) return error(401, 'unauthenticated');
+
     // Covers
     if (path === '/api/covers/backfill' && method === 'POST') {
       covers.backfill = {
@@ -267,29 +298,6 @@ export function installFakeApi(): FakeApi {
       }
     }
 
-    if (path === '/api/auth/me') {
-      if (!auth.account) return error(401, 'unauthenticated');
-      if (method === 'GET') return json(auth.account);
-      if (method === 'DELETE') {
-        const { confirmEmail } = body as { confirmEmail?: string };
-        if ((confirmEmail ?? '').trim().toLowerCase() !== auth.account.email) {
-          return error(422, 'confirm_email_mismatch');
-        }
-        auth.account = null;
-        libraries.length = 0;
-        shelves.length = 0;
-        books.length = 0;
-        lendings.length = 0;
-        return json(undefined, 204);
-      }
-    }
-    if (path === '/api/health')
-      return json({
-        status: 'ok',
-        version: 't',
-        uptimeSeconds: 0,
-        database: { driver: 'sqlite', reachable: true },
-      });
     if (path === '/api/defaults') return json(defaults());
 
     // Lookup
@@ -624,11 +632,11 @@ export function installFakeApi(): FakeApi {
       covers.backfillQueued = value;
     },
     setCover,
-    get account() {
-      return auth.account;
+    get user() {
+      return auth.user;
     },
-    set account(value) {
-      auth.account = value;
+    set user(value) {
+      auth.user = value;
     },
     restore: () => spy.mockRestore(),
   };

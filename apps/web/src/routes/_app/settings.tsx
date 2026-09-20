@@ -1,34 +1,23 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDeleteAccount, useSession } from '../api/auth';
-import { useBackfillStatus, useStartBackfill } from '../api/covers';
-import { useHealth } from '../api/health';
-import { DeleteAccountSheet } from '../components/DeleteAccountSheet';
-import { Screen } from '../components/Screen';
-import { showToast } from '../lib/toast';
-import { THEMES, useTheme } from '../theme/useTheme';
+import { useDeleteAccount, useLogout, useSession } from '../../api/auth';
+import { useBackfillStatus, useStartBackfill } from '../../api/covers';
+import { useHealth } from '../../api/health';
+import { Avatar } from '../../components/Avatar';
+import { DeleteAccountSheet } from '../../components/DeleteAccountSheet';
+import { Screen } from '../../components/Screen';
+import { showToast } from '../../lib/toast';
+import { THEMES, useTheme } from '../../theme/useTheme';
 
-export const Route = createFileRoute('/settings')({
+export const Route = createFileRoute('/_app/settings')({
   component: SettingsScreen,
 });
 
 function SettingsScreen() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
   const health = useHealth();
-  const session = useSession();
-  const [deleting, setDeleting] = useState(false);
-  const deleteAccount = useDeleteAccount({
-    onSuccess: () => {
-      setDeleting(false);
-      showToast(t('settings.account.deleted'));
-      // The cache is already empty; the session guard takes it from here.
-      void navigate({ to: '/' });
-    },
-    onError: () => showToast(t('settings.account.failed'), 'error'),
-  });
   const backfill = useBackfillStatus();
   const startBackfill = useStartBackfill({
     onSuccess: ({ queued }) => {
@@ -63,6 +52,7 @@ function SettingsScreen() {
 
   return (
     <Screen title={t('settings.title')}>
+      <AccountSection />
       <ul className="list">
         <li className="list__row">
           <span className="list__label">{t('settings.theme.label')}</span>
@@ -104,37 +94,87 @@ function SettingsScreen() {
             </span>
           ) : null}
         </li>
-        {session.data?.email ? (
-          <li className="list__row list__row--stacked" data-testid="account-row">
-            <span className="list__label">{t('settings.account.label')}</span>
-            <span className="list__value">
-              <button
-                type="button"
-                className="button button--small button--danger-ghost"
-                onClick={() => setDeleting(true)}
-              >
-                {t('settings.account.deleteAccount')}
-              </button>
-            </span>
-            <span className="muted list__note" data-testid="account-email">
-              {t('settings.account.signedInAs', { email: session.data.email })}
-            </span>
-          </li>
-        ) : null}
         <li className="list__row">
           <span className="list__label">{t('app.name')}</span>
           <span className="list__value">{t('settings.version', { version: __APP_VERSION__ })}</span>
         </li>
       </ul>
-      {session.data?.email ? (
+    </Screen>
+  );
+}
+
+/** Who is signed in, the way out, and the way to leave for good. */
+function AccountSection() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const session = useSession();
+  const logout = useLogout({
+    onSuccess: () => void navigate({ to: '/login', replace: true }),
+    onError: () => showToast(t('settings.account.signOutFailed'), 'error'),
+  });
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccount = useDeleteAccount({
+    onSuccess: () => {
+      setDeleting(false);
+      showToast(t('settings.account.deleted'));
+      // Session dropped and cache emptied: same exit as a sign-out.
+      void navigate({ to: '/login', replace: true });
+    },
+    onError: () => showToast(t('settings.account.failed'), 'error'),
+  });
+  const user = session.data;
+  if (!user) return null;
+
+  return (
+    <section className="account" aria-labelledby="account-heading" data-testid="account">
+      <h2 id="account-heading" className="account__title">
+        {t('settings.account.label')}
+      </h2>
+      <div className="list account__card">
+        <div className="list__row account__identity">
+          <Avatar name={user.displayName} src={user.avatarUrl} />
+          <div className="account__who">
+            <span className="account__name">{user.displayName}</span>
+            <span className="account__email" data-testid="account-email">
+              {user.email ?? t('settings.account.noEmail')}
+            </span>
+            <span className="account__provider">{t('settings.account.signedInAs')}</span>
+          </div>
+        </div>
+        <div className="list__row">
+          <button
+            type="button"
+            className="button button--block"
+            disabled={logout.isPending}
+            onClick={() => logout.mutate()}
+            data-testid="sign-out"
+          >
+            {logout.isPending ? t('settings.account.signingOut') : t('settings.account.signOut')}
+          </button>
+        </div>
+        {user.email ? (
+          <div className="list__row">
+            <button
+              type="button"
+              className="button button--block button--danger-ghost"
+              disabled={deleteAccount.isPending}
+              onClick={() => setDeleting(true)}
+              data-testid="delete-account"
+            >
+              {t('settings.account.deleteAccount')}
+            </button>
+          </div>
+        ) : null}
+      </div>
+      {user.email ? (
         <DeleteAccountSheet
           open={deleting}
-          email={session.data.email}
+          email={user.email}
           busy={deleteAccount.isPending}
           onClose={() => setDeleting(false)}
           onConfirm={(confirmEmail) => deleteAccount.mutate({ confirmEmail })}
         />
       ) : null}
-    </Screen>
+    </section>
   );
 }

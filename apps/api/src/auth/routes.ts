@@ -106,6 +106,26 @@ function oidcFailure(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
+/** Where the SPA shows sign-in errors (`?error=<code>&redirect=<return_to>`). */
+export const LOGIN_PATH = '/login';
+
+/**
+ * `GET /google` and its callback are browser navigations, not fetches: a JSON
+ * envelope there would be shown raw. When the request accepts HTML, failures
+ * land on the SPA's login screen instead, carrying the error code and the
+ * page the person was trying to reach. Fetch clients (and the tests that
+ * exercise the JSON contract) still get the envelope.
+ */
+function wantsHtml(c: Context<AppEnv>): boolean {
+  return (c.req.header('accept') ?? '').includes('text/html');
+}
+
+export function loginErrorPath(code: string, returnTo: string): string {
+  const params = new URLSearchParams({ error: code });
+  if (returnTo !== '/') params.set('redirect', returnTo);
+  return `${LOGIN_PATH}?${params.toString()}`;
+}
+
 export function createAuthRoutes(options: AuthRoutesOptions) {
   const { sessions, cookieSecret, secureCookies, oidc, account } = options;
   const log = options.log ?? ((message: string) => console.warn(`[auth] ${message}`));
@@ -165,67 +185,78 @@ export function createAuthRoutes(options: AuthRoutesOptions) {
     throw new ApiHttpError(503, 'auth_not_configured', 'Google sign-in is not configured');
   }
 
+  /** Browser navigation → login screen with the code; anything else → JSON envelope. */
+  function failNavigation(c: Context<AppEnv>, error: unknown, returnTo: string): Response {
+    const failure = oidcFailure(error);
+    if (!wantsHtml(c)) throw failure;
+    if (!(failure instanceof ApiHttpError)) {
+      console.error('[auth] sign-in failed', failure);
+      return c.redirect(loginErrorPath('internal_error', returnTo), 302);
+    }
+    return c.redirect(loginErrorPath(failure.code, returnTo), 302);
+  }
+
   const routes = new Hono<AppEnv>()
     .get('/google', validate('query', startQuerySchema), async (c) => {
-      const client = requireOidc();
-      const pending: PendingAuth = {
-        state: generateState(),
-        codeVerifier: generateCodeVerifier(),
-        nonce: generateState(),
-        returnTo: safeReturnTo(c.req.valid('query').return_to),
-      };
-      let url: URL;
+      const returnTo = safeReturnTo(c.req.valid('query').return_to);
       try {
-        url = await client.createAuthorizationUrl(pending);
+        const client = requireOidc();
+        const pending: PendingAuth = {
+          state: generateState(),
+          codeVerifier: generateCodeVerifier(),
+          nonce: generateState(),
+          returnTo,
+        };
+        const url = await client.createAuthorizationUrl(pending);
+        await setSignedCookie(c, OAUTH_COOKIE, encodePending(pending), cookieSecret, oauthCookie);
+        return c.redirect(url.toString(), 302);
       } catch (error) {
-        throw oidcFailure(error);
+        return failNavigation(c, error, returnTo);
       }
-      await setSignedCookie(c, OAUTH_COOKIE, encodePending(pending), cookieSecret, oauthCookie);
-      return c.redirect(url.toString(), 302);
     })
 
     .get('/google/callback', validate('query', callbackQuerySchema), async (c) => {
-      const client = requireOidc();
       const query = c.req.valid('query');
       const pending = decodePending(await getSignedCookie(c, cookieSecret, OAUTH_COOKIE));
       deleteCookie(c, OAUTH_COOKIE, { path: OAUTH_COOKIE_PATH });
-      if (!pending || !query.state || query.state !== pending.state) {
-        throw new ApiHttpError(
-          400,
-          'invalid_state',
-          'Sign-in request expired or was tampered with',
-        );
-      }
-      if (query.error || !query.code) {
-        const reason = query.error_description ?? query.error ?? 'no authorization code';
-        throw new ApiHttpError(
-          400,
-          'oauth_error',
-          `Google did not authorize the sign-in: ${reason}`,
-        );
-      }
-      let claims;
+      const returnTo = pending?.returnTo ?? '/';
       try {
-        claims = await client.exchangeCode({
+        const client = requireOidc();
+        if (!pending || !query.state || query.state !== pending.state) {
+          throw new ApiHttpError(
+            400,
+            'invalid_state',
+            'Sign-in request expired or was tampered with',
+          );
+        }
+        if (query.error || !query.code) {
+          const reason = query.error_description ?? query.error ?? 'no authorization code';
+          throw new ApiHttpError(
+            400,
+            'oauth_error',
+            `Google did not authorize the sign-in: ${reason}`,
+          );
+        }
+        const claims = await client.exchangeCode({
           code: query.code,
           codeVerifier: pending.codeVerifier,
           nonce: pending.nonce,
         });
+        if (!claims.emailVerified) {
+          throw new ApiHttpError(403, 'email_not_verified', 'Verify your email with Google first');
+        }
+        await signIn(c, {
+          provider: 'google',
+          subject: claims.subject,
+          email: claims.email,
+          emailVerified: true,
+          name: claims.name,
+          picture: claims.picture,
+        });
+        return c.redirect(returnTo, 302);
       } catch (error) {
-        throw oidcFailure(error);
+        return failNavigation(c, error, returnTo);
       }
-      if (!claims.emailVerified) {
-        throw new ApiHttpError(403, 'email_not_verified', 'Verify your email with Google first');
-      }
-      await signIn(c, {
-        provider: 'google',
-        subject: claims.subject,
-        email: claims.email,
-        emailVerified: true,
-        name: claims.name,
-        picture: claims.picture,
-      });
-      return c.redirect(pending.returnTo, 302);
     })
 
     .get('/me', async (c) => {

@@ -64,8 +64,10 @@ What this means in practice:
 
 ## Authentication flow
 
-Steps 1–4 (the SPA discovering it has no session and showing a login screen)
-belong to the web sub-issue; the API side is steps 5 onwards.
+Steps 1–4 are the SPA: the guarded layout (`apps/web/src/routes/_app.tsx`)
+asks `/api/auth/me` before the first screen renders and shows `/login`
+(`apps/web/src/routes/login.tsx`) when there is no session; the API side is
+steps 5 onwards.
 
 ```mermaid
 sequenceDiagram
@@ -119,6 +121,16 @@ Also on the API:
   uses).
 - Without `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` the API boots but
   `/api/auth/google` (and the callback) answer `503 auth_not_configured`.
+- `GET /api/auth/google` and the callback are browser navigations. When the
+  request accepts HTML, a failure (`auth_not_configured`, `invalid_state`,
+  `oauth_error`, `email_not_verified`, `not_allowed`) is a `302` to
+  `/login?error=<code>&redirect=<return_to>` so the SPA can explain it and
+  offer a retry; without `text/html` in `Accept` (fetch clients, tests) the
+  JSON envelope is returned as for any other route.
+- On the SPA, `/api/auth/me` is one TanStack Query: `null` (a 401) is a valid
+  cached value that the route guard reads without a request; any other 401
+  drops it and the shell navigates to `/login`. Sign-out `POST`s
+  `/api/auth/logout`, empties the query cache and lands on `/login`.
 - `POST /api/auth/test-login { email, name? }` signs in without Google. It is
   registered **only** when `NODE_ENV=test` (Playwright); anywhere else it is a
   404, and a test asserts that.

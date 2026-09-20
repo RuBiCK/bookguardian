@@ -3,25 +3,25 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isbnLookupQueryOptions, searchFirstMatch } from '../api/lookup';
-import { BookSheet } from '../components/BookSheet';
-import { CandidatesSheet } from '../components/CandidatesSheet';
-import { CaptureResultSheet } from '../components/CaptureResultSheet';
-import { CameraIcon, ImageIcon } from '../components/icons';
-import { Screen } from '../components/Screen';
-import { Sheet } from '../components/Sheet';
+import { isbnLookupQueryOptions, searchFirstMatch } from '../../api/lookup';
+import { BookSheet } from '../../components/BookSheet';
+import { CandidatesSheet } from '../../components/CandidatesSheet';
+import { CaptureResultSheet } from '../../components/CaptureResultSheet';
+import { CameraIcon, ImageIcon } from '../../components/icons';
+import { Screen } from '../../components/Screen';
+import { Sheet } from '../../components/Sheet';
 import {
   decodeIsbnFromImage,
   hasCameraSupport,
   startIsbnScanner,
   type BarcodeScanner,
   type CameraFailure,
-} from '../lib/barcode';
-import { parseIsbn } from '../lib/format';
-import { recognizeText, type OcrPhase } from '../lib/ocr';
-import { interpretOcr } from '../lib/ocr-query';
+} from '../../lib/barcode';
+import { parseIsbn } from '../../lib/format';
+import { recognizeText, type OcrPhase } from '../../lib/ocr';
+import { interpretOcr } from '../../lib/ocr-query';
 
-export const Route = createFileRoute('/scan')({
+export const Route = createFileRoute('/_app/scan')({
   component: ScanScreen,
 });
 

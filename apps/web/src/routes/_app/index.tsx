@@ -1,18 +1,18 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCreateLibrary, useLibraries } from '../api/inventory';
-import { BookList } from '../components/BookList';
-import { BookSheet } from '../components/BookSheet';
-import { EmptyState } from '../components/EmptyState';
-import { Fab } from '../components/Fab';
-import { ChevronRightIcon, LibraryIcon, PlusIcon } from '../components/icons';
-import { NameSheet } from '../components/NameSheet';
-import { Screen } from '../components/Screen';
-import { SearchBar } from '../components/SearchBar';
-import { showToast } from '../lib/toast';
+import { useCreateLibrary, useLibraries } from '../../api/inventory';
+import { BookList } from '../../components/BookList';
+import { BookSheet } from '../../components/BookSheet';
+import { EmptyState } from '../../components/EmptyState';
+import { Fab } from '../../components/Fab';
+import { ChevronRightIcon, LibraryIcon, PlusIcon } from '../../components/icons';
+import { NameSheet } from '../../components/NameSheet';
+import { Screen } from '../../components/Screen';
+import { SearchBar } from '../../components/SearchBar';
+import { showToast } from '../../lib/toast';
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/_app/')({
   component: LibraryScreen,
 });
 
