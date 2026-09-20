@@ -64,6 +64,10 @@ describe('/api/books', () => {
       { title: '' },
       { title: 'X', isbn13: '123' },
       { title: 'X', rating: 6 },
+      { title: 'X', rating: -1 },
+      { title: 'X', rating: 4.5 },
+      { title: 'X', readAt: '15/01/2020' },
+      { title: 'X', readStatus: 'read', readAt: '2020-1-2' },
       { title: 'X', coverUrl: 'not a url' },
       { title: 'X', readStatus: 'burned' },
       { title: 'X', pages: -1 },
@@ -213,6 +217,32 @@ describe('/api/books', () => {
     expect(onto.status).toBe(422);
   });
 
+  describe('rating', () => {
+    const patch = (id: string, body: Record<string, unknown>) =>
+      json<Book>(t.app, 'PATCH', `/api/books/${id}`, body);
+
+    it('stores a 0-star rating as unrated and accepts 1–5', async () => {
+      const book = (await add({ title: 'Dune', rating: 0 })).body;
+      expect(book.rating).toBeNull();
+      expect((await patch(book.id, { rating: 3 })).body.rating).toBe(3);
+      expect((await patch(book.id, { rating: 5 })).body.rating).toBe(5);
+      expect((await patch(book.id, { rating: 0 })).body.rating).toBeNull();
+      expect((await patch(book.id, { rating: 2 })).body.rating).toBe(2);
+      expect((await patch(book.id, { rating: null })).body.rating).toBeNull();
+      // Unrelated edits leave the rating alone.
+      expect((await patch(book.id, { rating: 4 })).body.rating).toBe(4);
+      expect((await patch(book.id, { title: 'Dune Messiah' })).body.rating).toBe(4);
+      for (const rating of [6, -1, 2.5, 'four']) {
+        const bad = await json<ErrorBody>(t.app, 'PATCH', `/api/books/${book.id}`, { rating });
+        expect(bad.status, String(rating)).toBe(422);
+        expect(bad.body.error.code).toBe('validation_error');
+      }
+      expect((await json(t.app, 'PATCH', `/api/books/${MISSING_ID}`, { rating: 1 })).status).toBe(
+        404,
+      );
+    });
+  });
+
   describe('listing', () => {
     let second: ShelfWithCount;
     let otherLibraryShelf: ShelfWithCount;
@@ -230,12 +260,20 @@ describe('/api/books', () => {
         bookCount: 0,
       };
       const seedBooks: Record<string, unknown>[] = [
-        { title: 'Dune', authors: ['Frank Herbert'], categories: ['Sci-Fi'], readStatus: 'read' },
+        {
+          title: 'Dune',
+          authors: ['Frank Herbert'],
+          categories: ['Sci-Fi'],
+          readStatus: 'read',
+          readAt: '2024-03-01',
+          rating: 5,
+        },
         {
           title: 'Emma',
           authors: ['Jane Austen'],
           categories: ['Classics'],
           readStatus: 'reading',
+          rating: 3,
         },
         {
           title: 'Neuromancer',
@@ -243,8 +281,10 @@ describe('/api/books', () => {
           categories: ['Sci-Fi', 'Cyberpunk'],
           isbn13: '9780441569595',
           shelfId: second.id,
+          readStatus: 'read',
+          readAt: '2024-06-15',
         },
-        { title: 'Zorba', publisher: 'Faber', shelfId: otherLibraryShelf.id },
+        { title: 'Zorba', publisher: 'Faber', shelfId: otherLibraryShelf.id, rating: 4 },
       ];
       for (const body of seedBooks) {
         expect((await add(body)).status).toBe(201);
@@ -291,16 +331,37 @@ describe('/api/books', () => {
       expect(inLibrary.titles).toEqual(['Neuromancer', 'Emma', 'Dune']);
       expect(inLibrary.total).toBe(3);
       expect((await titles(`?libraryId=${MISSING_ID}`)).titles).toEqual([]);
-      expect((await titles('?readStatus=read')).titles).toEqual(['Dune']);
-      expect((await titles('?readStatus=to_read')).titles).toEqual(['Zorba', 'Neuromancer']);
+      expect((await titles('?readStatus=read')).titles).toEqual(['Neuromancer', 'Dune']);
+      expect((await titles('?readStatus=to_read')).titles).toEqual(['Zorba']);
       expect((await titles('?category=Sci-Fi')).titles).toEqual(['Neuromancer', 'Dune']);
       expect((await titles('?category=sci-fi')).titles).toEqual(['Neuromancer', 'Dune']);
       expect((await titles('?category=Sci')).titles).toEqual([]);
-      expect((await titles('?category=Cyberpunk&q=gibson&readStatus=to_read')).titles).toEqual([
+      expect((await titles('?category=Cyberpunk&q=gibson&readStatus=read')).titles).toEqual([
         'Neuromancer',
       ]);
       expect((await json(t.app, 'GET', '/api/books?readStatus=nope')).status).toBe(422);
       expect((await json(t.app, 'GET', '/api/books?limit=0')).status).toBe(422);
+    });
+
+    it('filters by minimum rating and sorts by rating or recently read', async () => {
+      expect((await titles('?minRating=4')).titles).toEqual(['Zorba', 'Dune']);
+      expect((await titles('?minRating=5')).titles).toEqual(['Dune']);
+      expect((await titles('?minRating=1')).titles).toEqual(['Zorba', 'Emma', 'Dune']);
+      expect((await titles('?minRating=3&readStatus=reading')).titles).toEqual(['Emma']);
+      expect((await json(t.app, 'GET', '/api/books?minRating=0')).status).toBe(422);
+      expect((await json(t.app, 'GET', '/api/books?minRating=6')).status).toBe(422);
+
+      // Best first, unrated last.
+      expect((await titles('?sort=rating')).titles).toEqual([
+        'Dune',
+        'Zorba',
+        'Emma',
+        'Neuromancer',
+      ]);
+      // Most recently finished first, never-finished last (newest added among them first).
+      expect((await titles('?sort=read')).titles).toEqual(['Neuromancer', 'Dune', 'Zorba', 'Emma']);
+      expect((await titles('?sort=read&readStatus=read')).titles).toEqual(['Neuromancer', 'Dune']);
+      expect((await json(t.app, 'GET', '/api/books?sort=pages')).status).toBe(422);
     });
   });
 

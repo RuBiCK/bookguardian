@@ -83,7 +83,11 @@
     "deleteShelfWithBooks": "“{{name}}” still holds {{count}} books. Move them to another shelf first.",
     "cannotDeleteLastShelf": "A library needs at least one shelf.",
     "moveBooksTo": "Move its books to",
-    "reorderHint": "Use the arrows to reorder shelves."
+    "reorderHint": "Use the arrows to reorder shelves.",
+    "view": {
+      "shelves": "Shelves",
+      "books": "Books"
+    }
   },
   "books": {
     "title": "Books",
@@ -136,16 +140,15 @@
     "readAtFuture": "The finish date can't be in the future.",
     "detail": {
       "pages": "{{count}} pages",
-      "published": "Published {{date}}",
       "publisher": "Publisher",
-      "language": "Language",
       "isbn": "ISBN",
       "notes": "Notes",
       "description": "Description",
-      "rating": "{{rating}} of 5",
       "notFound": "That book no longer exists.",
-      "addedLabel": "Added"
-    }
+      "addedLabel": "Added",
+      "location": "Location"
+    },
+    "openPage": "Open book page"
   },
   "scan": {
     "title": "Scan",
@@ -227,5 +230,26 @@
       "offline": "Offline"
     },
     "version": "Version {{version}}"
+  },
+  "reading": {
+    "title": "Your reading",
+    "rating": "Your rating",
+    "stars_one": "{{count}} star",
+    "stars_other": "{{count}} stars",
+    "unrated": "Not rated",
+    "longPressHint": "Long-press a cover for quick actions"
+  },
+  "filters": {
+    "sort": "Sort by",
+    "rating": "Rating",
+    "anyRating": "Any rating",
+    "exactStars": "{{count}} ★",
+    "minStars": "{{count}}+ ★"
+  },
+  "sort": {
+    "added": "Recently added",
+    "title": "Title",
+    "read": "Recently read",
+    "rating": "Top rated"
   }
 }

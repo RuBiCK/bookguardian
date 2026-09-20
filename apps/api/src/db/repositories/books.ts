@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray, or, type SQL } from 'drizzle-orm';
+import { asc, desc, eq, gte, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import {
   readStatusSchema,
   type Book,
@@ -17,6 +17,8 @@ export interface BookSearch {
   /** Restrict to these shelves (already resolved from a library filter, for instance). */
   shelfIds?: string[];
   readStatus?: ReadStatus;
+  /** Only books rated at least this many stars. */
+  minRating?: number;
   /** Exact category (matched against the stored JSON array). */
   category?: string;
   sort?: BookSort;
@@ -55,6 +57,21 @@ function toBook(row: BookRow): Book {
 
 export function createBookRepository(kit: DialectKit, tables: Tables): BookRepository {
   const { books } = tables;
+
+  // `NULLS LAST` is not portable (MySQL lacks it), so sort on `IS NULL` first:
+  // false/0 before true/1 in every dialect puts the books that have a value first.
+  const sortOrder = (sort: BookSort): SQL[] => {
+    switch (sort) {
+      case 'title':
+        return [asc(books.title), desc(books.addedAt)];
+      case 'read':
+        return [asc(isNull(books.readAt)), desc(books.readAt), desc(books.addedAt)];
+      case 'rating':
+        return [asc(isNull(books.rating)), desc(books.rating), desc(books.addedAt)];
+      case 'added':
+        return [desc(books.addedAt), asc(books.title)];
+    }
+  };
   const owned = (ownerId: string, id: string) =>
     allOf(eq(books.ownerId, ownerId), eq(books.id, id));
 
@@ -85,6 +102,7 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
       const conditions: SQL[] = [eq(books.ownerId, ownerId)];
       if (search.shelfIds) conditions.push(inArray(books.shelfId, search.shelfIds));
       if (search.readStatus) conditions.push(eq(books.readStatus, search.readStatus));
+      if (search.minRating) conditions.push(gte(books.rating, search.minRating));
       // Categories are a JSON array; an exact element match is the encoded string in quotes.
       if (search.category) {
         conditions.push(kit.contains(books.categories, JSON.stringify(search.category)));
@@ -102,10 +120,7 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
         );
       }
       const where = allOf(conditions[0]!, ...conditions.slice(1));
-      const orderBy =
-        search.sort === 'title'
-          ? [asc(books.title), desc(books.addedAt)]
-          : [desc(books.addedAt), asc(books.title)];
+      const orderBy = sortOrder(search.sort ?? 'added');
 
       const [rows, total] = await Promise.all([
         kit.select(books, { where, orderBy, limit: search.limit, offset: search.offset }),

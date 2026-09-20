@@ -101,6 +101,12 @@ erDiagram
   date stamps today, an existing date survives re-marking, and any other
   status clears it (`resolveReadAt` in `packages/shared`). Future dates are
   rejected by the shared `readAtSchema`, on the API and in the web form alike.
+  `rating` is 1–5 (`NULL` = unrated; the API maps `0` to `NULL`, see
+  `normaliseRating`).
+- **Re-reads are not modelled yet.** A book carries a single finished date.
+  When re-reading matters, add a `book_reads (id, book_id, read_at)` history
+  table and keep `books.read_at` as the latest one — no rewrite of the
+  existing column is needed.
 - **Lending.** A lending is open while `returned_at` is `NULL`; the
   `(owner_id, returned_at)` index serves the "what's lent out" list.
 - **Deletes cascade** down the hierarchy (user → library → shelf → book →
@@ -108,6 +114,6 @@ erDiagram
 - **Types are portable.** See [ADR 0002](adr/0002-database-adapter-layer.md)
   for why timestamps and arrays are stored as text.
 
-The authoritative definitions are `apps/api/drizzle/migrations/0001_initial.sql`
-(DDL), `apps/api/src/db/schema/*.ts` (Drizzle) and
+The authoritative definitions are `apps/api/drizzle/migrations/*.sql`
+(DDL, applied in order), `apps/api/src/db/schema/*.ts` (Drizzle) and
 `packages/shared/src/schemas/*.ts` (Zod, wire format).

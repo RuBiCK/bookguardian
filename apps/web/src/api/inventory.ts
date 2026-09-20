@@ -12,6 +12,7 @@ import {
   resolveReadAt,
   libraryListResponseSchema,
   libraryWithCountsSchema,
+  normaliseRating,
   shelfListResponseSchema,
   shelfWithCountSchema,
   type Book,
@@ -45,7 +46,7 @@ export const PAGE_SIZE = 60;
 
 /** The filters a book list can be narrowed by (everything but paging). */
 export type BookFilter = Partial<
-  Pick<BookListQuery, 'q' | 'libraryId' | 'shelfId' | 'readStatus' | 'sort'>
+  Pick<BookListQuery, 'q' | 'libraryId' | 'shelfId' | 'readStatus' | 'minRating' | 'sort'>
 >;
 
 export const keys = {
@@ -123,6 +124,7 @@ function bookMatchesFilter(book: Book, filter: BookFilter, shelfLibrary: Map<str
   if (filter.shelfId && filter.shelfId !== book.shelfId) return false;
   if (filter.libraryId && shelfLibrary.get(book.shelfId) !== filter.libraryId) return false;
   if (filter.readStatus && filter.readStatus !== book.readStatus) return false;
+  if (filter.minRating && (book.rating ?? 0) < filter.minRating) return false;
   if (filter.q) {
     const q = filter.q.toLowerCase();
     const hay = [book.title, book.subtitle ?? '', ...book.authors].join(' ').toLowerCase();
@@ -225,7 +227,7 @@ export function optimisticBook(input: CreateBookRequest & { shelfId: string }): 
     categories: input.categories ?? [],
     description: input.description ?? null,
     notes: input.notes ?? null,
-    rating: input.rating ?? null,
+    rating: normaliseRating(input.rating) ?? null,
     readStatus: input.readStatus ?? 'to_read',
     readAt: input.readAt ?? null,
     addedAt: now,
@@ -368,9 +370,10 @@ export function useDeleteBook(callbacks: MutationCallbacks<void> = {}) {
 }
 
 /**
- * Quick read-status toggle from the detail screen. The read date follows the
- * same rule the API applies (`resolveReadAt`), so the optimistic book already
- * shows today's date when "Read" is tapped and no date when it is un-read.
+ * Rating / read-status / read-date actions used by the book page and the
+ * long-press quick actions. The read date follows the same rule the API
+ * applies (`resolveReadAt`) and a 0-star rating is sent as `null`, so the
+ * optimistic book already matches what the server will store.
  */
 export function useSetReadStatus(callbacks: MutationCallbacks<Book> = {}) {
   const update = useUpdateBook(callbacks);
@@ -390,8 +393,13 @@ export function useSetReadStatus(callbacks: MutationCallbacks<Book> = {}) {
         () => undefined,
         () => undefined,
       ),
+    /** 0 clears the rating. */
+    setRating: (book: Book, rating: number) =>
+      update.mutate({ id: book.id, input: { rating: normaliseRating(rating) ?? null } }),
   };
 }
+
+export type ReadingActions = ReturnType<typeof useSetReadStatus>;
 
 // ---- Library mutations ---------------------------------------------------
 

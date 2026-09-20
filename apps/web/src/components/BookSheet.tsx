@@ -55,10 +55,12 @@ export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved 
     setShelfId(book?.shelfId ?? initialShelfId ?? '');
   }, [open, book, draft, initialShelfId]);
 
-  // Fall back to the server's "most recently used" shelf once it is known.
+  // Fall back to the server's "most recently used" shelf once it is known —
+  // only when nothing pre-selected one, so this never races the reset above.
+  const preselected = book?.shelfId ?? initialShelfId;
   useEffect(() => {
-    if (open && !shelfId && defaults.data) setShelfId(defaults.data.shelfId);
-  }, [open, shelfId, defaults.data]);
+    if (open && !shelfId && !preselected && defaults.data) setShelfId(defaults.data.shelfId);
+  }, [open, shelfId, preselected, defaults.data]);
 
   const failed = useCallback(() => showToast(t('errors.saveFailed'), 'error'), [t]);
   const create = useCreateBook({ onError: failed });

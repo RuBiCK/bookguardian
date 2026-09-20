@@ -1,8 +1,9 @@
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { localDate } from '@bookguardian/shared';
 import { en } from '@bookguardian/shared/i18n';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LONG_PRESS_MS } from '../src/components/BookGrid';
 import { installFakeApi, seedFakeApi, type FakeApi } from './fake-api';
 import { renderApp } from './render';
 
@@ -460,9 +461,10 @@ describe('Book detail', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Dune' })).toBeInTheDocument();
     expect(screen.getByText('Frank Herbert')).toBeInTheDocument();
     expect(screen.getByText('Book one')).toBeInTheDocument();
-    expect(screen.getByText('Published 1965 · 412 pages')).toBeInTheDocument();
-    expect(screen.getByLabelText('4 of 5')).toBeInTheDocument();
-    expect(screen.getByText('Sci-Fi')).toBeInTheDocument();
+    // Metadata chips: year, pages, language, categories.
+    for (const chip of ['1965', '412 pages', 'en', 'Sci-Fi']) {
+      expect(screen.getByText(chip)).toHaveClass('pill');
+    }
     expect(screen.getByText('Ace')).toBeInTheDocument();
     expect(screen.getByText('9780441013593')).toBeInTheDocument();
     expect(screen.getByText('Desert planet.')).toBeInTheDocument();
@@ -470,6 +472,17 @@ describe('Book detail', () => {
     await waitFor(() =>
       expect(screen.getByTestId('book-shelf')).toHaveTextContent('My Library › Default'),
     );
+    const rating = screen.getByRole('group', { name: en.reading.rating });
+    expect(within(rating).getByRole('button', { name: '4 stars' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(rating).getByRole('button', { name: '5 stars' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(rating).toHaveTextContent('4 stars');
+    expect(screen.queryByLabelText(en.books.field.readAt)).not.toBeInTheDocument();
 
     // Quick status toggle (optimistic): "Read" stamps today, editable in place.
     await u.click(screen.getByRole('button', { name: en.readStatus.read }));
@@ -591,5 +604,174 @@ describe('Book detail', () => {
     await u.click(within(sheet).getByRole('button', { name: en.common.delete }));
     expect(await screen.findByText(en.errors.deleteFailed)).toBeInTheDocument();
     expect(api.books).toHaveLength(1);
+  });
+});
+
+describe('Reading life', () => {
+  it('rates with a tap, clears by tapping the same star, and rolls back on failure', async () => {
+    const u = user();
+    const book = api.addBook({ title: 'Dune' });
+    await renderApp(`/books/${book.id}`);
+    await screen.findByRole('heading', { level: 1, name: 'Dune' });
+    const rating = screen.getByRole('group', { name: en.reading.rating });
+    expect(rating).toHaveTextContent(en.reading.unrated);
+
+    await u.click(within(rating).getByRole('button', { name: '3 stars' }));
+    expect(rating).toHaveTextContent('3 stars');
+    expect(within(rating).getByRole('button', { name: '3 stars' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await waitFor(() => expect(api.books[0]?.rating).toBe(3));
+    const call = api.calls.findLast((c) => c.method === 'PATCH');
+    expect(call?.body).toEqual({ rating: 3 });
+
+    // Tapping the selected star again clears; the server stores null.
+    await u.click(within(rating).getByRole('button', { name: '3 stars' }));
+    expect(rating).toHaveTextContent(en.reading.unrated);
+    await waitFor(() => expect(api.books[0]?.rating).toBeNull());
+    expect(api.calls.findLast((c) => c.method === 'PATCH')?.body).toEqual({ rating: null });
+
+    // A refused save is undone.
+    api.failNext({ method: 'PATCH' });
+    await u.click(within(rating).getByRole('button', { name: '5 stars' }));
+    expect(await screen.findByText(en.errors.saveFailed)).toBeInTheDocument();
+    await waitFor(() => expect(rating).toHaveTextContent(en.reading.unrated));
+    expect(api.books[0]?.rating).toBeNull();
+  });
+
+  it('opens quick actions with a long press or right-click on a cover', async () => {
+    const u = user();
+    api.addBook({ title: 'Dune', authors: ['Frank Herbert'] });
+    api.addBook({ title: 'Emma' });
+    await renderApp(`/shelves/${seeded.shelf.id}`);
+    const grid = await screen.findByTestId('book-grid');
+    const dune = within(grid).getByRole('link', { name: 'Dune — Frank Herbert' });
+
+    // Right-click (desktop) opens the sheet without navigating.
+    fireEvent.contextMenu(dune);
+    let sheet = await screen.findByRole('dialog', { name: 'Dune' });
+    expect(within(sheet).getByText('Frank Herbert')).toBeInTheDocument();
+    await u.click(within(sheet).getByRole('button', { name: '5 stars' }));
+    await waitFor(() => expect(api.books[0]?.rating).toBe(5));
+    await u.click(within(sheet).getByRole('button', { name: en.readStatus.read }));
+    await waitFor(() => expect(api.books[0]?.readStatus).toBe('read'));
+    // The sheet follows the optimistic update: the finished date appears.
+    expect(within(sheet).getByLabelText(en.books.field.readAt)).toHaveValue(localDate());
+    await u.click(within(sheet).getByRole('button', { name: en.common.close }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { level: 1, name: 'Default' })).toBeInTheDocument();
+    // The card now shows the rating badge and the status badge.
+    expect(dune).toHaveTextContent('5');
+    expect(dune).toHaveTextContent(en.readStatus.read);
+
+    // A finger resting on a cover opens it after the long-press delay…
+    // (jsdom has no PointerEvent; a MouseEvent with the pointer type carries the coordinates.)
+    const pointer = (el: Element, type: string, x = 10, y = 10) =>
+      fireEvent(el, new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y }));
+    vi.useFakeTimers();
+    try {
+      const emma = within(grid).getByRole('link', { name: 'Emma — Unknown author' });
+      pointer(emma, 'pointerdown');
+      await act(() => vi.advanceTimersByTime(LONG_PRESS_MS - 50));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await act(() => vi.advanceTimersByTime(100));
+      sheet = screen.getByRole('dialog', { name: 'Emma' });
+      // …and the tap that ends it does not open the book page.
+      pointer(emma, 'pointerup');
+      fireEvent.click(emma);
+      expect(screen.getByRole('heading', { level: 1, name: 'Default' })).toBeInTheDocument();
+      fireEvent.click(within(sheet).getByRole('button', { name: en.common.close }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+      // A finger that scrolls away cancels the press.
+      pointer(emma, 'pointerdown');
+      pointer(emma, 'pointermove', 10, 40);
+      await act(() => vi.advanceTimersByTime(LONG_PRESS_MS * 2));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      // A short tap neither.
+      pointer(emma, 'pointerdown');
+      await act(() => vi.advanceTimersByTime(100));
+      pointer(emma, 'pointerup');
+      await act(() => vi.advanceTimersByTime(LONG_PRESS_MS * 2));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    // The sheet's footer link leads to the full page.
+    fireEvent.contextMenu(dune);
+    sheet = await screen.findByRole('dialog', { name: 'Dune' });
+    await u.click(within(sheet).getByRole('link', { name: en.books.openPage }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dune' })).toBeInTheDocument();
+  });
+
+  it('filters by rating and sorts by recently read / top rated on a shelf', async () => {
+    const u = user();
+    api.addBook({ title: 'Dune', rating: 5, readStatus: 'read', readAt: '2024-03-01' });
+    api.addBook({ title: 'Emma', rating: 3, readStatus: 'reading' });
+    api.addBook({ title: 'Zorba', rating: 4 });
+    api.addBook({ title: 'Neuromancer', readStatus: 'read', readAt: '2024-06-15' });
+    await renderApp(`/shelves/${seeded.shelf.id}`);
+    const cardTitles = () =>
+      screen
+        .getAllByTestId('book-card')
+        .map((c) => c.querySelector('.book-card__title')?.textContent);
+    await screen.findByTestId('book-grid');
+    await waitFor(() => expect(cardTitles()).toEqual(['Neuromancer', 'Zorba', 'Emma', 'Dune']));
+
+    await u.click(screen.getByRole('button', { name: '4+ ★' }));
+    await waitFor(() => expect(cardTitles()).toEqual(['Zorba', 'Dune']));
+    expect(api.calls.at(-1)?.path).toContain('minRating=4');
+    await u.click(screen.getByRole('button', { name: '5 ★' }));
+    await waitFor(() => expect(cardTitles()).toEqual(['Dune']));
+    await u.click(screen.getByRole('button', { name: en.filters.anyRating }));
+    await waitFor(() => expect(cardTitles()).toHaveLength(4));
+
+    await u.selectOptions(screen.getByLabelText(en.filters.sort), 'rating');
+    await waitFor(() => expect(cardTitles()).toEqual(['Dune', 'Zorba', 'Emma', 'Neuromancer']));
+    expect(api.calls.at(-1)?.path).toContain('sort=rating');
+    await u.selectOptions(screen.getByLabelText(en.filters.sort), 'read');
+    await waitFor(() => expect(cardTitles()).toEqual(['Neuromancer', 'Dune', 'Zorba', 'Emma']));
+    await u.click(screen.getByRole('button', { name: en.readStatus.read }));
+    await waitFor(() => expect(cardTitles()).toEqual(['Neuromancer', 'Dune']));
+
+    // Filters with no match show the "no results" state instead of the add prompt.
+    await u.click(screen.getByRole('button', { name: '5 ★' }));
+    await u.click(screen.getByRole('button', { name: en.readStatus.reading }));
+    const empty = await screen.findByRole('status');
+    expect(empty).toHaveTextContent(en.books.empty.noResults);
+    expect(within(empty).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('lists every book of a library in the Books view with the same filters', async () => {
+    const u = user();
+    const other = api.addShelf(seeded.library.id, 'Other');
+    const office = api.addLibrary('Office');
+    const desk = api.addShelf(office.id, 'Desk');
+    api.addBook({ title: 'Dune', rating: 5 });
+    api.addBook({ title: 'Emma', shelfId: other.id });
+    api.addBook({ title: 'Elsewhere', shelfId: desk.id });
+
+    await renderApp(`/libraries/${seeded.library.id}`);
+    await screen.findByTestId('shelf-list');
+    expect(screen.getByRole('button', { name: en.common.manage })).toBeInTheDocument();
+
+    await u.click(screen.getByRole('button', { name: en.library.view.books }));
+    const grid = await screen.findByTestId('book-grid');
+    expect(within(grid).getAllByTestId('book-card')).toHaveLength(2);
+    expect(grid).toHaveTextContent('Dune');
+    expect(grid).toHaveTextContent('Emma');
+    expect(grid).not.toHaveTextContent('Elsewhere');
+    expect(screen.queryByTestId('shelf-list')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: en.common.manage })).not.toBeInTheDocument();
+
+    await u.click(screen.getByRole('button', { name: '5 ★' }));
+    await waitFor(() => expect(screen.getAllByTestId('book-card')).toHaveLength(1));
+    await u.type(screen.getByRole('searchbox'), 'zzz');
+    expect(await screen.findByText(en.books.empty.noResults)).toBeInTheDocument();
+
+    await u.click(screen.getByRole('button', { name: en.library.view.shelves }));
+    expect(await screen.findByTestId('shelf-list')).toBeInTheDocument();
   });
 });

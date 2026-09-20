@@ -32,6 +32,12 @@ export function resolveReadAt(
   return readAt ?? current ?? today;
 }
 
+/** Ratings are 1–5 stars; `0` (and `null`) mean "not rated" and are stored as `null`. */
+export function normaliseRating(rating: number | null | undefined): number | null | undefined {
+  if (rating === undefined) return undefined;
+  return rating === null || rating === 0 ? null : rating;
+}
+
 const isbn10Schema = z
   .string()
   .regex(/^[0-9]{9}[0-9X]$/, 'Invalid ISBN-10')
@@ -60,6 +66,7 @@ export const bookSchema = z
     categories: z.array(z.string().trim().min(1).max(120)),
     description: z.string().max(10_000).nullable(),
     notes: z.string().max(10_000).nullable(),
+    /** 1–5 stars; `0` on input means "clear", stored and returned as `null`. */
     rating: z.number().int().min(0).max(5).nullable(),
     readStatus: readStatusSchema,
     readAt: readAtSchema.nullable(),

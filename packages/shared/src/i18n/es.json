@@ -83,7 +83,11 @@
     "deleteShelfWithBooks": "«{{name}}» aún tiene {{count}} libros. Muévelos antes a otro estante.",
     "cannotDeleteLastShelf": "Una biblioteca necesita al menos un estante.",
     "moveBooksTo": "Mover sus libros a",
-    "reorderHint": "Usa las flechas para reordenar los estantes."
+    "reorderHint": "Usa las flechas para reordenar los estantes.",
+    "view": {
+      "shelves": "Estanterías",
+      "books": "Libros"
+    }
   },
   "books": {
     "title": "Libros",
@@ -136,20 +140,68 @@
     "readAtFuture": "La fecha de lectura no puede ser futura.",
     "detail": {
       "pages": "{{count}} páginas",
-      "published": "Publicado en {{date}}",
       "publisher": "Editorial",
-      "language": "Idioma",
       "isbn": "ISBN",
       "notes": "Notas",
       "description": "Descripción",
-      "rating": "{{rating}} de 5",
       "notFound": "Ese libro ya no existe.",
-      "addedLabel": "Añadido"
-    }
+      "addedLabel": "Añadido",
+      "location": "Ubicación"
+    },
+    "openPage": "Abrir la página del libro"
   },
   "scan": {
     "title": "Escanear",
-    "placeholder": "Apunta con la cámara a un código de barras para añadir un libro."
+    "mode": {
+      "label": "Modo de captura",
+      "isbn": "Código de barras ISBN",
+      "cover": "Portada del libro"
+    },
+    "camera": {
+      "starting": "Iniciando la cámara…",
+      "ready": "Apunta la cámara al código de barras",
+      "denied": "Se denegó el acceso a la cámara. Permítelo en los ajustes del navegador o elige una foto.",
+      "unavailable": "No hay ninguna cámara disponible. Elige una foto del código de barras.",
+      "failed": "No se pudo iniciar la cámara. Elige una foto del código de barras.",
+      "preview": "Vista previa de la cámara",
+      "stopped": "Escáner en pausa",
+      "resume": "Escanear de nuevo"
+    },
+    "pickPhoto": "Elegir una foto",
+    "takePhoto": "Hacer una foto",
+    "manual": {
+      "label": "O escribe el ISBN",
+      "placeholder": "978…",
+      "submit": "Buscar"
+    },
+    "lookingUp": "Buscando {{isbn}}…",
+    "detected": "Código de barras {{isbn}} detectado",
+    "noBarcode": "No se encontró ningún código de barras en esa imagen. Prueba con una foto más nítida y cercana.",
+    "cover": {
+      "hint": "Fotografía la portada (o la contraportada con el ISBN) y buscaremos el libro.",
+      "loadingOcr": "Cargando el reconocimiento de texto ({{percent}}%)…",
+      "reading": "Leyendo la portada ({{percent}}%)…",
+      "searching": "Buscando coincidencias…",
+      "noText": "No se pudo leer ningún texto en esa portada. Prueba con mejor luz o más cerca.",
+      "noMatches": "No hay coincidencias para «{{query}}».",
+      "candidates": "¿Es uno de estos?",
+      "ocrFailed": "Falló el reconocimiento de texto. Comprueba tu conexión e inténtalo de nuevo.",
+      "tryAgain": "Intentar de nuevo"
+    },
+    "result": {
+      "title": "Libro encontrado",
+      "addTo": "Añadir a {{shelf}}",
+      "edit": "Editar detalles",
+      "notFound": "No se encontró ningún libro con el ISBN {{isbn}}.",
+      "notFoundTitle": "No está en los catálogos",
+      "addManually": "Añadirlo a mano",
+      "lookupFailed": "Los catálogos de libros no están disponibles ahora mismo. Inténtalo en un momento.",
+      "source": {
+        "open_library": "Open Library",
+        "google_books": "Google Books"
+      },
+      "via": "vía {{source}}"
+    }
   },
   "lending": {
     "title": "Préstamos",
@@ -178,5 +230,26 @@
       "offline": "Sin conexión"
     },
     "version": "Versión {{version}}"
+  },
+  "reading": {
+    "title": "Tu lectura",
+    "rating": "Tu valoración",
+    "stars_one": "{{count}} estrella",
+    "stars_other": "{{count}} estrellas",
+    "unrated": "Sin valorar",
+    "longPressHint": "Mantén pulsada una portada para las acciones rápidas"
+  },
+  "filters": {
+    "sort": "Ordenar por",
+    "rating": "Valoración",
+    "anyRating": "Cualquier valoración",
+    "exactStars": "{{count}} ★",
+    "minStars": "{{count}}+ ★"
+  },
+  "sort": {
+    "added": "Añadidos recientemente",
+    "title": "Título",
+    "read": "Leídos recientemente",
+    "rating": "Mejor valorados"
   }
 }

@@ -4,6 +4,7 @@
  * containers. Routes validate and translate to HTTP; the rules live here.
  */
 import {
+  normaliseRating,
   resolveReadAt,
   type Book,
   type CreateBookRequest,
@@ -120,13 +121,20 @@ export async function createBook(
   }
   const readStatus = input.readStatus ?? 'to_read';
   const readAt = resolveReadAt(readStatus, input.readAt);
-  return repos.books.create(ownerId, { ...input, shelfId, readStatus, readAt });
+  return repos.books.create(ownerId, {
+    ...input,
+    shelfId,
+    readStatus,
+    readAt,
+    rating: normaliseRating(input.rating),
+  });
 }
 
 /**
  * Patch a book. The read date follows the read status: `readStatus=read`
  * without a `readAt` stamps today (an existing date is kept), and any other
- * status clears it — so `readAt` is only ever set on a finished book.
+ * status clears it — so `readAt` is only ever set on a finished book. A
+ * 0-star rating is stored as "unrated" (`null`).
  */
 export async function updateBook(
   repos: Repositories,
@@ -147,6 +155,7 @@ export async function updateBook(
       current.readAt,
     );
   }
+  if (input.rating !== undefined) patch.rating = normaliseRating(input.rating);
   const book = await repos.books.update(ownerId, id, patch);
   if (!book) throw notFound('Book');
   return book;
