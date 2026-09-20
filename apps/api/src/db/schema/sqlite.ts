@@ -21,6 +21,13 @@ const jsonStringArray = customType<{ data: string[]; driverData: string }>({
   fromDriver: (value) => JSON.parse(value) as string[],
 });
 
+/** JSON object of provider identifiers stored in a TEXT column. */
+const jsonStringRecord = customType<{ data: Record<string, string>; driverData: string }>({
+  dataType: () => 'text',
+  toDriver: (value) => JSON.stringify(value),
+  fromDriver: (value) => JSON.parse(value) as Record<string, string>,
+});
+
 const id = () => text('id').notNull().primaryKey();
 const timestamps = {
   createdAt: text('created_at').notNull(),
@@ -148,6 +155,32 @@ export const libraryShares = sqliteTable(
   ],
 );
 
+/**
+ * Shared ISBN catalogue: provider metadata keyed by ISBN-13, no owner (see
+ * `0002_catalog_books.sql` and ADR 0003). A miss is a row with a null title
+ * and `missUntil` set.
+ */
+export const catalogBooks = sqliteTable('catalog_books', {
+  isbn13: text('isbn13').notNull().primaryKey(),
+  isbn10: text('isbn10'),
+  title: text('title'),
+  subtitle: text('subtitle'),
+  authors: jsonStringArray('authors').notNull(),
+  publisher: text('publisher'),
+  publishedDate: text('published_date'),
+  pages: integer('pages'),
+  language: text('language'),
+  coverUrl: text('cover_url'),
+  categories: jsonStringArray('categories').notNull(),
+  description: text('description'),
+  source: text('source'),
+  providerIds: jsonStringRecord('provider_ids').notNull(),
+  raw: text('raw'),
+  fetchedAt: text('fetched_at').notNull(),
+  refreshedAt: text('refreshed_at').notNull(),
+  missUntil: text('miss_until'),
+});
+
 export const sqliteSchema = {
   schemaMigrations,
   users,
@@ -156,4 +189,5 @@ export const sqliteSchema = {
   books,
   lendings,
   libraryShares,
+  catalogBooks,
 };

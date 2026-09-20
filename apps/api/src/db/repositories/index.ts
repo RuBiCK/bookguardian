@@ -1,5 +1,6 @@
 import type { DatabaseAdapter } from '../adapters/types';
 import { createBookRepository, type BookRepository } from './books';
+import { createCatalogBookRepository, type CatalogBookRepository } from './catalog-books';
 import { createLendingRepository, type LendingRepository } from './lendings';
 import { createLibraryRepository, type LibraryRepository } from './libraries';
 import { createLibraryShareRepository, type LibraryShareRepository } from './library-shares';
@@ -13,6 +14,8 @@ export interface Repositories {
   books: BookRepository;
   lendings: LendingRepository;
   libraryShares: LibraryShareRepository;
+  /** Shared, owner-less ISBN → provider metadata cache. */
+  catalogBooks: CatalogBookRepository;
 }
 
 /** Repositories are dialect-agnostic: they only see the adapter's kit + tables. */
@@ -25,12 +28,15 @@ export function createRepositories(adapter: DatabaseAdapter): Repositories {
     books: createBookRepository(kit, tables),
     lendings: createLendingRepository(kit, tables),
     libraryShares: createLibraryShareRepository(kit, tables),
+    catalogBooks: createCatalogBookRepository(kit, tables),
   };
 }
 
 export { NotFoundError } from './base';
+export type { CatalogBook, CatalogBookRow } from './catalog-books';
 export type {
   BookRepository,
+  CatalogBookRepository,
   LendingRepository,
   LibraryRepository,
   LibraryShareRepository,

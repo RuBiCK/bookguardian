@@ -129,6 +129,16 @@ Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 | `TZ`            | system                   | Timezone for "today" (read-date default + check)  |
 | `VITE_API_URL`  | `http://localhost:3000`  | Where Vite proxies `/api`; also baked into builds |
 
+Metadata lookup (see [Book metadata lookup](#book-metadata-lookup)):
+
+| Variable                   | Default | Notes                                                               |
+| -------------------------- | ------- | ------------------------------------------------------------------- |
+| `GOOGLE_BOOKS_API_KEY`     | —       | Google Books key; the anonymous quota is tiny                       |
+| `LOOKUP_TIMEOUT_MS`        | `8000`  | Per-provider request budget                                         |
+| `LOOKUP_CACHE_TTL_SECONDS` | `86400` | In-memory cache for free-text search results                        |
+| `CATALOG_REFRESH_DAYS`     | `180`   | Age past which a `catalog_books` row is refreshed in the background |
+| `CATALOG_MISS_DAYS`        | `7`     | How long an ISBN no provider knows is remembered before retrying    |
+
 ### Switching the database driver
 
 The API talks to the database only through `apps/api/src/db/adapters/*`. Pick
@@ -160,7 +170,8 @@ apps/
       routes/             HTTP handlers, Zod-validated
       db/adapters/        sqlite | postgres | mysql — the only dialect-specific code
       db/schema/          Drizzle tables per dialect (kept in parity by a test)
-      db/repositories/    dialect-agnostic data access
+      db/repositories/    dialect-agnostic data access (incl. the shared catalog_books)
+      lookup/             Open Library / Google Books providers + catalogue-first service
       inventory.ts        library/shelf/book use-cases (defaults, cascade rules)
       owner.ts            resolves the owner every query is scoped by
       db/migrate.ts       migration runner    db/seed.ts  seed
@@ -245,12 +256,38 @@ last); `sort=rating` lists the best-rated first (unrated last).
 `/api/lookup/*` asks **Open Library** first and falls back to **Google Books**
 when it has no record (`apps/api/src/lookup/`). Provider replies are normalised
 into the shared `BookDraft` schema (ISBN-10 and -13 both filled in, BCP-47
-language, https cover URL) and cached in memory per ISBN / per query
-(`LOOKUP_CACHE_TTL_SECONDS`, default one day). One provider failing is logged
-and skipped; only when all of them fail does the API answer 503 so the app can
-say "try again" instead of "unknown book". Google's anonymous quota is tiny —
-set `GOOGLE_BOOKS_API_KEY` for anything beyond local testing. Tests run against
+language, https cover URL). One provider failing is logged and skipped; only
+when all of them fail does the API answer 503 so the app can say "try again"
+instead of "unknown book". Google's anonymous quota is tiny — set
+`GOOGLE_BOOKS_API_KEY` for anything beyond local testing. Tests run against
 recorded fixtures in `apps/api/test/fixtures/lookup/`.
+
+#### The shared ISBN catalogue
+
+Whatever a provider returns for an ISBN is stored in the `catalog_books` table,
+keyed by ISBN-13, so **each ISBN is fetched online at most once per instance**
+([ADR 0003](docs/adr/0003-shared-isbn-catalogue.md)). The catalogue is
+provider data, not user data: it has no owner, every user reads the same row,
+and it survives restarts. `GET /api/lookup/isbn/:isbn` therefore goes:
+
+1. `catalog_books` hit that is not stale → returned, no provider call.
+2. Hit with `miss_until` in the future (no provider knew the ISBN last time) →
+   404 straight away; the providers are asked again after `CATALOG_MISS_DAYS`.
+3. Otherwise Open Library → Google Books, and the answer (hit or miss) is
+   stored. Concurrent requests for one ISBN share a single provider call.
+
+Rows older than `CATALOG_REFRESH_DAYS` are served immediately and refreshed
+in the background; a provider failure during that refresh leaves the row as it
+was. Free-text search results are only cached in memory
+(`LOOKUP_CACHE_TTL_SECONDS`), but every result carrying an ISBN-13 is stored
+opportunistically, so tapping a search candidate never fetches again. Books
+stay per-user copies: the catalogue pre-fills the add form, it is not a foreign
+key the UI depends on.
+
+To reset the catalogue, delete its rows — `sqlite3 apps/api/data/bookguardian.db
+'DELETE FROM catalog_books'` (or `/data/bookguardian.db` in Docker) — or delete
+the whole SQLite file in `./data` for a factory reset; it is rebuilt lazily as
+ISBNs are scanned or typed.
 
 ### Scan tab (web)
 

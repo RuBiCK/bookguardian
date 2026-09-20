@@ -6,7 +6,7 @@ import { createApp, type App } from '../src/app';
 import { createRepositories, type Repositories } from '../src/db/repositories';
 import { seed, type SeedResult } from '../src/db/seed';
 import { createTestDb, type TestDb } from './adapters';
-import { fixtureLookup } from './lookup-fixtures';
+import { fixtureLookup, type FixtureLookupOptions } from './lookup-fixtures';
 
 export interface TestApp {
   app: App;
@@ -21,16 +21,20 @@ export interface TestApp {
 export interface TestAppOptions {
   /** Also serve a built SPA from this directory (see `src/web-app.ts`). */
   webDist?: string;
+  /** Reuse a database (simulates a restart on the same SQLite file). */
+  db?: TestDb;
+  /** Clock / cadence for the catalogue-backed lookup. */
+  lookup?: Pick<FixtureLookupOptions, 'now' | 'refreshMs' | 'missMs'>;
 }
 
-export async function createTestApp({ webDist }: TestAppOptions = {}): Promise<TestApp> {
-  const db = await createTestDb();
+export async function createTestApp(options: TestAppOptions = {}): Promise<TestApp> {
+  const db = options.db ?? (await createTestDb());
   const repos = createRepositories(db.adapter);
   const base = await seed(db.adapter);
-  const lookup = fixtureLookup();
+  const lookup = fixtureLookup({ ...options.lookup, catalog: repos.catalogBooks });
   const app = createApp({
     quiet: true,
-    webDist,
+    webDist: options.webDist,
     services: { adapter: db.adapter, repos, lookup: lookup.service, version: '0.0.0-test' },
   });
   return { app, db, repos, base, lookup, cleanup: db.cleanup };

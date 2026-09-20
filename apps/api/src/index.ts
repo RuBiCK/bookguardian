@@ -20,13 +20,10 @@ if (migrated.applied.length > 0) {
 const seeded = await seed(adapter);
 if (seeded.created) console.log('[api] seeded default user, library and shelf');
 
+const repos = createRepositories(adapter);
+const lookup = createDefaultLookupService(config.lookup, repos.catalogBooks);
 const app = createApp({
-  services: {
-    adapter,
-    repos: createRepositories(adapter),
-    lookup: createDefaultLookupService(config.lookup),
-    version,
-  },
+  services: { adapter, repos, lookup, version },
   webDist: config.webDist,
 });
 
@@ -38,6 +35,8 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
 async function shutdown(signal: string) {
   console.log(`[api] ${signal} received, shutting down`);
   server.close();
+  // Let catalogue refreshes in flight land before the database goes away.
+  await lookup.idle();
   await adapter.close();
   process.exit(0);
 }

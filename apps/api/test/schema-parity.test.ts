@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { listMigrationFiles } from '../src/db/migrate';
 import { mysqlSchema } from '../src/db/schema/mysql';
 import { postgresSchema } from '../src/db/schema/postgres';
 import { sqliteSchema } from '../src/db/schema/sqlite';
-import { listMigrationFiles } from '../src/db/migrate';
 
 type AnySchema = Record<string, Parameters<typeof getTableColumns>[0]>;
 
