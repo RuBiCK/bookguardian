@@ -305,7 +305,20 @@
       "noEmail": "No email yet",
       "signOut": "Sign out",
       "signingOut": "Signing out…",
-      "signOutFailed": "Couldn't sign out. Check your connection and try again."
+      "signOutFailed": "Couldn't sign out. Check your connection and try again.",
+      "deleteAccount": "Delete account",
+      "deleteTitle": "Delete your account?",
+      "deleteBody": "Your libraries, shelves, books, lending history and uploaded covers will be erased for good. There is no undo.",
+      "deleteContinue": "Continue",
+      "confirmTitle": "Type your email to confirm",
+      "confirmBody": "To delete the account {{email}}, type its email address below.",
+      "confirmEmailLabel": "Email",
+      "confirmEmailPlaceholder": "you@example.com",
+      "deleteFinal": "Delete my account",
+      "deleting": "Deleting…",
+      "deleted": "Your account has been deleted.",
+      "mismatch": "That is not the email of this account.",
+      "failed": "Couldn't delete the account. Try again."
     }
   },
   "reading": {

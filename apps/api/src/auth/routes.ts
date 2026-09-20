@@ -7,12 +7,18 @@ import { generateCodeVerifier, generateState } from 'arctic';
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, getSignedCookie, setCookie, setSignedCookie } from 'hono/cookie';
 import { z } from 'zod';
-import { testLoginInputSchema, type AuthMeResponse, type User } from '@bookguardian/shared';
+import {
+  deleteAccountInputSchema,
+  testLoginInputSchema,
+  type AuthMeResponse,
+  type User,
+} from '@bookguardian/shared';
 import type { AppEnv } from '../app-env';
 import { ApiHttpError } from '../errors';
 import { validate } from '../validation';
 import {
   AccountNotAllowedError,
+  deleteAccount,
   EmailNotVerifiedError,
   normalizeEmail,
   resolveAccount,
@@ -162,6 +168,17 @@ export function createAuthRoutes(options: AuthRoutesOptions) {
     }
   }
 
+  /** The session behind the cookie, or 401 (clearing a stale cookie on the way). */
+  async function requireSession(c: Context<AppEnv>) {
+    const token = getCookie(c, SESSION_COOKIE);
+    const valid = token ? await sessions.validate(token) : null;
+    if (!valid || !token) {
+      if (token) deleteCookie(c, SESSION_COOKIE, { path: '/' });
+      throw new ApiHttpError(401, 'unauthenticated', 'Not signed in');
+    }
+    return { user: valid.user, renewed: valid.renewed, token };
+  }
+
   function requireOidc(): OidcClient {
     if (oidc) return oidc;
     log('GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set: Google sign-in is unavailable');
@@ -243,14 +260,32 @@ export function createAuthRoutes(options: AuthRoutesOptions) {
     })
 
     .get('/me', async (c) => {
-      const token = getCookie(c, SESSION_COOKIE);
-      const valid = token ? await sessions.validate(token) : null;
-      if (!valid) {
-        if (token) deleteCookie(c, SESSION_COOKIE, { path: '/' });
-        throw new ApiHttpError(401, 'unauthenticated', 'Not signed in');
+      const { user, renewed, token } = await requireSession(c);
+      if (renewed) setCookie(c, SESSION_COOKIE, token, sessionCookie());
+      return c.json(present(user));
+    })
+
+    /**
+     * Delete the signed-in account and everything it owns. The body must
+     * repeat the account's email (typed by the user) — a confirmation the
+     * SPA asks for in two steps, and a guard against a stray request.
+     */
+    .delete('/me', validate('json', deleteAccountInputSchema), async (c) => {
+      const { user } = await requireSession(c);
+      const { confirmEmail } = c.req.valid('json');
+      if (!user.email || normalizeEmail(confirmEmail) !== user.email) {
+        throw new ApiHttpError(
+          422,
+          'confirm_email_mismatch',
+          'Type the email of this account to confirm',
+        );
       }
-      if (valid.renewed && token) setCookie(c, SESSION_COOKIE, token, sessionCookie());
-      return c.json(present(valid.user));
+      const { adapter, covers } = c.get('services');
+      const deleted = await deleteAccount(adapter, user.id);
+      if (deleted) await covers.removeOrphanFiles(deleted.privateCoverAssetIds);
+      deleteCookie(c, SESSION_COOKIE, { path: '/' });
+      log(`deleted: ${user.email} (user ${user.id})`);
+      return c.body(null, 204);
     })
 
     .post('/logout', async (c) => {

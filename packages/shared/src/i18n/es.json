@@ -305,7 +305,20 @@
       "noEmail": "Sin email todavía",
       "signOut": "Cerrar sesión",
       "signingOut": "Cerrando sesión…",
-      "signOutFailed": "No se pudo cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo."
+      "signOutFailed": "No se pudo cerrar la sesión. Comprueba tu conexión y vuelve a intentarlo.",
+      "deleteAccount": "Eliminar cuenta",
+      "deleteTitle": "¿Eliminar tu cuenta?",
+      "deleteBody": "Se borrarán para siempre tus bibliotecas, estanterías, libros, historial de préstamos y portadas subidas. No se puede deshacer.",
+      "deleteContinue": "Continuar",
+      "confirmTitle": "Escribe tu email para confirmar",
+      "confirmBody": "Para eliminar la cuenta {{email}}, escribe su dirección de email abajo.",
+      "confirmEmailLabel": "Email",
+      "confirmEmailPlaceholder": "tu@ejemplo.com",
+      "deleteFinal": "Eliminar mi cuenta",
+      "deleting": "Eliminando…",
+      "deleted": "Tu cuenta se ha eliminado.",
+      "mismatch": "Ese no es el email de esta cuenta.",
+      "failed": "No se pudo eliminar la cuenta. Inténtalo de nuevo."
     }
   },
   "reading": {

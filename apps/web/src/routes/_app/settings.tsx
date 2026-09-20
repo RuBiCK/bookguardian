@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLogout, useSession } from '../../api/auth';
+import { useDeleteAccount, useLogout, useSession } from '../../api/auth';
 import { useBackfillStatus, useStartBackfill } from '../../api/covers';
 import { useHealth } from '../../api/health';
 import { Avatar } from '../../components/Avatar';
+import { DeleteAccountSheet } from '../../components/DeleteAccountSheet';
 import { Screen } from '../../components/Screen';
 import { showToast } from '../../lib/toast';
 import { THEMES, useTheme } from '../../theme/useTheme';
@@ -101,7 +103,7 @@ function SettingsScreen() {
   );
 }
 
-/** Who is signed in, and the way out. */
+/** Who is signed in, the way out, and the way to leave for good. */
 function AccountSection() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -109,6 +111,16 @@ function AccountSection() {
   const logout = useLogout({
     onSuccess: () => void navigate({ to: '/login', replace: true }),
     onError: () => showToast(t('settings.account.signOutFailed'), 'error'),
+  });
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccount = useDeleteAccount({
+    onSuccess: () => {
+      setDeleting(false);
+      showToast(t('settings.account.deleted'));
+      // Session dropped and cache emptied: same exit as a sign-out.
+      void navigate({ to: '/login', replace: true });
+    },
+    onError: () => showToast(t('settings.account.failed'), 'error'),
   });
   const user = session.data;
   if (!user) return null;
@@ -140,7 +152,29 @@ function AccountSection() {
             {logout.isPending ? t('settings.account.signingOut') : t('settings.account.signOut')}
           </button>
         </div>
+        {user.email ? (
+          <div className="list__row">
+            <button
+              type="button"
+              className="button button--block button--danger-ghost"
+              disabled={deleteAccount.isPending}
+              onClick={() => setDeleting(true)}
+              data-testid="delete-account"
+            >
+              {t('settings.account.deleteAccount')}
+            </button>
+          </div>
+        ) : null}
       </div>
+      {user.email ? (
+        <DeleteAccountSheet
+          open={deleting}
+          email={user.email}
+          busy={deleteAccount.isPending}
+          onClose={() => setDeleting(false)}
+          onConfirm={(confirmEmail) => deleteAccount.mutate({ confirmEmail })}
+        />
+      ) : null}
     </section>
   );
 }

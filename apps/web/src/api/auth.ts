@@ -6,7 +6,11 @@
  * `/login` the moment it turns null (a 401 anywhere, a sign-out, a session
  * that expired while the tab was in the background).
  */
-import { authMeResponseSchema, type AuthMeResponse } from '@bookguardian/shared';
+import {
+  authMeResponseSchema,
+  type AuthMeResponse,
+  type DeleteAccountInput,
+} from '@bookguardian/shared';
 import {
   queryOptions,
   useMutation,
@@ -84,6 +88,27 @@ export function useLogout(options: { onSuccess?: () => void; onError?: () => voi
       apiRequest('/api/auth/logout', noContent, { method: 'POST', onUnauthenticated: 'ignore' }),
     onSuccess: async () => {
       // Nothing of the previous account may survive in memory.
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      dropSession(queryClient);
+      options.onSuccess?.();
+    },
+    onError: () => options.onError?.(),
+  });
+}
+
+/**
+ * `DELETE /api/auth/me` with the typed-back email (Settings → Account). On
+ * success the cache is emptied and the session dropped, exactly like a
+ * sign-out: nothing the account owned may linger on screen, and the guard
+ * sends us to `/login`.
+ */
+export function useDeleteAccount(options: { onSuccess?: () => void; onError?: () => void } = {}) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: DeleteAccountInput) =>
+      apiRequest('/api/auth/me', noContent, { method: 'DELETE', body: input }),
+    onSuccess: async () => {
       await queryClient.cancelQueries();
       queryClient.clear();
       dropSession(queryClient);

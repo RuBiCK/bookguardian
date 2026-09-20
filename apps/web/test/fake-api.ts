@@ -238,7 +238,20 @@ export function installFakeApi(): FakeApi {
 
     // Auth: the session, and everything else needs one (like `authMiddleware`).
     if (path === '/api/auth/me') {
-      return auth.user ? json(auth.user) : error(401, 'unauthenticated');
+      if (!auth.user) return error(401, 'unauthenticated');
+      if (method === 'DELETE') {
+        const { confirmEmail } = body as { confirmEmail?: string };
+        if ((confirmEmail ?? '').trim().toLowerCase() !== auth.user.email) {
+          return error(422, 'confirm_email_mismatch');
+        }
+        auth.user = null;
+        libraries.length = 0;
+        shelves.length = 0;
+        books.length = 0;
+        lendings.length = 0;
+        return new Response(null, { status: 204 });
+      }
+      return json(auth.user);
     }
     if (path === '/api/auth/logout' && method === 'POST') {
       auth.user = null;
