@@ -19,6 +19,13 @@ const jsonStringArray = customType<{ data: string[]; driverData: string }>({
   fromDriver: (value) => JSON.parse(value) as string[],
 });
 
+/** JSON object of provider identifiers stored in a TEXT column. */
+const jsonStringRecord = customType<{ data: Record<string, string>; driverData: string }>({
+  dataType: () => 'text',
+  toDriver: (value) => JSON.stringify(value),
+  fromDriver: (value) => JSON.parse(value) as Record<string, string>,
+});
+
 const id = () => varchar('id', { length: 36 }).notNull().primaryKey();
 const ts = (name: string) => varchar(name, { length: 32 });
 const timestamps = {
@@ -147,6 +154,27 @@ export const libraryShares = pgTable(
   ],
 );
 
+export const catalogBooks = pgTable('catalog_books', {
+  isbn13: varchar('isbn13', { length: 13 }).notNull().primaryKey(),
+  isbn10: varchar('isbn10', { length: 10 }),
+  title: varchar('title', { length: 500 }),
+  subtitle: varchar('subtitle', { length: 500 }),
+  authors: jsonStringArray('authors').notNull(),
+  publisher: varchar('publisher', { length: 200 }),
+  publishedDate: varchar('published_date', { length: 40 }),
+  pages: integer('pages'),
+  language: varchar('language', { length: 16 }),
+  coverUrl: varchar('cover_url', { length: 2048 }),
+  categories: jsonStringArray('categories').notNull(),
+  description: text('description'),
+  source: varchar('source', { length: 32 }),
+  providerIds: jsonStringRecord('provider_ids').notNull(),
+  raw: text('raw'),
+  fetchedAt: ts('fetched_at').notNull(),
+  refreshedAt: ts('refreshed_at').notNull(),
+  missUntil: ts('miss_until'),
+});
+
 export const postgresSchema = {
   schemaMigrations,
   users,
@@ -155,4 +183,5 @@ export const postgresSchema = {
   books,
   lendings,
   libraryShares,
+  catalogBooks,
 };

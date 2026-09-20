@@ -15,6 +15,8 @@ describe('loadConfig', () => {
         googleBooksApiKey: undefined,
         timeoutMs: 8000,
         cacheTtlMs: 86_400_000,
+        catalogRefreshMs: 180 * 86_400_000,
+        catalogMissMs: 7 * 86_400_000,
       },
       webDist: undefined,
     });
@@ -32,6 +34,8 @@ describe('loadConfig', () => {
       GOOGLE_BOOKS_API_KEY: 'secret',
       LOOKUP_TIMEOUT_MS: '2000',
       LOOKUP_CACHE_TTL_SECONDS: '60',
+      CATALOG_REFRESH_DAYS: '30',
+      CATALOG_MISS_DAYS: '1',
       WEB_DIST: '/srv/web',
     });
     expect(config).toEqual({
@@ -44,6 +48,8 @@ describe('loadConfig', () => {
         googleBooksApiKey: 'secret',
         timeoutMs: 2000,
         cacheTtlMs: 60_000,
+        catalogRefreshMs: 30 * 86_400_000,
+        catalogMissMs: 86_400_000,
       },
       webDist: '/srv/web',
     });
@@ -59,5 +65,7 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ PORT: '70000' })).toThrow(/PORT/);
     expect(() => loadConfig({ OPEN_LIBRARY_URL: 'not a url' })).toThrow(/OPEN_LIBRARY_URL/);
     expect(() => loadConfig({ LOOKUP_TIMEOUT_MS: '1' })).toThrow(/LOOKUP_TIMEOUT_MS/);
+    expect(() => loadConfig({ CATALOG_REFRESH_DAYS: '0' })).toThrow(/CATALOG_REFRESH_DAYS/);
+    expect(() => loadConfig({ CATALOG_MISS_DAYS: '-1' })).toThrow(/CATALOG_MISS_DAYS/);
   });
 });

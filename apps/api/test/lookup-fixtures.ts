@@ -5,6 +5,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { CatalogBookRepository } from '../src/db/repositories';
 import { createLookupService, googleBooksProvider, openLibraryProvider } from '../src/lookup';
 import type { FetchLike } from '../src/lookup';
 
@@ -104,8 +105,19 @@ export function fixtureFetch(): FixtureFetch {
   };
 }
 
+export interface FixtureLookupOptions {
+  fetch?: FixtureFetch;
+  apiKey?: string;
+  /** Persist lookups here (the real wiring always does). */
+  catalog?: CatalogBookRepository;
+  /** Fake clock so tests can age catalogue rows without waiting. */
+  now?: () => number;
+  refreshMs?: number;
+  missMs?: number;
+}
+
 /** Open Library → Google Books over fixtures, no cache expiry during a test. */
-export function fixtureLookup(overrides: { fetch?: FixtureFetch; apiKey?: string } = {}) {
+export function fixtureLookup(overrides: FixtureLookupOptions = {}) {
   const fetch = overrides.fetch ?? fixtureFetch();
   const log: string[] = [];
   const service = createLookupService({
@@ -113,6 +125,10 @@ export function fixtureLookup(overrides: { fetch?: FixtureFetch; apiKey?: string
       openLibraryProvider({ baseUrl: OPEN_LIBRARY }),
       googleBooksProvider({ baseUrl: GOOGLE_BOOKS, apiKey: overrides.apiKey }),
     ],
+    catalog: overrides.catalog,
+    refreshMs: overrides.refreshMs,
+    missMs: overrides.missMs,
+    now: overrides.now,
     fetch: fetch.fetch,
     timeoutMs: 1000,
     log: (message) => log.push(message),

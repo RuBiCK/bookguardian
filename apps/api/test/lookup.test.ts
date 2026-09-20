@@ -373,24 +373,23 @@ describe('TtlCache', () => {
 });
 
 describe('lookup service', () => {
-  it('prefers Open Library and caches per ISBN', async () => {
+  it('prefers Open Library and asks the providers once per ISBN', async () => {
     const { service, fetch } = fixtureLookup();
     const first = await service.byIsbn('9780441172719');
     expect(first).toMatchObject({ source: 'open_library', title: 'Dune' });
+    expect(fetch.calls.some((c) => c.startsWith(GOOGLE_BOOKS))).toBe(false);
+    // Without a catalogue there is nothing to remember: every call fetches.
     const before = fetch.calls.length;
     expect(await service.byIsbn('9780441172719')).toEqual(first);
-    expect(fetch.calls.length).toBe(before);
-    expect(fetch.calls.some((c) => c.startsWith(GOOGLE_BOOKS))).toBe(false);
+    expect(fetch.calls.length).toBe(before * 2);
   });
 
-  it('falls back to Google Books when Open Library has nothing, and caches misses', async () => {
+  it('falls back to Google Books when Open Library has nothing', async () => {
     const { service, fetch } = fixtureLookup();
     const draft = await service.byIsbn('9780441013593');
     expect(draft).toMatchObject({ source: 'google_books', title: 'Dune' });
+    expect(fetch.calls[0]).toBe(`${OPEN_LIBRARY}/isbn/9780441013593.json`);
     expect(await service.byIsbn('9780000000002')).toBeNull();
-    const before = fetch.calls.length;
-    expect(await service.byIsbn('9780000000002')).toBeNull();
-    expect(fetch.calls.length).toBe(before);
   });
 
   it('coalesces concurrent identical lookups', async () => {

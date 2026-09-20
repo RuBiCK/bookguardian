@@ -1,0 +1,29 @@
+# Test on a phone over the LAN with HTTPS (the camera needs a secure origin).
+#
+#   LAN_IP=$(ipconfig getifaddr en0) LAN_HOSTNAME=$(scutil --get LocalHostName).local \
+#   docker compose -f docker-compose.yaml -f docker-compose.lan.yaml up -d --build
+#
+# Then open https://<LAN_IP>:8443 on the phone and accept the one-time
+# certificate warning. Port 3000 is bound to localhost only; Caddy on :8443
+# is the only thing the LAN sees. See README "Test on your phone over the LAN".
+services:
+  bookguardian:
+    ports: !override
+      - '127.0.0.1:3000:3000'
+
+  https:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - '8443:8443'
+    environment:
+      LAN_IP: ${LAN_IP:?set LAN_IP to this machine's LAN address, e.g. $(ipconfig getifaddr en0)}
+      LAN_HOSTNAME: ${LAN_HOSTNAME:-localhost}
+    volumes:
+      - ./deploy/lan/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - bookguardian
+
+volumes:
+  caddy_data:

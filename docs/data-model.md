@@ -3,7 +3,8 @@
 Canonical names come from the project brief: **Library → Shelf → Book**, plus
 **Lending** and **LibraryShare**. Every aggregate carries `owner_id`; sharing is
 modelled from the first migration so multi-user arrives without a schema
-rewrite.
+rewrite. The one owner-less table is **CatalogBook**: provider metadata per
+ISBN-13, shared by every user ([ADR 0003](adr/0003-shared-isbn-catalogue.md)).
 
 ```mermaid
 erDiagram
@@ -85,6 +86,26 @@ erDiagram
         varchar(32) created_at
         varchar(32) updated_at
     }
+    CATALOG_BOOKS {
+        varchar(13) isbn13 PK "no owner: shared provider data"
+        varchar(10) isbn10 "nullable, derived (979 has none)"
+        varchar(500) title "nullable: NULL = miss"
+        varchar(500) subtitle "nullable"
+        text authors "JSON string[]"
+        varchar(200) publisher "nullable"
+        varchar(40) published_date "nullable"
+        int pages "nullable"
+        varchar(16) language "nullable"
+        varchar(2048) cover_url "nullable, provider URL"
+        text categories "JSON string[]"
+        text description "nullable"
+        varchar(32) source "open_library | google_books, nullable"
+        text provider_ids "JSON {source: id}"
+        text raw "JSON BookDraft, nullable"
+        varchar(32) fetched_at
+        varchar(32) refreshed_at
+        varchar(32) miss_until "nullable: negative cache"
+    }
 ```
 
 ## Notes
@@ -111,6 +132,10 @@ erDiagram
   `(owner_id, returned_at)` index serves the "what's lent out" list.
 - **Deletes cascade** down the hierarchy (user → library → shelf → book →
   lending) so removing a library never leaves orphans.
+- **Catalogue.** `catalog_books` is filled lazily by `/api/lookup/isbn/:isbn`
+  and search results; `books` copies its fields at add time and never
+  references it, so a user's edits are theirs alone. BOOK-10 keys covers on the
+  same `isbn13`.
 - **Types are portable.** See [ADR 0002](adr/0002-database-adapter-layer.md)
   for why timestamps and arrays are stored as text.
 
