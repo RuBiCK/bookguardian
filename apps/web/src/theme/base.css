@@ -1212,6 +1212,180 @@ select.field__input {
   white-space: pre-wrap;
 }
 
+/* ---- Lending ---------------------------------------------------------- */
+
+.pill--danger {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.book-card__badge--lent {
+  right: 6px;
+  left: auto;
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+/* Book page section: current lending + history. */
+.lending {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.lending__title {
+  font-size: var(--text-md);
+}
+
+.lending__subtitle {
+  margin-top: var(--space-2);
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.lending__current {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.lending__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.lending__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.lending__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.lending__who {
+  font-weight: 600;
+  font-size: var(--text-base);
+}
+
+.lending__contact {
+  overflow-wrap: anywhere;
+}
+
+.lending__meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.lending .button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Lending tab: borrower groups of lending rows. */
+.lending__summary {
+  margin-bottom: var(--space-3);
+}
+
+.lending__overdue-count {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.borrower {
+  margin-bottom: var(--space-5);
+}
+
+.borrower__name {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-md);
+}
+
+.borrower__contact {
+  font-size: var(--text-sm);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.lending-row {
+  padding-left: var(--space-3);
+}
+
+.lending-row--overdue {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.lending-row__book {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lending-row__cover {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+  color: var(--accent);
+}
+
+.lending-row__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lending-row__cover svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lending-row .button {
+  flex: none;
+}
+
+/* Suggestion chips under a field wrap instead of scrolling. */
+.chips--wrap {
+  flex-wrap: wrap;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  overflow: visible;
+}
+
 /* ---- Toasts ----------------------------------------------------------- */
 
 .toaster {

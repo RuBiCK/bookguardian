@@ -2,6 +2,7 @@ import type { Book } from '@bookguardian/shared';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLentBookIds } from '../api/lending';
 import { BookIcon, StarIcon } from './icons';
 import { QuickActionsSheet } from './QuickActionsSheet';
 
@@ -11,11 +12,13 @@ const LONG_PRESS_SLOP_PX = 10;
 
 interface BookCardProps {
   book: Book;
+  /** The book is currently lent out (badge on the cover). */
+  lent?: boolean;
   onLongPress?: (book: Book) => void;
 }
 
 /** Cover-first tile; falls back to a title/author card when there is no cover. */
-export function BookCard({ book, onLongPress }: BookCardProps) {
+export function BookCard({ book, lent = false, onLongPress }: BookCardProps) {
   const { t } = useTranslation();
   const authors = book.authors.length > 0 ? book.authors.join(', ') : t('books.unknownAuthor');
   const press = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
@@ -90,6 +93,9 @@ export function BookCard({ book, onLongPress }: BookCardProps) {
             {t(`readStatus.${book.readStatus}`)}
           </span>
         ) : null}
+        {lent ? (
+          <span className="book-card__badge book-card__badge--lent">{t('lending.lent')}</span>
+        ) : null}
         {book.rating ? (
           <span
             className="book-card__rating"
@@ -112,6 +118,7 @@ interface BookGridProps {
 /** Cover grid; a long press (or right-click) on any cover opens the quick actions sheet. */
 export function BookGrid({ books }: BookGridProps) {
   const [quick, setQuick] = useState<Book | null>(null);
+  const lent = useLentBookIds();
   // Show the live copy of the book so the sheet reflects optimistic updates.
   const current = quick ? (books.find((b) => b.id === quick.id) ?? quick) : null;
   return (
@@ -119,7 +126,7 @@ export function BookGrid({ books }: BookGridProps) {
       <ul className="book-grid" data-testid="book-grid">
         {books.map((book) => (
           <li key={book.id}>
-            <BookCard book={book} onLongPress={setQuick} />
+            <BookCard book={book} lent={lent.has(book.id)} onLongPress={setQuick} />
           </li>
         ))}
       </ul>
