@@ -96,11 +96,13 @@ erDiagram
   `viewer` only for now. Read-only sharing means a grantee can list a library's
   shelves and books but never write.
 - **Reading state.** `read_status` is one of `to_read`, `reading`, `read`;
-  `read_at` is the date the book was finished and is only meaningful when the
-  status is `read` (the API stamps today when a book becomes read and clears
-  it when it stops being read). `rating` is 1–5 (`NULL` = unrated; the API
-  maps `0` to `NULL`). The transition rules live in
-  `packages/shared/src/lib/reading.ts`.
+  `read_at` is a local calendar day (`YYYY-MM-DD`, no time, no UTC shift) and
+  is only ever set when the status is `read`: marking a book read without a
+  date stamps today, an existing date survives re-marking, and any other
+  status clears it (`resolveReadAt` in `packages/shared`). Future dates are
+  rejected by the shared `readAtSchema`, on the API and in the web form alike.
+  `rating` is 1–5 (`NULL` = unrated; the API maps `0` to `NULL`, see
+  `normaliseRating`).
 - **Re-reads are not modelled yet.** A book carries a single finished date.
   When re-reading matters, add a `book_reads (id, book_id, read_at)` history
   table and keep `books.read_at` as the latest one — no rewrite of the

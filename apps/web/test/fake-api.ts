@@ -4,9 +4,8 @@
  * screens can be exercised end-to-end without a database.
  */
 import {
-  applyReadingRules,
   normaliseRating,
-  todayIso,
+  resolveReadAt,
   type Book,
   type BookDraft,
   type LibraryWithCounts,
@@ -333,14 +332,18 @@ export function installFakeApi(): FakeApi {
       if (!book) return error(404, 'not_found');
       if (method === 'GET') return json(book);
       if (method === 'PATCH') {
-        // Same reading rules as the real API (apps/api/src/inventory.ts).
+        // Same rules as the real API (apps/api/src/inventory.ts).
         const input = body as Partial<Book>;
-        const reading = applyReadingRules(book, input, todayIso());
-        if (!reading.ok) return error(422, 'invalid_reading_dates', { reason: reading.error });
-        const rating = normaliseRating(input.rating);
-        Object.assign(book, input, reading.value, rating === undefined ? {} : { rating }, {
-          updatedAt: now(),
-        });
+        const patch: Partial<Book> = { ...input };
+        if (input.readStatus !== undefined || input.readAt !== undefined) {
+          patch.readAt = resolveReadAt(
+            input.readStatus ?? book.readStatus,
+            input.readAt,
+            book.readAt,
+          );
+        }
+        if (input.rating !== undefined) patch.rating = normaliseRating(input.rating) ?? null;
+        Object.assign(book, patch, { updatedAt: now() });
         return json(book);
       }
       if (method === 'DELETE') {

@@ -6,16 +6,15 @@
  * never wait for the network on a phone.
  */
 import {
-  applyReadingRules,
   bookPageSchema,
   bookSchema,
   inventoryDefaultsSchema,
+  resolveReadAt,
   libraryListResponseSchema,
   libraryWithCountsSchema,
   normaliseRating,
   shelfListResponseSchema,
   shelfWithCountSchema,
-  todayIso,
   type Book,
   type BookListQuery,
   type BookPage,
@@ -24,7 +23,6 @@ import {
   type CreateShelfInput,
   type InventoryDefaults,
   type LibraryWithCounts,
-  type ReadingPatch,
   type ReadStatus,
   type ShelfWithCount,
   type UpdateBookInput,
@@ -371,39 +369,37 @@ export function useDeleteBook(callbacks: MutationCallbacks<void> = {}) {
   });
 }
 
-export type ReadingActions = ReturnType<typeof useUpdateBook> & {
-  /** 0 clears the rating. */
-  setRating(book: Book, rating: number): void;
-  /** Change the status; the finished date follows the shared reading rules (today stamped on read). */
-  setStatus(book: Book, readStatus: ReadStatus): void;
-  /** Edit the finished date of a read book (null clears). */
-  setReadAt(book: Book, readAt: string | null): void;
-};
-
 /**
- * Rating / status / dates actions used by the book page and the long-press
- * quick actions. The patch sent is exactly what the server will store, so
- * the optimistic cache never disagrees with the reply.
+ * Rating / read-status / read-date actions used by the book page and the
+ * long-press quick actions. The read date follows the same rule the API
+ * applies (`resolveReadAt`) and a 0-star rating is sent as `null`, so the
+ * optimistic book already matches what the server will store.
  */
-export function useSetReading(callbacks: MutationCallbacks<Book> = {}): ReadingActions {
+export function useSetReadStatus(callbacks: MutationCallbacks<Book> = {}) {
   const update = useUpdateBook(callbacks);
-  const apply = (book: Book, patch: ReadingPatch) => {
-    const result = applyReadingRules(book, patch, todayIso());
-    // A contradictory date cannot come from the controls; report it rather than send it.
-    if (!result.ok) {
-      callbacks.onError?.(new Error(result.error));
-      return;
-    }
-    update.mutate({ id: book.id, input: result.value });
-  };
   return {
     ...update,
-    setRating: (book, rating) =>
+    set: (book: Book, readStatus: ReadStatus) =>
+      update.mutate({
+        id: book.id,
+        input: { readStatus, readAt: resolveReadAt(readStatus, undefined, book.readAt) },
+      }),
+    /**
+     * Correct the day a finished book was read. Resolves once the change is
+     * saved or rolled back; failures are already surfaced through `onError`.
+     */
+    setReadAt: (book: Book, readAt: string): Promise<void> =>
+      update.mutateAsync({ id: book.id, input: { readStatus: 'read', readAt } }).then(
+        () => undefined,
+        () => undefined,
+      ),
+    /** 0 clears the rating. */
+    setRating: (book: Book, rating: number) =>
       update.mutate({ id: book.id, input: { rating: normaliseRating(rating) ?? null } }),
-    setStatus: (book, readStatus) => apply(book, { readStatus }),
-    setReadAt: (book, readAt) => apply(book, { readAt }),
   };
 }
+
+export type ReadingActions = ReturnType<typeof useSetReadStatus>;
 
 // ---- Library mutations ---------------------------------------------------
 

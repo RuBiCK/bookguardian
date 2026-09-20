@@ -4,9 +4,8 @@
  * containers. Routes validate and translate to HTTP; the rules live here.
  */
 import {
-  applyReadingRules,
   normaliseRating,
-  todayIso,
+  resolveReadAt,
   type Book,
   type CreateBookRequest,
   type InventoryDefaults,
@@ -111,23 +110,6 @@ export async function resolveDefaults(
   throw new ApiHttpError(409, 'no_shelf', 'Create a shelf before adding books');
 }
 
-/**
- * Apply the reading-life rules (shared with the web app) to an incoming
- * create/update payload: stamp `readAt` when a book becomes read, clear it
- * when it stops being read, refuse a contradictory date (422
- * `invalid_reading_dates`), and store a 0-star rating as "unrated".
- */
-function withReadingRules<T extends UpdateBookInput>(current: Book | null, input: T): T {
-  const result = applyReadingRules(current, input, todayIso());
-  if (!result.ok) {
-    throw new ApiHttpError(422, 'invalid_reading_dates', 'Finished date contradicts the status', {
-      reason: result.error,
-    });
-  }
-  const rating = normaliseRating(input.rating);
-  return { ...input, ...result.value, ...(rating === undefined ? {} : { rating }) };
-}
-
 export async function createBook(
   repos: Repositories,
   ownerId: string,
@@ -137,9 +119,23 @@ export async function createBook(
   if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
     throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId: input.shelfId });
   }
-  return repos.books.create(ownerId, { ...withReadingRules(null, input), shelfId });
+  const readStatus = input.readStatus ?? 'to_read';
+  const readAt = resolveReadAt(readStatus, input.readAt);
+  return repos.books.create(ownerId, {
+    ...input,
+    shelfId,
+    readStatus,
+    readAt,
+    rating: normaliseRating(input.rating),
+  });
 }
 
+/**
+ * Patch a book. The read date follows the read status: `readStatus=read`
+ * without a `readAt` stamps today (an existing date is kept), and any other
+ * status clears it — so `readAt` is only ever set on a finished book. A
+ * 0-star rating is stored as "unrated" (`null`).
+ */
 export async function updateBook(
   repos: Repositories,
   ownerId: string,
@@ -151,7 +147,16 @@ export async function updateBook(
   if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
     throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId: input.shelfId });
   }
-  const book = await repos.books.update(ownerId, id, withReadingRules(current, input));
+  const patch = { ...input };
+  if (input.readStatus !== undefined || input.readAt !== undefined) {
+    patch.readAt = resolveReadAt(
+      input.readStatus ?? current.readStatus,
+      input.readAt,
+      current.readAt,
+    );
+  }
+  if (input.rating !== undefined) patch.rating = normaliseRating(input.rating);
+  const book = await repos.books.update(ownerId, id, patch);
   if (!book) throw notFound('Book');
   return book;
 }

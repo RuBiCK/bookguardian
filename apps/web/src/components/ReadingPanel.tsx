@@ -1,7 +1,8 @@
-import { READ_STATUSES, todayIso, type Book } from '@bookguardian/shared';
+import { READ_STATUSES, type Book } from '@bookguardian/shared';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ReadingActions } from '../api/inventory';
+import { ReadDateField } from './ReadDateField';
 import { StarRating } from './StarRating';
 
 interface ReadingPanelProps {
@@ -12,13 +13,13 @@ interface ReadingPanelProps {
 }
 
 /**
- * "Your reading": star rating, status and the finished date. The date only
- * appears once the book is read, already filled in with today by the
- * reading rules and editable from there.
+ * "Your reading": star rating, status and the read date. The date only
+ * appears once the book is read, already stamped with today by the shared
+ * rule and editable from there (never a future day).
  */
 export function ReadingPanel({ book, actions, compact = false }: ReadingPanelProps) {
   const { t } = useTranslation();
-  const id = useId();
+  const readAtId = useId();
 
   return (
     <section
@@ -41,7 +42,7 @@ export function ReadingPanel({ book, actions, compact = false }: ReadingPanelPro
             className="segmented__option"
             aria-pressed={book.readStatus === status}
             onClick={() => {
-              if (book.readStatus !== status) actions.setStatus(book, status);
+              if (book.readStatus !== status) actions.set(book, status);
             }}
           >
             {t(`readStatus.${status}`)}
@@ -50,17 +51,14 @@ export function ReadingPanel({ book, actions, compact = false }: ReadingPanelPro
       </div>
 
       {book.readStatus === 'read' ? (
-        <div className="field field--inline">
-          <label className="field__label" htmlFor={`${id}-read`}>
-            {t('reading.readAt')}
+        <div className="reading__date">
+          <label className="field__label" htmlFor={readAtId}>
+            {t('books.field.readAt')}
           </label>
-          <input
-            id={`${id}-read`}
-            type="date"
-            className="field__input"
+          <ReadDateField
+            id={readAtId}
             value={book.readAt ?? ''}
-            max={todayIso()}
-            onChange={(event) => actions.setReadAt(book, event.target.value || null)}
+            onChange={(readAt) => actions.setReadAt(book, readAt)}
           />
         </div>
       ) : null}

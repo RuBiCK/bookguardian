@@ -137,6 +137,7 @@
     "titleRequired": "A title is required.",
     "isbnInvalid": "That doesn't look like a valid ISBN.",
     "coverUrlInvalid": "Enter a full URL (https://…).",
+    "readAtFuture": "The finish date can't be in the future.",
     "detail": {
       "pages": "{{count}} pages",
       "publisher": "Publisher",
@@ -236,7 +237,6 @@
     "stars_one": "{{count}} star",
     "stars_other": "{{count}} stars",
     "unrated": "Not rated",
-    "readAt": "Finished",
     "longPressHint": "Long-press a cover for quick actions"
   },
   "filters": {

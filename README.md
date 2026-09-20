@@ -105,6 +105,7 @@ Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 | `DATABASE_PATH` | `./data/bookguardian.db` | SQLite file (relative to `apps/api`)              |
 | `DATABASE_URL`  | —                        | Required for `postgres` / `mysql`                 |
 | `WEB_DIST`      | —                        | Built SPA dir to serve from the API (Docker)      |
+| `TZ`            | system                   | Timezone for "today" (read-date default + check)  |
 | `VITE_API_URL`  | `http://localhost:3000`  | Where Vite proxies `/api`; also baked into builds |
 
 ### Switching the database driver
@@ -149,7 +150,7 @@ apps/
     src/api/              typed fetch client + TanStack Query hooks
     e2e/                  Playwright (iPhone 14)
 packages/shared/
-  src/schemas/            Zod entities   src/dto/  API DTOs   src/i18n/  en.json
+  src/schemas/            Zod entities   src/dto/  API DTOs   src/i18n/  en.json, es.json
 docs/
   adr/                    architecture decision records
   data-model.md           ER diagram and field notes
@@ -159,7 +160,14 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 ## Conventions
 
 - Every user-facing string goes through `t('key')`; keys live in
-  `packages/shared/src/i18n/en.json`. `pnpm lint` fails on JSX literals.
+  `packages/shared/src/i18n/en.json` (source) and must exist in every other
+  dictionary (`es.json`, checked by a test). The app picks the locale from the
+  browser's language list and falls back to English. `pnpm lint` fails on JSX
+  literals.
+- Day-only fields (`readAt`, `dueAt`) are `YYYY-MM-DD` strings in the user's
+  local timezone, never `Date`s round-tripped through UTC. The API validates
+  "not in the future" against its own clock, so run it in the timezone of the
+  people using it (`TZ` in `.env` / Docker).
 - Every list has an empty state, every action is optimistic, everything must
   work with one thumb on a 390px-wide screen. Light and dark themes from day one.
 - One PR per issue, opened only after `pnpm lint && pnpm typecheck && pnpm test`
@@ -201,15 +209,12 @@ Errors always use the shared envelope `{ error: { code, message, details? } }`.
 ### Reading life
 
 `rating` is 1–5 stars; sending `0` (or `null`) clears it and the API always
-returns `null` for an unrated book. `readStatus` and `readAt` follow the rules
-in `packages/shared/src/lib/reading.ts` (shared with the web app so optimistic
-updates match the server):
-
-- moving to `read` stamps `readAt` with today unless a date is sent. The date
-  is editable afterwards and never re-stamped by unrelated edits;
-- moving back to `reading` or `to_read` clears `readAt`;
-- a `readAt` sent for a book that is not `read` is refused with 422
-  `invalid_reading_dates` (`details.reason` = `read_at_requires_read`).
+returns `null` for an unrated book (`normaliseRating` in `packages/shared`).
+`readAt` follows `readStatus` through the shared `resolveReadAt` rule (used by
+the API on write and by the web app for optimistic updates): marking a book
+`read` without a date stamps today, an existing date survives, any other status
+clears it, and future dates are rejected by `readAtSchema` (422
+`validation_error`).
 
 `sort=read` lists the most recently finished book first (never-finished books
 last); `sort=rating` lists the best-rated first (unrated last).

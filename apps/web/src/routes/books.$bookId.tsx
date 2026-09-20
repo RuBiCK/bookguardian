@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBook, useDeleteBook, useMoveBook, useSetReading } from '../api/inventory';
+import { useBook, useDeleteBook, useMoveBook, useSetReadStatus } from '../api/inventory';
 import { BookSheet } from '../components/BookSheet';
 import { ConfirmSheet } from '../components/ConfirmSheet';
 import { EmptyState } from '../components/EmptyState';
@@ -34,7 +34,7 @@ function BookDetailScreen() {
   const [deleting, setDeleting] = useState(false);
   const [targetShelf, setTargetShelf] = useState('');
 
-  const reading = useSetReading({
+  const reading = useSetReadStatus({
     onError: () => showToast(t('errors.saveFailed'), 'error'),
   });
   const moveBook = useMoveBook({ onError: () => showToast(t('errors.saveFailed'), 'error') });

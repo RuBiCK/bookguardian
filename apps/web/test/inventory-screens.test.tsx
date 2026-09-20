@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { localDate } from '@bookguardian/shared';
 import { en } from '@bookguardian/shared/i18n';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LONG_PRESS_MS } from '../src/components/BookGrid';
@@ -481,19 +482,18 @@ describe('Book detail', () => {
       'false',
     );
     expect(rating).toHaveTextContent('4 stars');
-    expect(screen.queryByLabelText(en.reading.readAt)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(en.books.field.readAt)).not.toBeInTheDocument();
 
-    // Quick status toggle (optimistic): today lands in "Finished".
+    // Quick status toggle (optimistic): "Read" stamps today, editable in place.
     await u.click(screen.getByRole('button', { name: en.readStatus.read }));
     expect(screen.getByRole('button', { name: en.readStatus.read })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    const today = new Date();
-    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    expect(screen.getByLabelText(en.reading.readAt)).toHaveValue(todayIso);
+    const readAt = screen.getByLabelText(en.books.field.readAt);
+    expect(readAt).toHaveValue(localDate());
     await waitFor(() => expect(api.books[0]?.readStatus).toBe('read'));
-    expect(api.books[0]?.readAt).toBe(todayIso);
+    expect(api.books[0]?.readAt).toBe(localDate());
 
     // Move to another shelf.
     await u.click(screen.getByRole('button', { name: en.common.move }));
@@ -531,6 +531,61 @@ describe('Book detail', () => {
     await waitFor(() => expect(api.books).toHaveLength(0));
   });
 
+  it('lets the user correct the finish date and clears it when the book is un-read', async () => {
+    const u = user();
+    const book = api.addBook({ title: 'Dune' });
+    await renderApp(`/books/${book.id}`);
+    await screen.findByRole('heading', { level: 1, name: 'Dune' });
+    expect(screen.queryByLabelText(en.books.field.readAt)).not.toBeInTheDocument();
+
+    // Mark as read → today, then pick an earlier day in the same row.
+    await u.click(screen.getByRole('button', { name: en.readStatus.read }));
+    const readAt = await screen.findByLabelText(en.books.field.readAt);
+    expect(readAt).toHaveValue(localDate());
+    expect(readAt).toHaveAttribute('max', localDate());
+    await waitFor(() => expect(api.books[0]?.readAt).toBe(localDate()));
+
+    fireEvent.change(readAt, { target: { value: '2024-03-10' } });
+    expect(readAt).toHaveValue('2024-03-10'); // optimistic
+    await waitFor(() => expect(api.books[0]?.readAt).toBe('2024-03-10'));
+    const patch = api.calls.filter((c) => c.method === 'PATCH').at(-1);
+    expect(patch?.body).toEqual({ readStatus: 'read', readAt: '2024-03-10' });
+
+    // Future days never reach the API.
+    fireEvent.change(readAt, { target: { value: '2999-01-01' } });
+    expect(await screen.findByText(en.books.readAtFuture)).toBeInTheDocument();
+    expect(api.calls.filter((c) => c.method === 'PATCH')).toHaveLength(2);
+    expect(api.books[0]?.readAt).toBe('2024-03-10');
+
+    // Reload: the corrected day is what comes back.
+    cleanup();
+    await renderApp(`/books/${book.id}`);
+    expect(await screen.findByLabelText(en.books.field.readAt)).toHaveValue('2024-03-10');
+
+    // Back to "reading" clears the date and hides the row.
+    await u.click(screen.getByRole('button', { name: en.readStatus.reading }));
+    await waitFor(() =>
+      expect(screen.queryByLabelText(en.books.field.readAt)).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(api.books[0]).toMatchObject({ readStatus: 'reading', readAt: null }),
+    );
+  });
+
+  it('rolls back the finish date when the save fails', async () => {
+    const book = api.addBook({ title: 'Dune', readStatus: 'read', readAt: '2020-01-15' });
+    await renderApp(`/books/${book.id}`);
+    const readAt = await screen.findByLabelText(en.books.field.readAt);
+    expect(readAt).toHaveValue('2020-01-15');
+
+    api.failNext({ method: 'PATCH' }, 422);
+    fireEvent.change(readAt, { target: { value: '2019-05-05' } });
+    expect(readAt).toHaveValue('2019-05-05');
+    expect(await screen.findByText(en.errors.saveFailed)).toBeInTheDocument();
+    await waitFor(() => expect(readAt).toHaveValue('2020-01-15'));
+    expect(api.books[0]?.readAt).toBe('2020-01-15');
+  });
+
   it('shows a not-found state for a missing book and rolls back a failed delete', async () => {
     await renderApp('/books/00000000-0000-4000-8000-00000000dead');
     expect(await screen.findByText(en.books.detail.notFound)).toBeInTheDocument();
@@ -553,11 +608,6 @@ describe('Book detail', () => {
 });
 
 describe('Reading life', () => {
-  const today = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-
   it('rates with a tap, clears by tapping the same star, and rolls back on failure', async () => {
     const u = user();
     const book = api.addBook({ title: 'Dune' });
@@ -590,64 +640,6 @@ describe('Reading life', () => {
     expect(api.books[0]?.rating).toBeNull();
   });
 
-  it('walks a book through reading → read with an editable finished date', async () => {
-    const u = user();
-    const book = api.addBook({ title: 'Emma' });
-    await renderApp(`/books/${book.id}`);
-    await screen.findByRole('heading', { level: 1, name: 'Emma' });
-    expect(screen.queryByLabelText(en.reading.readAt)).not.toBeInTheDocument();
-
-    // "Reading" carries no date.
-    await u.click(screen.getByRole('button', { name: en.readStatus.reading }));
-    await waitFor(() =>
-      expect(api.books[0]).toMatchObject({ readStatus: 'reading', readAt: null }),
-    );
-    expect(screen.queryByLabelText(en.reading.readAt)).not.toBeInTheDocument();
-    expect(api.calls.findLast((c) => c.method === 'PATCH')?.body).toEqual({
-      readStatus: 'reading',
-      readAt: null,
-    });
-
-    // "Read" stamps today, editable from there.
-    await u.click(screen.getByRole('button', { name: en.readStatus.read }));
-    const finished = await screen.findByLabelText(en.reading.readAt);
-    expect(finished).toHaveValue(today());
-    expect(finished).toHaveAttribute('max', today());
-    await waitFor(() =>
-      expect(api.books[0]).toMatchObject({ readStatus: 'read', readAt: today() }),
-    );
-
-    fireEvent.change(finished, { target: { value: '2024-02-01' } });
-    await waitFor(() => expect(finished).toHaveValue('2024-02-01'));
-    await waitFor(() => expect(api.books[0]?.readAt).toBe('2024-02-01'));
-    expect(api.calls.findLast((c) => c.method === 'PATCH')?.body).toEqual({
-      readStatus: 'read',
-      readAt: '2024-02-01',
-    });
-
-    // Back to "to read" clears the date.
-    await u.click(screen.getByRole('button', { name: en.readStatus.to_read }));
-    await waitFor(() => expect(screen.queryByLabelText(en.reading.readAt)).toBeNull());
-    await waitFor(() =>
-      expect(api.books[0]).toMatchObject({ readStatus: 'to_read', readAt: null }),
-    );
-
-    // A refused status change is rolled back, date included.
-    await u.click(screen.getByRole('button', { name: en.readStatus.read }));
-    await waitFor(() => expect(api.books[0]?.readStatus).toBe('read'));
-    api.failNext({ method: 'PATCH' });
-    await u.click(screen.getByRole('button', { name: en.readStatus.reading }));
-    expect(await screen.findByText(en.errors.saveFailed)).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: en.readStatus.read })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
-    );
-    expect(screen.getByLabelText(en.reading.readAt)).toHaveValue(today());
-    expect(api.books[0]).toMatchObject({ readStatus: 'read', readAt: today() });
-  });
-
   it('opens quick actions with a long press or right-click on a cover', async () => {
     const u = user();
     api.addBook({ title: 'Dune', authors: ['Frank Herbert'] });
@@ -665,7 +657,7 @@ describe('Reading life', () => {
     await u.click(within(sheet).getByRole('button', { name: en.readStatus.read }));
     await waitFor(() => expect(api.books[0]?.readStatus).toBe('read'));
     // The sheet follows the optimistic update: the finished date appears.
-    expect(within(sheet).getByLabelText(en.reading.readAt)).toHaveValue(today());
+    expect(within(sheet).getByLabelText(en.books.field.readAt)).toHaveValue(localDate());
     await u.click(within(sheet).getByRole('button', { name: en.common.close }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('heading', { level: 1, name: 'Default' })).toBeInTheDocument();

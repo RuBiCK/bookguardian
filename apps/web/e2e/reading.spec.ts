@@ -33,14 +33,14 @@ test.describe('reading life', () => {
     await page.goto(`/books/${book.id}`);
     await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     const reading = page.getByRole('region', { name: en.reading.title });
-    await expect(reading.getByLabel(en.reading.readAt)).toHaveCount(0);
+    await expect(reading.getByLabel(en.books.field.readAt)).toHaveCount(0);
 
     // One tap: "Read". The finished date appears, pre-filled with today.
     await reading.getByRole('button', { name: en.readStatus.read, exact: true }).tap();
     await expect(
       reading.getByRole('button', { name: en.readStatus.read, exact: true }),
     ).toHaveAttribute('aria-pressed', 'true');
-    await expect(reading.getByLabel(en.reading.readAt)).toHaveValue(today());
+    await expect(reading.getByLabel(en.books.field.readAt)).toHaveValue(today());
     await expect
       .poll(async () => (await (await request.get(`/api/books/${book.id}`)).json()) as ApiBook)
       .toMatchObject({ readStatus: 'read', readAt: today() });
@@ -78,7 +78,7 @@ test.describe('reading life', () => {
     await expect(sheet).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Default' })).toBeVisible();
     await sheet.getByRole('button', { name: en.readStatus.reading }).tap();
-    await expect(sheet.getByLabel(en.reading.readAt)).toHaveCount(0);
+    await expect(sheet.getByLabel(en.books.field.readAt)).toHaveCount(0);
     await expect
       .poll(async () => (await (await request.get(`/api/books/${book.id}`)).json()) as ApiBook)
       .toMatchObject({ readStatus: 'reading', readAt: null });
@@ -98,13 +98,17 @@ test.describe('reading life', () => {
     const tooHigh = await request.patch(`/api/books/${book.id}`, { data: { rating: 6 } });
     expect(tooHigh.status()).toBe(422);
 
+    // A date on a book that is not read is dropped by the shared rule, not stored.
     const contradictory = await request.patch(`/api/books/${book.id}`, {
       data: { readStatus: 'reading', readAt: '2024-01-01' },
     });
-    expect(contradictory.status()).toBe(422);
-    expect(((await contradictory.json()) as { error: { code: string } }).error.code).toBe(
-      'invalid_reading_dates',
-    );
+    expect(contradictory.status()).toBe(200);
+    expect(((await contradictory.json()) as ApiBook).readAt).toBeNull();
+    // Future dates never pass validation.
+    const future = await request.patch(`/api/books/${book.id}`, {
+      data: { readStatus: 'read', readAt: '2999-01-01' },
+    });
+    expect(future.status()).toBe(422);
 
     const read = await request.patch(`/api/books/${book.id}`, { data: { readStatus: 'read' } });
     expect(((await read.json()) as ApiBook).readAt).toBe(today());
