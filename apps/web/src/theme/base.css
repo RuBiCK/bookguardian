@@ -1796,3 +1796,211 @@ select.field__input {
 .candidates__item:active {
   background: var(--bg-sunken);
 }
+
+/* ---- Splash (session check on launch) --------------------------------- */
+
+.splash {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+.app-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 22%;
+  box-shadow: var(--shadow-md);
+}
+
+/* ---- Login ------------------------------------------------------------ */
+
+.login {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  max-width: var(--content-max);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 12vh) var(--space-6) calc(var(--safe-bottom) + var(--space-8));
+}
+
+.login__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.app-mark--login {
+  width: 96px;
+  height: 96px;
+}
+
+.login__title {
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+}
+
+.login__tagline {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  color: var(--fg-muted);
+}
+
+.login__error {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--danger) 10%, var(--bg-elevated));
+  color: var(--fg);
+  font-size: var(--text-sm);
+}
+
+.login__error p {
+  margin: var(--space-1) 0 0;
+  color: var(--fg-muted);
+}
+
+.login__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.login__hint {
+  margin: 0;
+  color: var(--fg-subtle);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/*
+ * Google sign-in button, per Google's branding guidelines: fixed surfaces
+ * (#FFFFFF / #131314), 1px outline (#747775 / #8E918F), the "G" at 20px with
+ * 12px padding, label in a Roboto-like medium at 14px. Only light/dark is
+ * picked from the theme; the rest is not ours to restyle.
+ */
+.gsi-button {
+  --gsi-bg: #fff;
+  --gsi-fg: #1f1f1f;
+  --gsi-border: #747775;
+  --gsi-hover: rgb(31 31 31 / 8%);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 400px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--gsi-border);
+  border-radius: var(--radius-md);
+  background: var(--gsi-bg);
+  color: var(--gsi-fg);
+  font-family: Roboto, var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 120ms var(--ease),
+    box-shadow 120ms var(--ease);
+}
+
+.gsi-button:active {
+  background: color-mix(in srgb, var(--gsi-bg), var(--gsi-fg) 8%);
+}
+
+.gsi-button:focus-visible {
+  outline: 2px solid #4285f4;
+  outline-offset: 2px;
+}
+
+.gsi-button__icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+}
+
+.gsi-button__icon svg {
+  display: block;
+}
+
+[data-theme='dark'] .gsi-button {
+  --gsi-bg: #131314;
+  --gsi-fg: #e3e3e3;
+  --gsi-border: #8e918f;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] .gsi-button {
+    --gsi-bg: #131314;
+    --gsi-fg: #e3e3e3;
+    --gsi-border: #8e918f;
+  }
+}
+
+/* ---- Settings · Account ---------------------------------------------- */
+
+.account {
+  margin-bottom: var(--space-5);
+}
+
+.account__title {
+  margin: 0 0 var(--space-2) var(--space-1);
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.account__identity {
+  justify-content: flex-start;
+  gap: var(--space-4);
+}
+
+.account__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.account__email {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.account__provider {
+  color: var(--fg-subtle);
+  font-size: var(--text-xs);
+}
+
+.avatar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  object-fit: cover;
+}
+
+.avatar--initial {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+}

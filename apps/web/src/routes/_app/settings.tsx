@@ -1,12 +1,14 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useBackfillStatus, useStartBackfill } from '../api/covers';
-import { useHealth } from '../api/health';
-import { Screen } from '../components/Screen';
-import { showToast } from '../lib/toast';
-import { THEMES, useTheme } from '../theme/useTheme';
+import { useLogout, useSession } from '../../api/auth';
+import { useBackfillStatus, useStartBackfill } from '../../api/covers';
+import { useHealth } from '../../api/health';
+import { Avatar } from '../../components/Avatar';
+import { Screen } from '../../components/Screen';
+import { showToast } from '../../lib/toast';
+import { THEMES, useTheme } from '../../theme/useTheme';
 
-export const Route = createFileRoute('/settings')({
+export const Route = createFileRoute('/_app/settings')({
   component: SettingsScreen,
 });
 
@@ -48,6 +50,7 @@ function SettingsScreen() {
 
   return (
     <Screen title={t('settings.title')}>
+      <AccountSection />
       <ul className="list">
         <li className="list__row">
           <span className="list__label">{t('settings.theme.label')}</span>
@@ -95,5 +98,49 @@ function SettingsScreen() {
         </li>
       </ul>
     </Screen>
+  );
+}
+
+/** Who is signed in, and the way out. */
+function AccountSection() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const session = useSession();
+  const logout = useLogout({
+    onSuccess: () => void navigate({ to: '/login', replace: true }),
+    onError: () => showToast(t('settings.account.signOutFailed'), 'error'),
+  });
+  const user = session.data;
+  if (!user) return null;
+
+  return (
+    <section className="account" aria-labelledby="account-heading" data-testid="account">
+      <h2 id="account-heading" className="account__title">
+        {t('settings.account.label')}
+      </h2>
+      <div className="list account__card">
+        <div className="list__row account__identity">
+          <Avatar name={user.displayName} src={user.avatarUrl} />
+          <div className="account__who">
+            <span className="account__name">{user.displayName}</span>
+            <span className="account__email" data-testid="account-email">
+              {user.email ?? t('settings.account.noEmail')}
+            </span>
+            <span className="account__provider">{t('settings.account.signedInAs')}</span>
+          </div>
+        </div>
+        <div className="list__row">
+          <button
+            type="button"
+            className="button button--block"
+            disabled={logout.isPending}
+            onClick={() => logout.mutate()}
+            data-testid="sign-out"
+          >
+            {logout.isPending ? t('settings.account.signingOut') : t('settings.account.signOut')}
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }

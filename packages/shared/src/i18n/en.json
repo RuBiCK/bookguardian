@@ -41,6 +41,20 @@
     "deleteFailed": "Couldn't delete. Nothing was changed.",
     "validation": "Please check the highlighted fields."
   },
+  "auth": {
+    "title": "Sign in",
+    "tagline": "Your shelves, in your pocket.",
+    "hint": "Sign in with your Google account to see your library on every device.",
+    "google": "Continue with Google",
+    "loading": "Signing you in…",
+    "error": {
+      "title": "We couldn't sign you in",
+      "not_allowed": "This Google account isn't allowed on this Bookguardian. Ask whoever runs it to add your email.",
+      "email_not_verified": "Google hasn't verified the email of that account yet. Verify it with Google and try again.",
+      "auth_not_configured": "Sign-in isn't set up on this server yet (missing Google credentials).",
+      "generic": "Something went wrong while signing in. Please try again."
+    }
+  },
   "count": {
     "books_one": "{{count}} book",
     "books_other": "{{count}} books",
@@ -284,6 +298,14 @@
       "result_other": "{{found}} of {{total}} covers found",
       "nothing": "Every book with an ISBN already has a cover.",
       "failed": "Couldn't start the search. Try again."
+    },
+    "account": {
+      "label": "Account",
+      "signedInAs": "Signed in with Google",
+      "noEmail": "No email yet",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "signOutFailed": "Couldn't sign out. Check your connection and try again."
     }
   },
   "reading": {

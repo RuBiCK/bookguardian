@@ -35,3 +35,10 @@ export function formatDate(value: string, locale?: string): string {
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
 }
+
+/** First letter of a person's name (what an avatar falls back to), `?` when there is none. */
+export function initialOf(name: string): string {
+  const first = name.trim().split(/\s+/)[0] ?? '';
+  const char = [...first][0];
+  return char ? char.toUpperCase() : '?';
+}
