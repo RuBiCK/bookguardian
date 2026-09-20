@@ -4,15 +4,18 @@ import { createApp, type App } from '../src/app';
 import type { DatabaseAdapter } from '../src/db/adapters';
 import { createRepositories } from '../src/db/repositories';
 import { createTestDb, type TestDb } from './adapters';
+import { fixtureCovers } from './cover-fixtures';
 import { fixtureLookup } from './lookup-fixtures';
 
 function appFor(adapter: DatabaseAdapter): App {
+  const repos = createRepositories(adapter);
   return createApp({
     quiet: true,
     services: {
       adapter,
-      repos: createRepositories(adapter),
+      repos,
       lookup: fixtureLookup().service,
+      covers: fixtureCovers(repos).service,
       version: '0.0.0-test',
     },
   });

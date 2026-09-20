@@ -8,6 +8,7 @@ export const lentBookSchema = bookSchema.pick({
   id: true,
   title: true,
   authors: true,
+  coverAssetId: true,
   coverUrl: true,
   shelfId: true,
 });

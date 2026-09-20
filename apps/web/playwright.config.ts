@@ -5,6 +5,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const WEB_PORT = 4173;
 const API_PORT = 3100;
+const STUB_PORT = 3101;
+const tmp = mkdtempSync(join(tmpdir(), 'bookguardian-e2e-'));
 
 /**
  * Mobile-viewport e2e. The iPhone 14 device descriptor sets the 390px
@@ -12,7 +14,9 @@ const API_PORT = 3100;
  * CI needs no WebKit system deps; switch `browserName` to 'webkit' locally to
  * exercise Safari-specific behaviour.
  *
- * Two servers are started: the API (SQLite in a temp dir, migrated at boot)
+ * Three servers are started: a stand-in for Open Library (`providers-stub.mjs`,
+ * so the cover cascade runs end to end without the network), the API (SQLite
+ * and covers in a temp dir, migrated at boot, providers pointed at the stub)
  * and the built web app served by `vite preview`, which proxies /api to it.
  */
 export default defineConfig({
@@ -33,6 +37,13 @@ export default defineConfig({
   ],
   webServer: [
     {
+      command: 'node e2e/providers-stub.mjs',
+      url: `http://localhost:${STUB_PORT}/__stub/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+      env: { PORT: String(STUB_PORT) },
+    },
+    {
       command: 'pnpm --filter @bookguardian/api exec tsx src/index.ts',
       url: `http://localhost:${API_PORT}/api/health?shallow=true`,
       reuseExistingServer: !process.env.CI,
@@ -40,7 +51,13 @@ export default defineConfig({
       env: {
         PORT: String(API_PORT),
         DB_DRIVER: 'sqlite',
-        DATABASE_PATH: join(mkdtempSync(join(tmpdir(), 'bookguardian-e2e-')), 'e2e.db'),
+        DATABASE_PATH: join(tmp, 'e2e.db'),
+        COVERS_DIR: join(tmp, 'covers'),
+        OPEN_LIBRARY_URL: `http://localhost:${STUB_PORT}`,
+        OPEN_LIBRARY_COVERS_URL: `http://localhost:${STUB_PORT}`,
+        // No pacing, and misses expire at once so the backfill re-checks them.
+        COVERS_MIN_INTERVAL_MS: '0',
+        COVERS_MISS_DAYS: '0',
       },
     },
     {

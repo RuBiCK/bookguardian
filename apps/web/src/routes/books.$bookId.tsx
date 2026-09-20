@@ -2,10 +2,12 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBook, useDeleteBook, useMoveBook, useSetReadStatus } from '../api/inventory';
+import { BookCover } from '../components/BookCover';
 import { BookSheet } from '../components/BookSheet';
 import { ConfirmSheet } from '../components/ConfirmSheet';
+import { CoverSheet } from '../components/CoverSheet';
 import { EmptyState } from '../components/EmptyState';
-import { BookIcon, PencilIcon, TrashIcon } from '../components/icons';
+import { PencilIcon, TrashIcon } from '../components/icons';
 import { LendingPanel } from '../components/LendingPanel';
 import { ReadingPanel } from '../components/ReadingPanel';
 import { Screen } from '../components/Screen';
@@ -31,6 +33,7 @@ function BookDetailScreen() {
   const book = useBook(bookId);
   const shelfLabel = useShelfLabel(book.data?.shelfId);
   const [editing, setEditing] = useState(false);
+  const [changingCover, setChangingCover] = useState(false);
   const [moving, setMoving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [targetShelf, setTargetShelf] = useState('');
@@ -78,15 +81,19 @@ function BookDetailScreen() {
       back={{ to: '/shelves/$shelfId', params: { shelfId: b.shelfId } }}
       hero={
         <div className="hero">
-          <div className="hero__cover">
-            {b.coverUrl ? (
-              <img src={b.coverUrl} alt="" />
-            ) : (
-              <span className="hero__cover-placeholder" aria-label={t('books.noCover')}>
-                <BookIcon />
-              </span>
-            )}
-          </div>
+          <button
+            type="button"
+            className="hero__cover"
+            aria-label={t('books.cover.change')}
+            onClick={() => setChangingCover(true)}
+          >
+            <BookCover book={b} sizes="168px" />
+          </button>
+          {b.coverPending ? (
+            <p className="muted hero__cover-status" role="status">
+              {t('books.cover.pending')}
+            </p>
+          ) : null}
           <h1 className="hero__title">{b.title}</h1>
           {b.subtitle ? <p className="hero__subtitle">{b.subtitle}</p> : null}
           <p className="hero__authors">{authors}</p>
@@ -165,6 +172,7 @@ function BookDetailScreen() {
       </button>
 
       <BookSheet open={editing} onClose={() => setEditing(false)} book={b} />
+      <CoverSheet open={changingCover} book={b} onClose={() => setChangingCover(false)} />
 
       <Sheet
         open={moving}

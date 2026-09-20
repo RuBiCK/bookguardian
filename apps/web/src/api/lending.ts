@@ -116,6 +116,7 @@ export function optimisticLending(input: CreateLendingInput, book: Book): Lendin
       id: book.id,
       title: book.title,
       authors: book.authors,
+      coverAssetId: book.coverAssetId,
       coverUrl: book.coverUrl,
       shelfId: book.shelfId,
     },

@@ -1,4 +1,4 @@
-import { asc, desc, eq, gte, inArray, isNull, or, type SQL } from 'drizzle-orm';
+import { asc, desc, eq, gte, inArray, isNotNull, isNull, or, type SQL } from 'drizzle-orm';
 import {
   readStatusSchema,
   type Book,
@@ -26,25 +26,62 @@ export interface BookSearch {
   offset?: number;
 }
 
+/**
+ * A book as stored. The API adds the computed `coverUrl` / `coverPending`
+ * before it becomes the shared `Book` DTO (see `inventory.ts`).
+ */
+export type BookRecord = Omit<Book, 'coverUrl' | 'coverPending'>;
+
+/** `coverUrl` on the wire is an instruction for the cover service, not a column. */
+export type NewBookRecord = Omit<CreateBookInput, 'coverUrl'> & {
+  shelfId: string;
+  id?: string;
+  coverAssetId?: string | null;
+  coverOverride?: boolean;
+};
+export type BookRecordPatch = Omit<UpdateBookInput, 'coverUrl'> & {
+  coverAssetId?: string | null;
+  coverOverride?: boolean;
+};
+
 export interface BookPageResult {
-  items: Book[];
+  items: BookRecord[];
   total: number;
 }
 
 export interface BookRepository {
-  findById(ownerId: string, id: string): Promise<Book | null>;
+  findById(ownerId: string, id: string): Promise<BookRecord | null>;
   /** The books with these ids that belong to the owner (order unspecified). */
-  findByIds(ownerId: string, ids: string[]): Promise<Book[]>;
-  listByOwner(ownerId: string, options?: { limit?: number; offset?: number }): Promise<Book[]>;
-  listByShelf(ownerId: string, shelfId: string): Promise<Book[]>;
+  findByIds(ownerId: string, ids: string[]): Promise<BookRecord[]>;
+  listByOwner(
+    ownerId: string,
+    options?: { limit?: number; offset?: number },
+  ): Promise<BookRecord[]>;
+  listByShelf(ownerId: string, shelfId: string): Promise<BookRecord[]>;
   /** Filtered, paginated listing plus the total number of matches. */
   search(ownerId: string, search: BookSearch): Promise<BookPageResult>;
   /** The book added most recently, used to pre-select "the shelf you last used". */
-  findMostRecent(ownerId: string): Promise<Book | null>;
+  findMostRecent(ownerId: string): Promise<BookRecord | null>;
   /** Books per shelf id (shelves without books are absent from the map). */
   countByShelf(ownerId: string, shelfIds?: string[]): Promise<Map<string, number>>;
-  create(ownerId: string, input: CreateBookInput & { shelfId: string; id?: string }): Promise<Book>;
-  update(ownerId: string, id: string, input: UpdateBookInput): Promise<Book | null>;
+  /**
+   * Books the cover cascade can still help: an ISBN, no cover, and no user
+   * override. Every owner when `ownerId` is omitted (boot-time backfill).
+   */
+  listMissingCovers(ownerId?: string): Promise<BookRecord[]>;
+  /** Books (of any owner) showing this asset; drives access to private covers. */
+  listByCoverAsset(assetId: string): Promise<BookRecord[]>;
+  /** Distinct asset ids some book still points at (the GC keeps these). */
+  referencedCoverAssetIds(): Promise<Set<string>>;
+  create(ownerId: string, input: NewBookRecord): Promise<BookRecord>;
+  update(ownerId: string, id: string, input: BookRecordPatch): Promise<BookRecord | null>;
+  /** Point the book at an asset (or none) and record whether the user chose it. */
+  setCover(
+    ownerId: string,
+    id: string,
+    coverAssetId: string | null,
+    coverOverride: boolean,
+  ): Promise<BookRecord | null>;
   /** Re-shelve every book on `fromShelfId`; returns how many moved. */
   moveAll(ownerId: string, fromShelfIds: string[], toShelfId: string): Promise<number>;
   delete(ownerId: string, id: string): Promise<void>;
@@ -53,7 +90,7 @@ export interface BookRepository {
 type BookRow = Tables['books']['$inferSelect'];
 
 /** The DB stores read_status as plain text; narrow it back to the enum. */
-function toBook(row: BookRow): Book {
+function toBook(row: BookRow): BookRecord {
   return { ...row, readStatus: readStatusSchema.parse(row.readStatus) };
 }
 
@@ -153,9 +190,30 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
       const groups = await kit.countBy(books, books.shelfId, where);
       return new Map(groups.map((g) => [g.key, g.count]));
     },
+    async listMissingCovers(ownerId) {
+      const conditions: SQL[] = [
+        isNotNull(books.isbn13),
+        isNull(books.coverAssetId),
+        eq(books.coverOverride, false),
+      ];
+      if (ownerId) conditions.push(eq(books.ownerId, ownerId));
+      const rows = await kit.select(books, {
+        where: allOf(conditions[0]!, ...conditions.slice(1)),
+        orderBy: [desc(books.addedAt)],
+      });
+      return rows.map(toBook);
+    },
+    async listByCoverAsset(assetId) {
+      const rows = await kit.select(books, { where: eq(books.coverAssetId, assetId) });
+      return rows.map(toBook);
+    },
+    async referencedCoverAssetIds() {
+      const groups = await kit.countBy(books, books.coverAssetId, isNotNull(books.coverAssetId));
+      return new Set(groups.map((g) => g.key));
+    },
     async create(ownerId, input) {
       const now = nowIso();
-      const row: Book = {
+      const row: BookRecord = {
         id: input.id ?? newId(),
         ownerId,
         shelfId: input.shelfId,
@@ -168,7 +226,8 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
         publishedDate: input.publishedDate ?? null,
         pages: input.pages ?? null,
         language: input.language ?? null,
-        coverUrl: input.coverUrl ?? null,
+        coverAssetId: input.coverAssetId ?? null,
+        coverOverride: input.coverOverride ?? false,
         categories: input.categories ?? [],
         description: input.description ?? null,
         notes: input.notes ?? null,
@@ -184,6 +243,11 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
     },
     async update(ownerId, id, input) {
       await kit.update(books, { ...input, updatedAt: nowIso() }, owned(ownerId, id));
+      return this.findById(ownerId, id);
+    },
+    async setCover(ownerId, id, coverAssetId, coverOverride) {
+      // Not `updatedAt`: a cover arriving in the background is not a user edit.
+      await kit.update(books, { coverAssetId, coverOverride }, owned(ownerId, id));
       return this.findById(ownerId, id);
     },
     async moveAll(ownerId, fromShelfIds, toShelfId) {

@@ -43,11 +43,11 @@ type Stage =
   | { kind: 'lookup'; isbn13: string }
   | { kind: 'ocr'; phase: OcrPhase; progress: number }
   | { kind: 'searching' }
-  | { kind: 'result'; draft: BookDraft }
-  | { kind: 'candidates'; items: BookDraft[]; titleGuess: string }
+  | { kind: 'result'; draft: BookDraft; photo?: File }
+  | { kind: 'candidates'; items: BookDraft[]; titleGuess: string; photo: File }
   | { kind: 'notFound'; isbn13: string }
-  | { kind: 'manual'; draft: Partial<BookDraft> }
-  | { kind: 'notice'; message: NoticeKey; query?: string; titleGuess?: string };
+  | { kind: 'manual'; draft: Partial<BookDraft>; photo?: File }
+  | { kind: 'notice'; message: NoticeKey; query?: string; titleGuess?: string; photo?: File };
 
 const IDLE: Stage = { kind: 'idle' };
 const CAMERA_MESSAGE = {
@@ -93,12 +93,13 @@ function ScanScreen() {
       isbn13: string,
       run: number,
       quietMiss = false,
+      photo?: File,
     ): Promise<BookDraft | null | undefined> => {
       setStage({ kind: 'lookup', isbn13 });
       try {
         const draft = await queryClient.fetchQuery(isbnLookupQueryOptions(isbn13));
         if (!stillCurrent(run)) return undefined;
-        if (draft) setStage({ kind: 'result', draft });
+        if (draft) setStage({ kind: 'result', draft, photo });
         else if (!quietMiss) setStage({ kind: 'notFound', isbn13 });
         return draft;
       } catch {
@@ -207,12 +208,18 @@ function ScanScreen() {
 
     const guess = interpretOcr(text);
     // A printed ISBN (back cover, copyright page) beats any fuzzy title search.
+    // The photo travels with the result: it becomes the cover if the catalogue has none.
     if (guess.isbn13) {
-      const draft = await lookup(guess.isbn13, run, true);
+      const draft = await lookup(guess.isbn13, run, true, file);
       if (draft || !stillCurrent(run)) return;
     }
     if (guess.queries.length === 0) {
-      setStage({ kind: 'notice', message: 'scan.cover.noText', titleGuess: guess.titleGuess });
+      setStage({
+        kind: 'notice',
+        message: 'scan.cover.noText',
+        titleGuess: guess.titleGuess,
+        photo: file,
+      });
       return;
     }
     setStage({ kind: 'searching' });
@@ -221,12 +228,18 @@ function ScanScreen() {
       if (!stillCurrent(run)) return;
       setStage(
         items.length > 0
-          ? { kind: 'candidates', items: items.slice(0, 5), titleGuess: guess.titleGuess }
+          ? {
+              kind: 'candidates',
+              items: items.slice(0, 5),
+              titleGuess: guess.titleGuess,
+              photo: file,
+            }
           : {
               kind: 'notice',
               message: 'scan.cover.noMatches',
               query,
               titleGuess: guess.titleGuess,
+              photo: file,
             },
       );
     } catch {
@@ -444,7 +457,13 @@ function ScanScreen() {
               <button
                 type="button"
                 className="button button--small button--ghost"
-                onClick={() => setStage({ kind: 'manual', draft: { title: stage.titleGuess } })}
+                onClick={() =>
+                  setStage({
+                    kind: 'manual',
+                    draft: { title: stage.titleGuess },
+                    photo: stage.photo,
+                  })
+                }
               >
                 {t('scan.result.addManually')}
               </button>
@@ -453,17 +472,28 @@ function ScanScreen() {
         </div>
       ) : null}
 
-      <CaptureResultSheet draft={stage.kind === 'result' ? stage.draft : null} onClose={reset} />
+      <CaptureResultSheet
+        draft={stage.kind === 'result' ? stage.draft : null}
+        fallbackPhoto={stage.kind === 'result' ? stage.photo : null}
+        onClose={reset}
+      />
 
       <CandidatesSheet
         open={stage.kind === 'candidates'}
         candidates={stage.kind === 'candidates' ? stage.items : []}
-        onPick={(draft) => setStage({ kind: 'result', draft })}
+        onPick={(draft) =>
+          setStage({
+            kind: 'result',
+            draft,
+            photo: stage.kind === 'candidates' ? stage.photo : undefined,
+          })
+        }
         onClose={reset}
         onAddManually={() =>
           setStage({
             kind: 'manual',
             draft: { title: stage.kind === 'candidates' ? stage.titleGuess : '' },
+            photo: stage.kind === 'candidates' ? stage.photo : undefined,
           })
         }
       />
@@ -495,6 +525,7 @@ function ScanScreen() {
       <BookSheet
         open={stage.kind === 'manual'}
         draft={stage.kind === 'manual' ? stage.draft : undefined}
+        fallbackPhoto={stage.kind === 'manual' ? stage.photo : null}
         onClose={reset}
       />
     </Screen>

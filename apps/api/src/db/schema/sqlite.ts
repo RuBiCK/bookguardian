@@ -28,6 +28,13 @@ const jsonStringRecord = customType<{ data: Record<string, string>; driverData: 
   fromDriver: (value) => JSON.parse(value) as Record<string, string>,
 });
 
+/** Boolean stored as INTEGER 0/1 (portable; MySQL has no real boolean either). */
+const intBoolean = customType<{ data: boolean; driverData: number }>({
+  dataType: () => 'integer',
+  toDriver: (value) => (value ? 1 : 0),
+  fromDriver: (value) => Number(value) === 1,
+});
+
 const id = () => text('id').notNull().primaryKey();
 const timestamps = {
   createdAt: text('created_at').notNull(),
@@ -96,7 +103,8 @@ export const books = sqliteTable(
     publishedDate: text('published_date'),
     pages: integer('pages'),
     language: text('language'),
-    coverUrl: text('cover_url'),
+    coverAssetId: text('cover_asset_id').references(() => coverAssets.id),
+    coverOverride: intBoolean('cover_override').notNull().default(false),
     categories: jsonStringArray('categories').notNull(),
     description: text('description'),
     notes: text('notes'),
@@ -110,6 +118,7 @@ export const books = sqliteTable(
     index('idx_books_owner').on(t.ownerId),
     index('idx_books_shelf').on(t.shelfId),
     index('idx_books_isbn13').on(t.isbn13),
+    index('idx_books_cover_asset').on(t.coverAssetId),
   ],
 );
 
@@ -181,6 +190,37 @@ export const catalogBooks = sqliteTable('catalog_books', {
   missUntil: text('miss_until'),
 });
 
+/**
+ * Stored cover files, keyed by the SHA-256 of the WebP (see
+ * `0003_cover_assets.sql` and ADR 0004). `ownerId` NULL = shared by ISBN.
+ */
+export const coverAssets = sqliteTable(
+  'cover_assets',
+  {
+    id: text('id').notNull().primaryKey(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    bytes: integer('bytes').notNull(),
+    source: text('source').notNull(),
+    ownerId: text('owner_id').references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [index('idx_cover_assets_owner').on(t.ownerId)],
+);
+
+/** ISBN-13 → shared cover resolution cache; a miss has a null asset and `missUntil`. */
+export const isbnCovers = sqliteTable(
+  'isbn_covers',
+  {
+    isbn13: text('isbn13').notNull().primaryKey(),
+    coverAssetId: text('cover_asset_id').references(() => coverAssets.id),
+    source: text('source'),
+    fetchedAt: text('fetched_at').notNull(),
+    missUntil: text('miss_until'),
+  },
+  (t) => [index('idx_isbn_covers_asset').on(t.coverAssetId)],
+);
+
 export const sqliteSchema = {
   schemaMigrations,
   users,
@@ -190,4 +230,6 @@ export const sqliteSchema = {
   lendings,
   libraryShares,
   catalogBooks,
+  coverAssets,
+  isbnCovers,
 };

@@ -26,6 +26,13 @@ const jsonStringRecord = customType<{ data: Record<string, string>; driverData: 
   fromDriver: (value) => JSON.parse(value) as Record<string, string>,
 });
 
+/** Boolean stored as INTEGER 0/1 (portable; MySQL has no real boolean either). */
+const intBoolean = customType<{ data: boolean; driverData: number }>({
+  dataType: () => 'integer',
+  toDriver: (value) => (value ? 1 : 0),
+  fromDriver: (value) => Number(value) === 1,
+});
+
 const id = () => varchar('id', { length: 36 }).notNull().primaryKey();
 const ts = (name: string) => varchar(name, { length: 32 });
 const timestamps = {
@@ -95,7 +102,8 @@ export const books = mysqlTable(
     publishedDate: varchar('published_date', { length: 40 }),
     pages: int('pages'),
     language: varchar('language', { length: 16 }),
-    coverUrl: varchar('cover_url', { length: 2048 }),
+    coverAssetId: varchar('cover_asset_id', { length: 64 }).references(() => coverAssets.id),
+    coverOverride: intBoolean('cover_override').notNull().default(false),
     categories: jsonStringArray('categories').notNull(),
     description: text('description'),
     notes: text('notes'),
@@ -109,6 +117,7 @@ export const books = mysqlTable(
     index('idx_books_owner').on(t.ownerId),
     index('idx_books_shelf').on(t.shelfId),
     index('idx_books_isbn13').on(t.isbn13),
+    index('idx_books_cover_asset').on(t.coverAssetId),
   ],
 );
 
@@ -175,6 +184,34 @@ export const catalogBooks = mysqlTable('catalog_books', {
   missUntil: ts('miss_until'),
 });
 
+export const coverAssets = mysqlTable(
+  'cover_assets',
+  {
+    id: varchar('id', { length: 64 }).notNull().primaryKey(),
+    width: int('width').notNull(),
+    height: int('height').notNull(),
+    bytes: int('bytes').notNull(),
+    source: varchar('source', { length: 16 }).notNull(),
+    ownerId: varchar('owner_id', { length: 36 }).references(() => users.id, {
+      onDelete: 'cascade',
+    }),
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [index('idx_cover_assets_owner').on(t.ownerId)],
+);
+
+export const isbnCovers = mysqlTable(
+  'isbn_covers',
+  {
+    isbn13: varchar('isbn13', { length: 13 }).notNull().primaryKey(),
+    coverAssetId: varchar('cover_asset_id', { length: 64 }).references(() => coverAssets.id),
+    source: varchar('source', { length: 16 }),
+    fetchedAt: ts('fetched_at').notNull(),
+    missUntil: ts('miss_until'),
+  },
+  (t) => [index('idx_isbn_covers_asset').on(t.coverAssetId)],
+);
+
 export const mysqlSchema = {
   schemaMigrations,
   users,
@@ -184,4 +221,6 @@ export const mysqlSchema = {
   lendings,
   libraryShares,
   catalogBooks,
+  coverAssets,
+  isbnCovers,
 };

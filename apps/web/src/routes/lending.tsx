@@ -2,7 +2,8 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useActiveLendings, useReturnLending } from '../api/lending';
 import { EmptyState } from '../components/EmptyState';
-import { BookIcon, LendingIcon } from '../components/icons';
+import { BookCover } from '../components/BookCover';
+import { LendingIcon } from '../components/icons';
 import { LendingMeta } from '../components/LendingPanel';
 import { Screen } from '../components/Screen';
 import { groupByBorrower } from '../lib/lending';
@@ -89,11 +90,7 @@ function LendingScreen() {
                       aria-label={t('lending.openBook', { title: lending.book.title })}
                     >
                       <span className="lending-row__cover">
-                        {lending.book.coverUrl ? (
-                          <img src={lending.book.coverUrl} alt="" loading="lazy" />
-                        ) : (
-                          <BookIcon />
-                        )}
+                        <BookCover book={lending.book} sizes="40px" compact />
                       </span>
                       <span className="card__body">
                         <span className="card__title">{lending.book.title}</span>

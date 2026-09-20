@@ -28,10 +28,17 @@ describe('/api/lendings', () => {
     (await json<{ items: LendingWithBook[] }>(t.app, 'GET', '/api/lendings')).body.items;
 
   it('lends a book: lent now, no due date, book summary attached', async () => {
-    const book = await addBook('Dune', {
-      authors: ['Frank Herbert'],
-      coverUrl: 'https://covers.example.com/dune.jpg',
+    const book = await addBook('Dune', { authors: ['Frank Herbert'] });
+    // A cover the cascade would have stored, so the row carries its served URL.
+    const asset = await t.repos.coverAssets.upsert({
+      id: 'a'.repeat(64),
+      width: 400,
+      height: 600,
+      bytes: 1000,
+      source: 'open_library',
+      ownerId: null,
     });
+    await t.repos.books.setCover(t.base.userId, book.id, asset.id, false);
     const res = await lend({ bookId: book.id, borrowerName: '  Ana  ' });
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
@@ -46,7 +53,8 @@ describe('/api/lendings', () => {
         id: book.id,
         title: 'Dune',
         authors: ['Frank Herbert'],
-        coverUrl: 'https://covers.example.com/dune.jpg',
+        coverAssetId: 'a'.repeat(64),
+        coverUrl: `/api/covers/${'a'.repeat(64)}.webp`,
         shelfId: t.base.shelfId,
       },
     });
@@ -136,11 +144,23 @@ describe('/api/lendings', () => {
     const dueToday = await addBook('Due today');
     const soon = await addBook('Soon');
     const open = await addBook('Open-ended');
-    const l1 = (await lend({ bookId: late.id, borrowerName: 'Ana', dueAt: dayFromToday(-1) })).body;
-    const l2 = (await lend({ bookId: dueToday.id, borrowerName: 'Ana', dueAt: dayFromToday(0) }))
-      .body;
-    const l3 = (await lend({ bookId: soon.id, borrowerName: 'Bo', dueAt: dayFromToday(1) })).body;
-    const l4 = (await lend({ bookId: open.id, borrowerName: 'Bo' })).body;
+    // Explicit, increasing lentAt: four lends in the same millisecond would tie on "newest first".
+    const at = (i: number) => new Date(Date.now() - (4 - i) * 60_000).toISOString();
+    const l1 = (
+      await lend({ bookId: late.id, borrowerName: 'Ana', dueAt: dayFromToday(-1), lentAt: at(1) })
+    ).body;
+    const l2 = (
+      await lend({
+        bookId: dueToday.id,
+        borrowerName: 'Ana',
+        dueAt: dayFromToday(0),
+        lentAt: at(2),
+      })
+    ).body;
+    const l3 = (
+      await lend({ bookId: soon.id, borrowerName: 'Bo', dueAt: dayFromToday(1), lentAt: at(3) })
+    ).body;
+    const l4 = (await lend({ bookId: open.id, borrowerName: 'Bo', lentAt: at(4) })).body;
     expect([l1.overdue, l2.overdue, l3.overdue, l4.overdue]).toEqual([true, false, false, false]);
 
     // Newest first: the last lending comes first.

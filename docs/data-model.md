@@ -3,8 +3,11 @@
 Canonical names come from the project brief: **Library → Shelf → Book**, plus
 **Lending** and **LibraryShare**. Every aggregate carries `owner_id`; sharing is
 modelled from the first migration so multi-user arrives without a schema
-rewrite. The one owner-less table is **CatalogBook**: provider metadata per
-ISBN-13, shared by every user ([ADR 0003](adr/0003-shared-isbn-catalogue.md)).
+rewrite. The owner-less tables are **CatalogBook** — provider metadata per
+ISBN-13, shared by every user ([ADR 0003](adr/0003-shared-isbn-catalogue.md)) —
+and **IsbnCover**, which maps an ISBN-13 to the shared **CoverAsset** every
+book with that ISBN shows ([ADR 0004](adr/0004-cover-assets.md)). Cover images
+themselves are files on disk; the tables only describe them.
 
 ```mermaid
 erDiagram
@@ -17,6 +20,9 @@ erDiagram
     LIBRARIES ||--o{ LIBRARY_SHARES : "shared via"
     SHELVES ||--o{ BOOKS : holds
     BOOKS ||--o{ LENDINGS : "lent as"
+    COVER_ASSETS ||--o{ BOOKS : "shown by"
+    COVER_ASSETS ||--o{ ISBN_COVERS : "resolved for"
+    USERS ||--o{ COVER_ASSETS : "owns (private only)"
 
     USERS {
         varchar(36) id PK
@@ -55,7 +61,8 @@ erDiagram
         varchar(40) published_date "nullable, free-form"
         int pages "nullable"
         varchar(16) language "nullable, BCP-47"
-        varchar(2048) cover_url "nullable"
+        varchar(64) cover_asset_id "nullable FK, indexed"
+        int cover_override "0 = shared ISBN cover, 1 = user's own"
         text categories "JSON string[]"
         text description "nullable"
         text notes "nullable"
@@ -106,6 +113,22 @@ erDiagram
         varchar(32) refreshed_at
         varchar(32) miss_until "nullable: negative cache"
     }
+    COVER_ASSETS {
+        varchar(64) id PK "sha256 of the WebP = file name"
+        int width
+        int height
+        int bytes
+        varchar(16) source "open_library | google_books | user_photo | manual"
+        varchar(36) owner_id "nullable FK: NULL = shared, set = private"
+        varchar(32) created_at
+    }
+    ISBN_COVERS {
+        varchar(13) isbn13 PK "no owner: shared resolution cache"
+        varchar(64) cover_asset_id "nullable FK: NULL = miss"
+        varchar(16) source "nullable"
+        varchar(32) fetched_at
+        varchar(32) miss_until "nullable: retry after"
+    }
 ```
 
 ## Notes
@@ -138,8 +161,17 @@ erDiagram
   lending) so removing a library never leaves orphans.
 - **Catalogue.** `catalog_books` is filled lazily by `/api/lookup/isbn/:isbn`
   and search results; `books` copies its fields at add time and never
-  references it, so a user's edits are theirs alone. BOOK-10 keys covers on the
-  same `isbn13`.
+  references it, so a user's edits are theirs alone.
+- **Covers.** A cover is a WebP file under `COVERS_DIR/<xx>/<sha256>.webp`
+  (+ `-thumb`), never a blob. `cover_assets` names the file by its content
+  hash, so identical images are stored once; `owner_id` NULL means "resolved
+  from a provider by ISBN, shared by everyone", a user id means "this user's
+  photo or pasted URL, served only to them (or a library-share grantee)".
+  `isbn_covers` caches ISBN → shared asset (a row with a NULL asset and
+  `miss_until` is a cached miss). `books.cover_asset_id` points at the cover a
+  book shows and `cover_override` records that the user chose it; the served
+  `coverUrl` is computed from the asset id, no URL is stored. Deleting a book
+  leaves the file; a GC removes assets nothing references any more.
 - **Types are portable.** See [ADR 0002](adr/0002-database-adapter-layer.md)
   for why timestamps and arrays are stored as text.
 

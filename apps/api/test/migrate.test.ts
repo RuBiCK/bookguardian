@@ -93,9 +93,12 @@ describe('migrate (sqlite file inspection)', () => {
         .map((r) => r.name)
         .sort();
       expect(indexes).toEqual([
+        'idx_books_cover_asset',
         'idx_books_isbn13',
         'idx_books_owner',
         'idx_books_shelf',
+        'idx_cover_assets_owner',
+        'idx_isbn_covers_asset',
         'idx_lendings_book',
         'idx_lendings_open',
         'idx_libraries_owner',

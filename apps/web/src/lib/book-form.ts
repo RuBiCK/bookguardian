@@ -51,7 +51,8 @@ export function bookToForm(book: Book): BookFormValues {
     pages: book.pages?.toString() ?? '',
     language: book.language ?? '',
     categories: joinList(book.categories),
-    coverUrl: book.coverUrl ?? '',
+    // The served cover is not editable text; a URL typed here replaces it.
+    coverUrl: '',
     description: book.description ?? '',
     notes: book.notes ?? '',
   };
@@ -73,7 +74,8 @@ export function draftToForm(draft: Partial<BookDraft>): BookFormValues {
     pages: draft.pages?.toString() ?? '',
     language: draft.language ?? '',
     categories: joinList(draft.categories ?? []),
-    coverUrl: draft.coverUrl ?? '',
+    // The API fetches its own copy of the provider cover by ISBN.
+    coverUrl: '',
     description: draft.description ?? '',
     notes: '',
   };
@@ -91,7 +93,6 @@ export function draftToInput(draft: BookDraft): CreateBookInput {
     publishedDate: draft.publishedDate,
     pages: draft.pages,
     language: draft.language,
-    coverUrl: draft.coverUrl,
     categories: draft.categories,
     description: draft.description,
   };
@@ -100,7 +101,11 @@ export function draftToInput(draft: BookDraft): CreateBookInput {
 export type BookFormResult =
   { ok: true; input: CreateBookInput } | { ok: false; errors: BookFormErrors };
 
-/** Validate the form and produce the API payload (all fields, so edits clear values too). */
+/**
+ * Validate the form and produce the API payload (all fields, so edits clear
+ * values too — except `coverUrl`, which is only sent when typed: it asks the
+ * API to fetch that image as the book's own cover).
+ */
 export function formToInput(values: BookFormValues): BookFormResult {
   const errors: BookFormErrors = {};
   const title = values.title.trim();
@@ -127,10 +132,10 @@ export function formToInput(values: BookFormValues): BookFormResult {
     pages: errors.pages ? null : pages,
     language: emptyToNull(values.language),
     categories: splitList(values.categories),
-    coverUrl: errors.coverUrl ? null : coverUrl,
     description: emptyToNull(values.description),
     notes: emptyToNull(values.notes),
   };
+  if (coverUrl && !errors.coverUrl) candidate.coverUrl = coverUrl;
 
   const parsed = createBookInputSchema.safeParse(candidate);
   if (!parsed.success) {

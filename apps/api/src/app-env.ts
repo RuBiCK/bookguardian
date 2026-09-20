@@ -1,3 +1,4 @@
+import type { CoverService } from './covers';
 import type { DatabaseAdapter } from './db/adapters';
 import type { Repositories } from './db/repositories';
 import type { LookupService } from './lookup';
@@ -7,6 +8,7 @@ export interface Services {
   adapter: DatabaseAdapter;
   repos: Repositories;
   lookup: LookupService;
+  covers: CoverService;
   version: string;
 }
 

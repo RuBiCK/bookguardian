@@ -38,6 +38,9 @@ export function normaliseRating(rating: number | null | undefined): number | nul
   return rating === null || rating === 0 ? null : rating;
 }
 
+/** Content hash (SHA-256, hex) that names a stored cover file. */
+export const coverAssetIdSchema = z.string().regex(/^[a-f0-9]{64}$/, 'Invalid cover asset id');
+
 const isbn10Schema = z
   .string()
   .regex(/^[0-9]{9}[0-9X]$/, 'Invalid ISBN-10')
@@ -62,7 +65,17 @@ export const bookSchema = z
     pages: z.number().int().positive().nullable(),
     /** BCP-47 / ISO 639 language tag ("en", "es", "pt-BR"). */
     language: z.string().trim().max(16).nullable(),
-    coverUrl: z.url().max(2048).nullable(),
+    /**
+     * Cover asset the book shows: the shared cover of its ISBN, or the
+     * user's own (`coverOverride`). `null` while unresolved / not found.
+     */
+    coverAssetId: coverAssetIdSchema.nullable(),
+    /** `true` once the user replaced the catalogue cover with a photo or a URL of their own. */
+    coverOverride: z.boolean(),
+    /** Where to load the cover from (`/api/covers/<id>.webp`); computed by the API, never stored. */
+    coverUrl: z.string().min(1).max(2048).nullable(),
+    /** The cover cascade is still running for this book; poll until it settles. */
+    coverPending: z.boolean(),
     categories: z.array(z.string().trim().min(1).max(120)),
     description: z.string().max(10_000).nullable(),
     notes: z.string().max(10_000).nullable(),
@@ -77,8 +90,25 @@ export const bookSchema = z
 
 export type Book = z.infer<typeof bookSchema>;
 
+/**
+ * What a client may send. `coverUrl` here is an instruction, not the stored
+ * value: the API downloads that image and makes it the book's own cover
+ * (`coverOverride`); `null` on an update drops a user cover and falls back to
+ * the catalogue one. Leave it out to keep whatever the book has.
+ */
 export const createBookInputSchema = bookSchema
-  .omit({ id: true, ownerId: true, addedAt: true, createdAt: true, updatedAt: true })
+  .omit({
+    id: true,
+    ownerId: true,
+    addedAt: true,
+    createdAt: true,
+    updatedAt: true,
+    coverAssetId: true,
+    coverOverride: true,
+    coverUrl: true,
+    coverPending: true,
+  })
+  .extend({ coverUrl: z.url().max(2048).nullable() })
   .partial()
   .required({ title: true });
 

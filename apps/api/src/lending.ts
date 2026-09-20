@@ -4,6 +4,7 @@
  * enforced here inside a transaction, not in the routes.
  */
 import {
+  coverPath,
   isOverdue,
   localDate,
   type Borrower,
@@ -48,7 +49,8 @@ async function withBooks(
       id: b.id,
       title: b.title,
       authors: b.authors,
-      coverUrl: b.coverUrl,
+      coverAssetId: b.coverAssetId,
+      coverUrl: b.coverAssetId ? coverPath(b.coverAssetId) : null,
       shelfId: b.shelfId,
     });
   }

@@ -71,7 +71,14 @@ describe('lending DTOs', () => {
       createdAt: ts,
       updatedAt: ts,
       overdue: false,
-      book: { id: uuid, title: 'Dune', authors: [], coverUrl: null, shelfId: uuid },
+      book: {
+        id: uuid,
+        title: 'Dune',
+        authors: [],
+        coverAssetId: null,
+        coverUrl: null,
+        shelfId: uuid,
+      },
     };
     expect(lendingWithBookSchema.parse(item)).toEqual(item);
     expect(lendingWithBookSchema.safeParse({ ...item, book: undefined }).success).toBe(false);

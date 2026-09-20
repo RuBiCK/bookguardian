@@ -1,6 +1,7 @@
 import type { Book, BookDraft } from '@bookguardian/shared';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFallbackCover } from '../api/covers';
 import { useCreateBook, useDefaults, useUpdateBook } from '../api/inventory';
 import {
   bookToForm,
@@ -27,6 +28,8 @@ interface BookSheetProps {
   initialShelfId?: string;
   /** Called right after the (optimistic) save, before the server confirms. */
   onSaved?: () => void;
+  /** A scan's cover photo: becomes the new book's cover if the catalogue has none. */
+  fallbackPhoto?: File | null;
 }
 
 /**
@@ -34,7 +37,15 @@ interface BookSheetProps {
  * shelf is pre-selected (last used, or the one you are looking at) so the
  * happy path is: tap +, type a title, tap Save.
  */
-export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved }: BookSheetProps) {
+export function BookSheet({
+  open,
+  onClose,
+  book,
+  draft,
+  initialShelfId,
+  onSaved,
+  fallbackPhoto,
+}: BookSheetProps) {
   const { t } = useTranslation();
   const formId = useId();
   const defaults = useDefaults();
@@ -63,7 +74,14 @@ export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved 
   }, [open, shelfId, preselected, defaults.data]);
 
   const failed = useCallback(() => showToast(t('errors.saveFailed'), 'error'), [t]);
-  const create = useCreateBook({ onError: failed });
+  // The sheet closes (and its props reset) before the server answers, so
+  // remember which photo went with this save.
+  const keepPhoto = useFallbackCover();
+  const savedPhoto = useRef<File | null>(null);
+  const create = useCreateBook({
+    onSuccess: (created) => keepPhoto(created, savedPhoto.current),
+    onError: failed,
+  });
   const update = useUpdateBook({ onError: failed });
   const saving = create.isPending || update.isPending;
 
@@ -84,6 +102,7 @@ export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved 
     if (book) {
       update.mutate({ id: book.id, input: { ...result.input, shelfId } });
     } else {
+      savedPhoto.current = fallbackPhoto ?? null;
       create.mutate({ ...result.input, shelfId });
       showToast(t('books.added', { shelf: shelfLabel }));
     }
@@ -99,6 +118,7 @@ export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved 
       inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
       multiline?: boolean;
       autoComplete?: string;
+      hint?: string;
     } = {},
   ) => {
     const id = `${formId}-${name}`;
@@ -134,6 +154,8 @@ export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved 
           <p id={`${id}-error`} className="field__error">
             {errorMessage(name, error)}
           </p>
+        ) : options.hint ? (
+          <p className="field__hint">{options.hint}</p>
         ) : null}
       </div>
     );
@@ -204,7 +226,12 @@ export function BookSheet({ open, onClose, book, draft, initialShelfId, onSaved 
             </div>
             {field('language', { placeholder: t('books.field.languagePlaceholder') })}
             {field('categories', { placeholder: t('books.field.categoriesPlaceholder') })}
-            {field('coverUrl', { type: 'url', inputMode: 'url' })}
+            {field('coverUrl', {
+              type: 'url',
+              inputMode: 'url',
+              placeholder: 'https://…',
+              hint: t('books.field.coverUrlHint'),
+            })}
             {field('description', { multiline: true })}
             {field('notes', { multiline: true })}
           </>

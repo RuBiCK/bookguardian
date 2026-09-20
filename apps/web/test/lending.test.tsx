@@ -44,7 +44,8 @@ describe('Lending tab', () => {
   });
 
   it('lists active lendings grouped by borrower with days out and overdue badges', async () => {
-    const dune = api.addBook({ title: 'Dune', coverUrl: 'https://covers.example.com/dune.jpg' });
+    const dune = api.addBook({ title: 'Dune' });
+    api.setCover(dune.id, 'd'.repeat(64));
     const emma = api.addBook({ title: 'Emma' });
     const late = api.addBook({ title: 'Late one' });
     const back = api.addBook({ title: 'Returned already' });
@@ -93,8 +94,9 @@ describe('Lending tab', () => {
     expect(rows[1]).toHaveTextContent('3 days out');
     expect(rows[1]!.querySelector('img')).toHaveAttribute(
       'src',
-      'https://covers.example.com/dune.jpg',
+      `/api/covers/${'d'.repeat(64)}-thumb.webp`,
     );
+    expect(within(rows[0]!).getByTestId('book-cover')).toHaveAttribute('data-state', 'placeholder');
     expect(screen.queryByText('Returned already')).not.toBeInTheDocument();
     expect(
       within(rows[1]!).getByRole('link', {
@@ -319,7 +321,7 @@ describe('lending helpers', () => {
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     overdue: false,
-    book: { id: 'b', title: 'T', authors: [], coverUrl: null, shelfId: 's' },
+    book: { id: 'b', title: 'T', authors: [], coverAssetId: null, coverUrl: null, shelfId: 's' },
     ...over,
   });
 

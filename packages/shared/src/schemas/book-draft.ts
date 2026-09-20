@@ -21,11 +21,12 @@ export const bookDraftSchema = bookSchema
     publishedDate: true,
     pages: true,
     language: true,
-    coverUrl: true,
     categories: true,
     description: true,
   })
   .extend({
+    /** Provider cover image, for the result sheet only; the API fetches its own copy by ISBN. */
+    coverUrl: z.url().max(2048).nullable(),
     source: bookSourceSchema,
     /** Provider-specific identifier (Open Library key, Google volume id) for debugging. */
     sourceId: z.string().max(200).nullable(),

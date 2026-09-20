@@ -47,9 +47,9 @@ export default tseslint.config(
     },
   },
 
-  // Plain JS config files at the root are not part of any tsconfig project.
+  // Plain JS files (root config, scripts, the e2e provider stub) are not part of any tsconfig project.
   {
-    files: ['*.js', '*.mjs', '*.cjs', 'scripts/**/*.{js,mjs,cjs}'],
+    files: ['*.js', '*.mjs', '*.cjs', 'scripts/**/*.{js,mjs,cjs}', 'apps/web/e2e/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       ...tseslint.configs.disableTypeChecked.languageOptions,

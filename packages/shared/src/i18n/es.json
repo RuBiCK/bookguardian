@@ -100,7 +100,6 @@
     },
     "showing": "Mostrando {{shown}} de {{total}}",
     "loadMore": "Cargar más",
-    "noCover": "Sin portada",
     "unknownAuthor": "Autor desconocido",
     "add": "Añadir libro",
     "edit": "Editar libro",
@@ -130,7 +129,8 @@
       "description": "Descripción",
       "notes": "Notas",
       "rating": "Valoración",
-      "readAt": "Leído el"
+      "readAt": "Leído el",
+      "coverUrlHint": "Pega el enlace de una imagen para usarla como portada propia."
     },
     "more": "Más detalles",
     "less": "Menos detalles",
@@ -148,7 +148,20 @@
       "addedLabel": "Añadido",
       "location": "Ubicación"
     },
-    "openPage": "Abrir la página del libro"
+    "openPage": "Abrir la página del libro",
+    "cover": {
+      "change": "Cambiar portada",
+      "title": "Portada",
+      "takePhoto": "Hacer una foto",
+      "choosePhoto": "Elegir una foto",
+      "useCatalogue": "Usar la portada del catálogo",
+      "uploading": "Subiendo portada…",
+      "uploaded": "Portada actualizada",
+      "uploadFailed": "No se pudo subir esa foto.",
+      "removed": "Vuelve la portada del catálogo",
+      "pending": "Buscando portada…",
+      "own": "Tu foto"
+    }
   },
   "scan": {
     "title": "Escanear",
@@ -261,7 +274,17 @@
       "online": "En línea ({{driver}})",
       "offline": "Sin conexión"
     },
-    "version": "Versión {{version}}"
+    "version": "Versión {{version}}",
+    "covers": {
+      "label": "Portadas",
+      "find": "Buscar portadas que faltan",
+      "searching": "Buscando…",
+      "progress": "{{done}} de {{total}} comprobados",
+      "result_one": "{{found}} de {{total}} portada encontrada",
+      "result_other": "{{found}} de {{total}} portadas encontradas",
+      "nothing": "Todos los libros con ISBN ya tienen portada.",
+      "failed": "No se pudo iniciar la búsqueda. Inténtalo de nuevo."
+    }
   },
   "reading": {
     "title": "Tu lectura",

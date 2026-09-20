@@ -1,6 +1,6 @@
 import type { BookDraft } from '@bookguardian/shared';
 import { useTranslation } from 'react-i18next';
-import { BookIcon } from './icons';
+import { BookCover } from './BookCover';
 
 interface DraftCardProps {
   draft: BookDraft;
@@ -16,13 +16,7 @@ export function DraftCard({ draft, compact = false }: DraftCardProps) {
   return (
     <div className={`draft${compact ? ' draft--compact' : ''}`} data-testid="draft-card">
       <span className="draft__cover">
-        {draft.coverUrl ? (
-          <img src={draft.coverUrl} alt="" loading="lazy" />
-        ) : (
-          <span className="draft__placeholder" aria-hidden="true">
-            <BookIcon />
-          </span>
-        )}
+        <BookCover book={draft} src={draft.coverUrl} />
       </span>
       <span className="draft__body">
         <span className="draft__title">{draft.title}</span>
