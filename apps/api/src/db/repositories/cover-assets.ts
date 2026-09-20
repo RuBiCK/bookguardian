@@ -18,6 +18,8 @@ export interface NewCoverAsset {
   source: CoverSource;
   /** `null` = shared provider cover; a user id = private photo / pasted URL. */
   ownerId: string | null;
+  /** Defaults to now; the cover service passes its own clock. */
+  createdAt?: string;
 }
 
 export interface CoverAssetRepository {
@@ -65,7 +67,7 @@ export function createCoverAssetRepository(kit: DialectKit, tables: Tables): Cov
         }
         return toAsset(existing);
       }
-      const row: Row = { ...asset, createdAt: nowIso() };
+      const row: Row = { ...asset, createdAt: asset.createdAt ?? nowIso() };
       try {
         await kit.insert(coverAssets, row);
         return toAsset(row);

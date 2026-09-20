@@ -241,12 +241,18 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 | `GET`    | `/api/books/:id`                         | One book                                                                                                                                                                                        |
 | `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`). Reading rules apply — see below                                                                                                           |
 | `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                                                  |
-| `DELETE` | `/api/books/:id`                         | → 204 (cover files are left to the GC)                                                                                                                                                          |
+| `DELETE` | `/api/books/:id`                         | → 204 (its lendings go with it; cover files are left to the GC)                                                                                                                                 |
 | `POST`   | `/api/books/:id/cover[?fallback=true]`   | Multipart `file` → the book with its new (private) cover. `fallback=true` only fills an empty slot (202 when ignored). 422 `invalid_image`, 413 `cover_too_large`                               |
 | `DELETE` | `/api/books/:id/cover`                   | Drop the user's own cover; back to the catalogue one                                                                                                                                            |
 | `GET`    | `/api/covers/:sha256(-thumb).webp`       | A stored cover (600 px / 200 px tall), `Cache-Control: … immutable`, ETag = hash. Private covers: `private`, 404 for anyone but the owner or a library-share grantee                            |
 | `POST`   | `/api/covers/backfill`                   | Queue the cascade for every coverless book of the caller (skips cached misses) → 202 `{ queued }`                                                                                               |
 | `GET`    | `/api/covers/backfill`                   | `{ queued, pending, done, found, failed }` of the caller's last backfill                                                                                                                        |
+| `GET`    | `/api/books/:id/lendings`                | `{ items: LendingWithBook[] }` — the book's lending history, newest first (the open lending, if any, comes first)                                                                               |
+| `GET`    | `/api/lendings`                          | `{ items: LendingWithBook[] }` — active lendings, newest first. `active=false` adds returned ones, `overdue=true` keeps only overdue ones, `bookId` narrows to one book                         |
+| `POST`   | `/api/lendings`                          | Lend `{ bookId, borrowerName, borrowerContact?, lentAt? (default now), dueAt? }` → 201. 409 `already_lent` while the book is out; 422 `unknown_book`                                            |
+| `GET`    | `/api/lendings/borrowers`                | `{ items: Borrower[] }` — everyone lent to before, most recent first, for the autocomplete                                                                                                      |
+| `GET`    | `/api/lendings/:id`                      | One lending with its book summary                                                                                                                                                               |
+| `POST`   | `/api/lendings/:id/return`               | `{ returnedAt? }` (default now) → the closed lending. 409 `already_returned`; 422 `returned_before_lent`                                                                                        |
 | `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down                                             |
 | `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                                                                |
 
@@ -268,6 +274,19 @@ clears it, and future dates are rejected by `readAtSchema` (422
 
 `sort=read` lists the most recently finished book first (never-finished books
 last); `sort=rating` lists the best-rated first (unrated last).
+
+### Lending
+
+A book is out to **at most one person at a time**: `POST /api/lendings` checks
+for an open lending and inserts inside one transaction (`apps/api/src/lending.ts`),
+so a double tap gets a 409 instead of a second row. A lending is active while
+`returnedAt` is `null`; **overdue** means active with `dueAt` (a calendar day)
+strictly before today — the due day itself is not overdue yet. The API stamps
+`overdue` on every listed lending from its own local date (`isOverdue` in
+`packages/shared`), and `?overdue=true` filters on it. `LendingWithBook` carries
+a `book` summary (`id`, `title`, `authors`, `coverUrl`, `shelfId`) so the
+Lending tab needs a single request; the web app derives "N days out"
+(`daysOut`) and the cover badges from the same list.
 
 ### Book metadata lookup
 

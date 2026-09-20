@@ -11,6 +11,8 @@ export interface BookCoverProps {
   src?: string | null;
   /** Roughly how wide the cover renders, so the browser picks thumb or full. */
   sizes?: string;
+  /** Tiny rendering (lending rows): the coloured card alone, no text. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -21,7 +23,13 @@ export interface BookCoverProps {
  * the API is still looking — it draws a 2:3 card coloured from the title,
  * with the title and author on it, legible in light and dark mode alike.
  */
-export function BookCover({ book, src, sizes = '33vw', className }: BookCoverProps) {
+export function BookCover({
+  book,
+  src,
+  sizes = '33vw',
+  compact = false,
+  className,
+}: BookCoverProps) {
   const { t } = useTranslation();
   const stored = book.coverAssetId ?? null;
   const full = src ?? (stored ? coverSrc(stored) : null);
@@ -60,8 +68,12 @@ export function BookCover({ book, src, sizes = '33vw', className }: BookCoverPro
           style={{ background: placeholderColor(book.title), color: PLACEHOLDER_TEXT }}
           aria-hidden="true"
         >
-          <span className="cover__placeholder-title">{book.title}</span>
-          <span className="cover__placeholder-author">{authors}</span>
+          {compact ? null : (
+            <>
+              <span className="cover__placeholder-title">{book.title}</span>
+              <span className="cover__placeholder-author">{authors}</span>
+            </>
+          )}
         </span>
       )}
     </span>

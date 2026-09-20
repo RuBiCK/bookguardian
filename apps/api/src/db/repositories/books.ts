@@ -51,6 +51,8 @@ export interface BookPageResult {
 
 export interface BookRepository {
   findById(ownerId: string, id: string): Promise<BookRecord | null>;
+  /** The books with these ids that belong to the owner (order unspecified). */
+  findByIds(ownerId: string, ids: string[]): Promise<BookRecord[]>;
   listByOwner(
     ownerId: string,
     options?: { limit?: number; offset?: number },
@@ -116,6 +118,13 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
     async findById(ownerId, id) {
       const [row] = await kit.select(books, { where: owned(ownerId, id), limit: 1 });
       return row ? toBook(row) : null;
+    },
+    async findByIds(ownerId, ids) {
+      if (ids.length === 0) return [];
+      const rows = await kit.select(books, {
+        where: allOf(eq(books.ownerId, ownerId), inArray(books.id, ids)),
+      });
+      return rows.map(toBook);
     },
     async listByOwner(ownerId, options = {}) {
       const rows = await kit.select(books, {

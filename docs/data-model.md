@@ -152,7 +152,11 @@ erDiagram
   table and keep `books.read_at` as the latest one — no rewrite of the
   existing column is needed.
 - **Lending.** A lending is open while `returned_at` is `NULL`; the
-  `(owner_id, returned_at)` index serves the "what's lent out" list.
+  `(owner_id, returned_at)` index serves the "what's lent out" list. A book
+  has at most one open lending at a time — enforced by the API inside a
+  transaction (`apps/api/src/lending.ts`), not by a constraint, so the rule
+  stays portable. `due_at` is a calendar day; "overdue" is derived (open and
+  `due_at` before today), never stored.
 - **Deletes cascade** down the hierarchy (user → library → shelf → book →
   lending) so removing a library never leaves orphans.
 - **Catalogue.** `catalog_books` is filled lazily by `/api/lookup/isbn/:isbn`

@@ -8,6 +8,7 @@ import { ownerMiddleware, type OwnerResolver } from './owner';
 import { bookRoutes, defaultsRoutes } from './routes/books';
 import { coverRoutes } from './routes/covers';
 import { healthRoutes } from './routes/health';
+import { lendingRoutes } from './routes/lendings';
 import { libraryRoutes } from './routes/libraries';
 import { lookupRoutes } from './routes/lookup';
 import { shelfRoutes } from './routes/shelves';
@@ -48,6 +49,7 @@ export function createApp({ services, quiet = false, webDist, resolveOwner }: Cr
     .route('/shelves', shelfRoutes)
     .route('/books', bookRoutes)
     .route('/defaults', defaultsRoutes)
+    .route('/lendings', lendingRoutes)
     .route('/lookup', lookupRoutes)
     .route('/covers', coverRoutes);
 

@@ -9,11 +9,13 @@ import {
   updateBookInputSchema,
   uploadCoverQuerySchema,
   type BookPage,
+  type LendingListResponse,
 } from '@bookguardian/shared';
 import type { AppEnv } from '../app-env';
 import { InvalidImageError } from '../covers';
 import { ApiHttpError } from '../errors';
 import { createBook, moveBook, presentBook, resolveDefaults, updateBook } from '../inventory';
+import { listLendings } from '../lending';
 import { validate } from '../validation';
 
 export const bookRoutes = new Hono<AppEnv>()
@@ -82,6 +84,14 @@ export const bookRoutes = new Hono<AppEnv>()
       return c.json(book);
     },
   )
+  /** Lending history of one book, newest first (the open lending, if any, comes first). */
+  .get('/:id/lendings', validate('param', idParamSchema), async (c) => {
+    const items = await listLendings(c.get('services').repos, c.get('ownerId'), {
+      bookId: c.req.valid('param').id,
+    });
+    const body: LendingListResponse = { items };
+    return c.json(body);
+  })
   .delete('/:id', validate('param', idParamSchema), async (c) => {
     const { repos } = c.get('services');
     const ownerId = c.get('ownerId');

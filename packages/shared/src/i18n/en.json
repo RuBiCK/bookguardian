@@ -220,9 +220,41 @@
     "title": "Lending",
     "empty": {
       "title": "Nothing lent out",
-      "body": "Books you lend to friends will show up here."
+      "body": "Books you lend to friends will show up here. Tap “Lend” on a book page."
     },
-    "placeholder": "Keep track of who has your books."
+    "summary_one": "{{count}} book out",
+    "summary_other": "{{count}} books out",
+    "overdueCount_one": "{{count}} overdue",
+    "overdueCount_other": "{{count}} overdue",
+    "lend": "Lend",
+    "lendTitle": "Lend “{{title}}”",
+    "lentTo": "Lent to {{name}}",
+    "lentOn": "Lent on {{date}}",
+    "since": "since {{date}}",
+    "outToday": "Out today",
+    "daysOut_one": "{{count}} day out",
+    "daysOut_other": "{{count}} days out",
+    "due": "Due {{date}}",
+    "overdue": "Overdue",
+    "lent": "Lent",
+    "returned": "Returned",
+    "returnedOn": "Returned {{date}}",
+    "markReturned": "Returned",
+    "returnedToast": "“{{title}}” is back",
+    "lentToast": "Lent to {{name}}",
+    "alreadyLent": "This book is already lent out.",
+    "history": "Lending history",
+    "historyEmpty": "Never lent out.",
+    "field": {
+      "borrower": "Who has it?",
+      "borrowerPlaceholder": "Name",
+      "contact": "Contact or note",
+      "contactPlaceholder": "Phone, email, “from work”…",
+      "dueAt": "Due back"
+    },
+    "recentBorrowers": "Recent borrowers",
+    "borrowerRequired": "Who did you lend it to?",
+    "openBook": "Open “{{title}}”"
   },
   "stats": {
     "title": "Stats",

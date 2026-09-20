@@ -8,6 +8,7 @@ import { ConfirmSheet } from '../components/ConfirmSheet';
 import { CoverSheet } from '../components/CoverSheet';
 import { EmptyState } from '../components/EmptyState';
 import { PencilIcon, TrashIcon } from '../components/icons';
+import { LendingPanel } from '../components/LendingPanel';
 import { ReadingPanel } from '../components/ReadingPanel';
 import { Screen } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
@@ -22,8 +23,8 @@ export const Route = createFileRoute('/books/$bookId')({
 
 /**
  * The book page: large cover, title and authors, metadata chips, your
- * rating / status / dates, description, location, notes, and the move /
- * edit / delete actions.
+ * rating / status / dates, lending, description, location, notes, and the
+ * move / edit / delete actions.
  */
 function BookDetailScreen() {
   const { t, i18n } = useTranslation();
@@ -119,6 +120,7 @@ function BookDetailScreen() {
       }
     >
       <ReadingPanel book={b} actions={reading} />
+      <LendingPanel book={b} />
 
       {b.description ? (
         <section className="prose">

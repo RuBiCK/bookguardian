@@ -56,6 +56,14 @@ describe('BookCover', () => {
     expect(screen.getAllByTestId('book-cover')[1]).toHaveTextContent(en.books.unknownAuthor);
   });
 
+  it('renders the coloured card alone when compact', () => {
+    render(<BookCover book={book} compact />);
+    const cover = screen.getByTestId('book-cover');
+    expect(cover).toHaveAttribute('data-state', 'placeholder');
+    expect(cover).toHaveTextContent('');
+    expect(cover.querySelector<HTMLElement>('.cover__placeholder')!.style.background).not.toBe('');
+  });
+
   it('marks the card as pending while the API is still looking', () => {
     render(<BookCover book={{ ...book, coverAssetId: null, coverPending: true }} />);
     expect(screen.getByTestId('book-cover')).toHaveAttribute('data-state', 'pending');

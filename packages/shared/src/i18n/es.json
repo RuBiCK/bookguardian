@@ -220,9 +220,41 @@
     "title": "Préstamos",
     "empty": {
       "title": "Nada prestado",
-      "body": "Los libros que prestes a tus amigos aparecerán aquí."
+      "body": "Los libros que prestes a tus amigos aparecerán aquí. Toca «Prestar» en la página de un libro."
     },
-    "placeholder": "Lleva la cuenta de quién tiene tus libros."
+    "summary_one": "{{count}} libro prestado",
+    "summary_other": "{{count}} libros prestados",
+    "overdueCount_one": "{{count}} atrasado",
+    "overdueCount_other": "{{count}} atrasados",
+    "lend": "Prestar",
+    "lendTitle": "Prestar «{{title}}»",
+    "lentTo": "Prestado a {{name}}",
+    "lentOn": "Prestado el {{date}}",
+    "since": "desde el {{date}}",
+    "outToday": "Prestado hoy",
+    "daysOut_one": "{{count}} día fuera",
+    "daysOut_other": "{{count}} días fuera",
+    "due": "Vuelve el {{date}}",
+    "overdue": "Atrasado",
+    "lent": "Prestado",
+    "returned": "Devuelto",
+    "returnedOn": "Devuelto el {{date}}",
+    "markReturned": "Devuelto",
+    "returnedToast": "«{{title}}» ha vuelto",
+    "lentToast": "Prestado a {{name}}",
+    "alreadyLent": "Este libro ya está prestado.",
+    "history": "Historial de préstamos",
+    "historyEmpty": "Nunca prestado.",
+    "field": {
+      "borrower": "¿Quién lo tiene?",
+      "borrowerPlaceholder": "Nombre",
+      "contact": "Contacto o nota",
+      "contactPlaceholder": "Teléfono, email, «del trabajo»…",
+      "dueAt": "Vuelve el"
+    },
+    "recentBorrowers": "Prestatarios recientes",
+    "borrowerRequired": "¿A quién se lo has prestado?",
+    "openBook": "Abrir «{{title}}»"
   },
   "stats": {
     "title": "Estadísticas",

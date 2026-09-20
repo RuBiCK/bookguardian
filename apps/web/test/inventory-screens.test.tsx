@@ -792,12 +792,14 @@ describe('Reading life', () => {
       screen
         .getAllByTestId('book-card')
         .map((c) => c.querySelector('.book-card__title')?.textContent);
+    // The grid also asks for active lendings (cover badges); look at the last book query.
+    const lastBookQuery = () => api.calls.findLast((c) => c.path.startsWith('/api/books?'))?.path;
     await screen.findByTestId('book-grid');
     await waitFor(() => expect(cardTitles()).toEqual(['Neuromancer', 'Zorba', 'Emma', 'Dune']));
 
     await u.click(screen.getByRole('button', { name: '4+ ★' }));
     await waitFor(() => expect(cardTitles()).toEqual(['Zorba', 'Dune']));
-    expect(api.calls.at(-1)?.path).toContain('minRating=4');
+    expect(lastBookQuery()).toContain('minRating=4');
     await u.click(screen.getByRole('button', { name: '5 ★' }));
     await waitFor(() => expect(cardTitles()).toEqual(['Dune']));
     await u.click(screen.getByRole('button', { name: en.filters.anyRating }));
@@ -805,7 +807,7 @@ describe('Reading life', () => {
 
     await u.selectOptions(screen.getByLabelText(en.filters.sort), 'rating');
     await waitFor(() => expect(cardTitles()).toEqual(['Dune', 'Zorba', 'Emma', 'Neuromancer']));
-    expect(api.calls.at(-1)?.path).toContain('sort=rating');
+    expect(lastBookQuery()).toContain('sort=rating');
     await u.selectOptions(screen.getByLabelText(en.filters.sort), 'read');
     await waitFor(() => expect(cardTitles()).toEqual(['Neuromancer', 'Dune', 'Zorba', 'Emma']));
     await u.click(screen.getByRole('button', { name: en.readStatus.read }));

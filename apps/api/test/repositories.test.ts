@@ -212,6 +212,69 @@ describeEachAdapter('repositories', (adapterCase) => {
     expect(await repos.lendings.findById(base.userId, explicit.id)).not.toBeNull();
   });
 
+  it('lendings: active-by-book, open-by-books, filtered list and borrowers', async () => {
+    const dune = await repos.books.create(base.userId, { shelfId: base.shelfId, title: 'Dune' });
+    const emma = await repos.books.create(base.userId, { shelfId: base.shelfId, title: 'Emma' });
+    const idle = await repos.books.create(base.userId, { shelfId: base.shelfId, title: 'Idle' });
+    expect(await repos.lendings.findActiveByBook(base.userId, dune.id)).toBeNull();
+
+    const old = await repos.lendings.create(base.userId, {
+      bookId: dune.id,
+      borrowerName: 'Ana',
+      lentAt: '2026-01-01T00:00:00.000Z',
+    });
+    await repos.lendings.markReturned(base.userId, old.id, '2026-01-15T00:00:00.000Z');
+    const current = await repos.lendings.create(base.userId, {
+      bookId: dune.id,
+      borrowerName: 'bo',
+      borrowerContact: 'bo@example.com',
+      lentAt: '2026-02-01T00:00:00.000Z',
+    });
+    const other = await repos.lendings.create(base.userId, {
+      bookId: emma.id,
+      borrowerName: 'Bo',
+      lentAt: '2026-03-01T00:00:00.000Z',
+    });
+
+    expect((await repos.lendings.findActiveByBook(base.userId, dune.id))?.id).toBe(current.id);
+    expect(
+      (await repos.lendings.listOpenByBooks(base.userId, [dune.id, emma.id, idle.id])).map(
+        (l) => l.id,
+      ),
+    ).toEqual([other.id, current.id]);
+    expect(await repos.lendings.listOpenByBooks(base.userId, [])).toEqual([]);
+
+    expect((await repos.lendings.list(base.userId)).map((l) => l.id)).toEqual([
+      other.id,
+      current.id,
+      old.id,
+    ]);
+    expect((await repos.lendings.list(base.userId, { active: false })).map((l) => l.id)).toEqual([
+      old.id,
+    ]);
+    expect(
+      (await repos.lendings.list(base.userId, { active: true, bookId: dune.id })).map((l) => l.id),
+    ).toEqual([current.id]);
+
+    // Distinct by name (case-folded), most recent first, latest contact kept.
+    expect(await repos.lendings.listBorrowers(base.userId)).toEqual([
+      { name: 'Bo', contact: null, lastLentAt: '2026-03-01T00:00:00.000Z' },
+      { name: 'Ana', contact: null, lastLentAt: '2026-01-01T00:00:00.000Z' },
+    ]);
+
+    // Books by id set, owner-scoped.
+    const found = await repos.books.findByIds(base.userId, [
+      dune.id,
+      idle.id,
+      '00000000-0000-4000-8000-000000000000',
+    ]);
+    expect(found.map((b) => b.title).sort()).toEqual(['Dune', 'Idle']);
+    expect(await repos.books.findByIds(base.userId, [])).toEqual([]);
+    const other2 = await repos.users.create({ displayName: 'Other' });
+    expect(await repos.books.findByIds(other2.id, [dune.id])).toEqual([]);
+    expect(await repos.lendings.findActiveByBook(other2.id, dune.id)).toBeNull();
+  });
+
   it('library shares: viewer-only, unique per grantee, listable both ways, revocable', async () => {
     const friend = await repos.users.create({ displayName: 'Friend' });
     const share = await repos.libraryShares.create({

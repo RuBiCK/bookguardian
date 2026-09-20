@@ -234,6 +234,7 @@ export function createCoverService({
       ...dims(resolved.cover),
       source: resolved.source,
       ownerId: null,
+      createdAt: iso(),
     });
     await repos.isbnCovers.save({
       isbn13: job.isbn13,
@@ -261,6 +262,7 @@ export function createCoverService({
       ...dims(cover),
       source: 'manual',
       ownerId: job.ownerId,
+      createdAt: iso(),
     });
     await link(job.ownerId, job.bookId, asset.id, true);
     return true;
@@ -305,6 +307,7 @@ export function createCoverService({
         ...dims(cover),
         source: 'user_photo',
         ownerId,
+        createdAt: iso(),
       });
       // A fallback only fills an empty slot; a catalogue cover that already
       // arrived (or a user's own) wins and the upload is left for the GC.
