@@ -4,6 +4,7 @@
  * containers. Routes validate and translate to HTTP; the rules live here.
  */
 import {
+  coverPath,
   normaliseRating,
   resolveReadAt,
   type Book,
@@ -14,8 +15,14 @@ import {
   type UpdateBookInput,
 } from '@bookguardian/shared';
 import type { Services } from './app-env';
+import type { CoverService } from './covers';
 import type { DatabaseAdapter } from './db/adapters';
-import { createRepositories, type Repositories } from './db/repositories';
+import {
+  createRepositories,
+  type BookRecord,
+  type BookRecordPatch,
+  type Repositories,
+} from './db/repositories';
 import { ApiHttpError } from './errors';
 
 const notFound = (entity: string) => new ApiHttpError(404, 'not_found', `${entity} not found`);
@@ -110,8 +117,25 @@ export async function resolveDefaults(
   throw new ApiHttpError(409, 'no_shelf', 'Create a shelf before adding books');
 }
 
+/**
+ * The wire shape of a book: the stored record plus where its cover is served
+ * from and whether the cover cascade is still working on it.
+ */
+export function presentBook(covers: CoverService, record: BookRecord): Book {
+  return {
+    ...record,
+    coverUrl: record.coverAssetId ? coverPath(record.coverAssetId) : null,
+    coverPending: covers.isPending(record.id),
+  };
+}
+
+/**
+ * Add a book. It is stored right away; the cover arrives afterwards: a pasted
+ * `coverUrl` is downloaded as the book's own cover, otherwise an ISBN starts
+ * the shared-cover cascade (see `covers/service.ts`).
+ */
 export async function createBook(
-  repos: Repositories,
+  { repos, covers }: Pick<Services, 'repos' | 'covers'>,
   ownerId: string,
   input: CreateBookRequest,
 ): Promise<Book> {
@@ -121,13 +145,17 @@ export async function createBook(
   }
   const readStatus = input.readStatus ?? 'to_read';
   const readAt = resolveReadAt(readStatus, input.readAt);
-  return repos.books.create(ownerId, {
-    ...input,
+  const { coverUrl, ...fields } = input;
+  const record = await repos.books.create(ownerId, {
+    ...fields,
     shelfId,
     readStatus,
     readAt,
     rating: normaliseRating(input.rating),
   });
+  if (coverUrl) covers.enqueueManualUrl(record, coverUrl);
+  else covers.enqueueResolve(record);
+  return presentBook(covers, record);
 }
 
 /**
@@ -135,9 +163,13 @@ export async function createBook(
  * without a `readAt` stamps today (an existing date is kept), and any other
  * status clears it — so `readAt` is only ever set on a finished book. A
  * 0-star rating is stored as "unrated" (`null`).
+ *
+ * Covers: a `coverUrl` string becomes the book's own cover, `null` drops a
+ * user cover, and a changed ISBN drops the shared one; whenever the book
+ * ends up coverless with an ISBN, the cascade runs again.
  */
 export async function updateBook(
-  repos: Repositories,
+  { repos, covers }: Pick<Services, 'repos' | 'covers'>,
   ownerId: string,
   id: string,
   input: UpdateBookInput,
@@ -147,7 +179,8 @@ export async function updateBook(
   if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
     throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId: input.shelfId });
   }
-  const patch = { ...input };
+  const { coverUrl, ...fields } = input;
+  const patch: BookRecordPatch = { ...fields };
   if (input.readStatus !== undefined || input.readAt !== undefined) {
     patch.readAt = resolveReadAt(
       input.readStatus ?? current.readStatus,
@@ -156,13 +189,22 @@ export async function updateBook(
     );
   }
   if (input.rating !== undefined) patch.rating = normaliseRating(input.rating);
-  const book = await repos.books.update(ownerId, id, patch);
-  if (!book) throw notFound('Book');
-  return book;
+  const isbnChanged = fields.isbn13 !== undefined && fields.isbn13 !== current.isbn13;
+  if (coverUrl === null && current.coverOverride) {
+    patch.coverAssetId = null;
+    patch.coverOverride = false;
+  } else if (isbnChanged && !current.coverOverride) {
+    patch.coverAssetId = null;
+  }
+  const record = await repos.books.update(ownerId, id, patch);
+  if (!record) throw notFound('Book');
+  if (coverUrl) covers.enqueueManualUrl(record, coverUrl);
+  else if (record.coverAssetId === null) covers.enqueueResolve(record);
+  return presentBook(covers, record);
 }
 
 export async function moveBook(
-  repos: Repositories,
+  { repos, covers }: Pick<Services, 'repos' | 'covers'>,
   ownerId: string,
   id: string,
   shelfId: string,
@@ -170,9 +212,31 @@ export async function moveBook(
   if (!(await repos.shelves.findById(ownerId, shelfId))) {
     throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId });
   }
-  const book = await repos.books.update(ownerId, id, { shelfId });
-  if (!book) throw notFound('Book');
-  return book;
+  const record = await repos.books.update(ownerId, id, { shelfId });
+  if (!record) throw notFound('Book');
+  return presentBook(covers, record);
+}
+
+/**
+ * Can `viewerId` see a private cover? Its owner can, and so can anyone a
+ * library holding a book with that cover is shared with (`library_shares`).
+ * Shared covers (no owner) are public.
+ */
+export async function canViewCover(
+  repos: Repositories,
+  viewerId: string,
+  asset: { id: string; ownerId: string | null },
+): Promise<boolean> {
+  if (asset.ownerId === null || asset.ownerId === viewerId) return true;
+  const shared = new Set(
+    (await repos.libraryShares.listByGrantee(viewerId)).map((s) => s.libraryId),
+  );
+  if (shared.size === 0) return false;
+  for (const book of await repos.books.listByCoverAsset(asset.id)) {
+    const shelf = await repos.shelves.findById(book.ownerId, book.shelfId);
+    if (shelf && shared.has(shelf.libraryId)) return true;
+  }
+  return false;
 }
 
 export interface DeleteContainerResult {

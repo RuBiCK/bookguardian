@@ -126,9 +126,11 @@ describe('Scan tab — ISBN mode', () => {
       isbn13: '9780441013593',
       isbn10: '0441013597',
       authors: ['Frank Herbert'],
-      coverUrl: 'https://covers.example.com/dune.jpg',
       pages: 412,
+      // The provider's cover URL is not stored; the API fetches its own copy by ISBN.
+      coverPending: true,
     });
+    expect(api.uploads).toEqual([]); // no photo was involved in a barcode scan
     // Scanning resumes for the next book.
     await waitFor(() => expect(startIsbnScanner).toHaveBeenCalledTimes(2));
   });
@@ -266,6 +268,26 @@ describe('Scan tab — cover mode', () => {
       await within(result).findByRole('button', { name: 'Add to My Library › Default' }),
     );
     await waitFor(() => expect(api.books.map((b) => b.title)).toEqual(['Dune Messiah']));
+    // The cover photo is offered as the book's cover, in case the catalogue has none.
+    await waitFor(() =>
+      expect(api.uploads).toEqual([
+        { bookId: api.books[0]!.id, name: 'photo.jpg', fallback: true },
+      ]),
+    );
+  });
+
+  it('keeps the cover photo for a book added by hand after a failed search', async () => {
+    const u = user();
+    recognizeText.mockResolvedValue('Nothing findable');
+    await openCover();
+    await u.upload(screen.getByTestId('cover-photo'), photo());
+    const notice = await screen.findByTestId('scan-notice');
+    await u.click(within(notice).getByRole('button', { name: en.scan.result.addManually }));
+    const sheet = await screen.findByRole('dialog', { name: en.books.add });
+    await u.click(within(sheet).getByRole('button', { name: en.common.save }));
+    await waitFor(() => expect(api.books).toHaveLength(1));
+    await waitFor(() => expect(api.uploads).toHaveLength(1));
+    expect(api.uploads[0]).toMatchObject({ bookId: api.books[0]!.id, fallback: true });
   });
 
   it('prefers an ISBN printed on the cover and falls back to search when it is unknown', async () => {
@@ -274,7 +296,7 @@ describe('Scan tab — cover mode', () => {
     await openCover();
     await user().upload(screen.getByTestId('cover-photo'), photo());
     const result = await screen.findByRole('dialog', { name: en.scan.result.title });
-    expect(within(result).getByText('Emma')).toBeInTheDocument();
+    expect(within(result).getByText('Emma', { selector: '.draft__title' })).toBeInTheDocument();
     expect(within(result).getByText('via Google Books')).toBeInTheDocument();
     expect(api.calls.some((c) => c.path.startsWith('/api/lookup/search'))).toBe(false);
 

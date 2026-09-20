@@ -93,7 +93,6 @@ describeEachAdapter('repositories', (adapterCase) => {
       publishedDate: '1965',
       pages: 412,
       language: 'en',
-      coverUrl: 'https://covers.example.com/dune.jpg',
       description: 'Desert planet.',
       notes: 'Gift from Ana',
       rating: 5,

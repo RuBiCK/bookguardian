@@ -100,7 +100,6 @@
     },
     "showing": "Showing {{shown}} of {{total}}",
     "loadMore": "Load more",
-    "noCover": "No cover",
     "unknownAuthor": "Unknown author",
     "add": "Add book",
     "edit": "Edit book",
@@ -130,7 +129,8 @@
       "description": "Description",
       "notes": "Notes",
       "rating": "Rating",
-      "readAt": "Finished on"
+      "readAt": "Finished on",
+      "coverUrlHint": "Paste an image link to use it as this book's own cover."
     },
     "more": "More details",
     "less": "Fewer details",
@@ -148,7 +148,20 @@
       "addedLabel": "Added",
       "location": "Location"
     },
-    "openPage": "Open book page"
+    "openPage": "Open book page",
+    "cover": {
+      "change": "Change cover",
+      "title": "Book cover",
+      "takePhoto": "Take a photo",
+      "choosePhoto": "Choose a photo",
+      "useCatalogue": "Use the catalogue cover",
+      "uploading": "Uploading cover…",
+      "uploaded": "Cover updated",
+      "uploadFailed": "Couldn't upload that photo.",
+      "removed": "Back to the catalogue cover",
+      "pending": "Looking for a cover…",
+      "own": "Your photo"
+    }
   },
   "scan": {
     "title": "Scan",
@@ -229,7 +242,17 @@
       "online": "Online ({{driver}})",
       "offline": "Offline"
     },
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "covers": {
+      "label": "Covers",
+      "find": "Find missing covers",
+      "searching": "Searching…",
+      "progress": "{{done}} of {{total}} checked",
+      "result_one": "{{found}} of {{total}} cover found",
+      "result_other": "{{found}} of {{total}} covers found",
+      "nothing": "Every book with an ISBN already has a cover.",
+      "failed": "Couldn't start the search. Try again."
+    }
   },
   "reading": {
     "title": "Your reading",

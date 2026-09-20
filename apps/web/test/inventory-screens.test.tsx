@@ -112,12 +112,16 @@ describe('Library tab', () => {
     await u.click(within(sheet).getByRole('button', { name: en.common.save }));
 
     await waitFor(() => expect(api.books).toHaveLength(1));
+    // The typed cover URL is an instruction for the API (fetch it as the cover), not a stored value.
+    expect(
+      api.calls.find((c) => c.method === 'POST' && c.path === '/api/books')?.body,
+    ).toMatchObject({ coverUrl: 'https://covers.example.com/n.jpg' });
     expect(api.books[0]).toMatchObject({
       title: 'Neuromancer',
       shelfId: desk.id,
       isbn13: '9780441569595',
       isbn10: '0441569595',
-      coverUrl: 'https://covers.example.com/n.jpg',
+      coverPending: true,
       pages: 271,
       authors: ['William Gibson'],
       publisher: 'Ace',
@@ -365,11 +369,8 @@ describe('Shelf screen', () => {
     const u = user();
     const other = api.addShelf(seeded.library.id, 'Other');
     api.addBook({ title: 'Dune', authors: ['Frank Herbert'], readStatus: 'read' });
-    api.addBook({
-      title: 'Emma',
-      authors: ['Jane Austen'],
-      coverUrl: 'https://covers.example.com/emma.jpg',
-    });
+    const emmaBook = api.addBook({ title: 'Emma', authors: ['Jane Austen'] });
+    api.setCover(emmaBook.id, 'e'.repeat(64));
     api.addBook({ title: 'Elsewhere', shelfId: other.id });
 
     await renderApp(`/shelves/${seeded.shelf.id}`);
@@ -378,10 +379,14 @@ describe('Shelf screen', () => {
     const grid = await screen.findByTestId('book-grid');
     expect(within(grid).getAllByTestId('book-card')).toHaveLength(2);
     const emma = within(grid).getByRole('link', { name: 'Emma — Jane Austen' });
-    expect(emma.querySelector('img')).toHaveAttribute('src', 'https://covers.example.com/emma.jpg');
+    expect(emma.querySelector('img')).toHaveAttribute(
+      'src',
+      `/api/covers/${'e'.repeat(64)}-thumb.webp`,
+    );
     const dune = within(grid).getByRole('link', { name: 'Dune — Frank Herbert' });
     expect(dune).toHaveTextContent(en.readStatus.read);
     expect(dune.querySelector('img')).toBeNull();
+    expect(within(dune).getByTestId('book-cover')).toHaveAttribute('data-state', 'placeholder');
     expect(screen.getByText('Showing 2 of 2')).toBeInTheDocument();
 
     await u.click(screen.getByRole('button', { name: en.readStatus.read }));
@@ -454,12 +459,11 @@ describe('Book detail', () => {
       rating: 4,
       description: 'Desert planet.',
       notes: 'Gift',
-      coverUrl: 'https://covers.example.com/dune.jpg',
     });
 
     await renderApp(`/books/${book.id}`);
     expect(await screen.findByRole('heading', { level: 1, name: 'Dune' })).toBeInTheDocument();
-    expect(screen.getByText('Frank Herbert')).toBeInTheDocument();
+    expect(screen.getByText('Frank Herbert', { selector: '.hero__authors' })).toBeInTheDocument();
     expect(screen.getByText('Book one')).toBeInTheDocument();
     // Metadata chips: year, pages, language, categories.
     for (const chip of ['1965', '412 pages', 'en', 'Sci-Fi']) {
@@ -604,6 +608,77 @@ describe('Book detail', () => {
     await u.click(within(sheet).getByRole('button', { name: en.common.delete }));
     expect(await screen.findByText(en.errors.deleteFailed)).toBeInTheDocument();
     expect(api.books).toHaveLength(1);
+  });
+
+  it('changes the cover from a photo and goes back to the catalogue one', async () => {
+    const u = user();
+    const book = api.addBook({
+      title: 'Dune',
+      authors: ['Frank Herbert'],
+      isbn13: '9780441013593',
+    });
+    api.setCover(book.id, 'c'.repeat(64));
+    await renderApp(`/books/${book.id}`);
+    await screen.findByRole('heading', { level: 1, name: 'Dune' });
+    const hero = screen.getByRole('button', { name: en.books.cover.change });
+    expect(hero.querySelector('img')).toHaveAttribute(
+      'src',
+      `/api/covers/${'c'.repeat(64)}-thumb.webp`,
+    );
+
+    await u.click(hero);
+    let sheet = await screen.findByRole('dialog', { name: en.books.cover.title });
+    expect(within(sheet).queryByRole('button', { name: en.books.cover.useCatalogue })).toBeNull();
+    const photo = new File(['jpeg'], 'shelfie.jpg', { type: 'image/jpeg' });
+    await u.upload(within(sheet).getByTestId('cover-sheet-file'), photo);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await screen.findByText(en.books.cover.uploaded)).toBeInTheDocument();
+    expect(api.uploads).toEqual([{ bookId: book.id, name: 'shelfie.jpg', fallback: false }]);
+    await waitFor(() => expect(api.books[0]?.coverOverride).toBe(true));
+    await waitFor(() =>
+      expect(hero.querySelector('img')).toHaveAttribute(
+        'src',
+        `/api/covers/${api.books[0]!.coverAssetId}-thumb.webp`,
+      ),
+    );
+
+    // A user cover can be dropped again.
+    await u.click(hero);
+    sheet = await screen.findByRole('dialog', { name: en.books.cover.title });
+    expect(within(sheet).getByText(en.books.cover.own)).toBeInTheDocument();
+    await u.click(within(sheet).getByRole('button', { name: en.books.cover.useCatalogue }));
+    expect(await screen.findByText(en.books.cover.removed)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(api.books[0]).toMatchObject({ coverOverride: false, coverAssetId: null }),
+    );
+    await waitFor(() =>
+      expect(within(hero).getByTestId('book-cover')).toHaveAttribute('data-state', 'placeholder'),
+    );
+
+    // A failed upload says so.
+    api.failNext({ method: 'POST', path: /\/cover$/ });
+    await u.click(hero);
+    sheet = await screen.findByRole('dialog', { name: en.books.cover.title });
+    await u.upload(within(sheet).getByTestId('cover-sheet-camera'), photo);
+    expect(await screen.findByText(en.books.cover.uploadFailed)).toBeInTheDocument();
+  });
+
+  it('polls while the API is still looking for a cover and stops once it lands', async () => {
+    const book = api.addBook({ title: 'Dune', isbn13: '9780441013593', coverPending: true });
+    await renderApp(`/books/${book.id}`);
+    await screen.findByRole('heading', { level: 1, name: 'Dune' });
+    expect(screen.getByRole('status')).toHaveTextContent(en.books.cover.pending);
+    const before = api.calls.filter((c) => c.path === `/api/books/${book.id}`).length;
+    api.setCover(book.id, 'd'.repeat(64));
+    await waitFor(
+      () => expect(screen.queryByText(en.books.cover.pending)).not.toBeInTheDocument(),
+      { timeout: 5000 },
+    );
+    const after = api.calls.filter((c) => c.path === `/api/books/${book.id}`).length;
+    expect(after).toBeGreaterThan(before);
+    expect(
+      screen.getByRole('button', { name: en.books.cover.change }).querySelector('img'),
+    ).toHaveAttribute('src', `/api/covers/${'d'.repeat(64)}-thumb.webp`);
   });
 });
 

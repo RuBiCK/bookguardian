@@ -1,6 +1,8 @@
 import type { DatabaseAdapter } from '../adapters/types';
 import { createBookRepository, type BookRepository } from './books';
 import { createCatalogBookRepository, type CatalogBookRepository } from './catalog-books';
+import { createCoverAssetRepository, type CoverAssetRepository } from './cover-assets';
+import { createIsbnCoverRepository, type IsbnCoverRepository } from './isbn-covers';
 import { createLendingRepository, type LendingRepository } from './lendings';
 import { createLibraryRepository, type LibraryRepository } from './libraries';
 import { createLibraryShareRepository, type LibraryShareRepository } from './library-shares';
@@ -16,6 +18,10 @@ export interface Repositories {
   libraryShares: LibraryShareRepository;
   /** Shared, owner-less ISBN → provider metadata cache. */
   catalogBooks: CatalogBookRepository;
+  /** Stored cover files (shared by ISBN or private to a user). */
+  coverAssets: CoverAssetRepository;
+  /** ISBN → shared cover resolution cache (hits and misses). */
+  isbnCovers: IsbnCoverRepository;
 }
 
 /** Repositories are dialect-agnostic: they only see the adapter's kit + tables. */
@@ -29,14 +35,21 @@ export function createRepositories(adapter: DatabaseAdapter): Repositories {
     lendings: createLendingRepository(kit, tables),
     libraryShares: createLibraryShareRepository(kit, tables),
     catalogBooks: createCatalogBookRepository(kit, tables),
+    coverAssets: createCoverAssetRepository(kit, tables),
+    isbnCovers: createIsbnCoverRepository(kit, tables),
   };
 }
 
 export { NotFoundError } from './base';
 export type { CatalogBook, CatalogBookRow } from './catalog-books';
+export type { BookRecord, BookRecordPatch, NewBookRecord } from './books';
+export type { NewCoverAsset } from './cover-assets';
+export type { IsbnCover } from './isbn-covers';
 export type {
   BookRepository,
   CatalogBookRepository,
+  CoverAssetRepository,
+  IsbnCoverRepository,
   LendingRepository,
   LibraryRepository,
   LibraryShareRepository,

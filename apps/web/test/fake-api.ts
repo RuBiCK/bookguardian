@@ -4,10 +4,12 @@
  * screens can be exercised end-to-end without a database.
  */
 import {
+  coverPath,
   normaliseRating,
   resolveReadAt,
   type Book,
   type BookDraft,
+  type CoverBackfillStatus,
   type LibraryWithCounts,
   type ShelfWithCount,
 } from '@bookguardian/shared';
@@ -42,6 +44,13 @@ export interface FakeApi {
   searchResults: BookDraft[];
   /** Answer every lookup with 503 (providers down). */
   lookupDown: boolean;
+  /** Cover uploads received: book id + file name + whether it was a fallback. */
+  uploads: { bookId: string; name: string; fallback: boolean }[];
+  /** What `GET /api/covers/backfill` reports; `POST` resets it from `backfillQueued`. */
+  backfill: CoverBackfillStatus;
+  backfillQueued: number;
+  /** Give a book a stored cover (an asset id), as the API's cascade would. */
+  setCover(bookId: string, assetId: string | null, override?: boolean): void;
   addLibrary(name: string, location?: string | null): Library;
   addShelf(libraryId: string, name: string, sortOrder?: number): Shelf;
   addBook(input: Partial<Book> & { title: string; shelfId?: string }): Book;
@@ -67,6 +76,24 @@ export function installFakeApi(): FakeApi {
     drafts: {} as Record<string, BookDraft>,
     searchResults: [] as BookDraft[],
     down: false,
+  };
+  const uploads: FakeApi['uploads'] = [];
+  const covers = {
+    backfill: { queued: 0, pending: 0, done: 0, found: 0, failed: 0 },
+    backfillQueued: 0,
+  };
+  let assetCounter = 0;
+  const newAssetId = () => {
+    assetCounter += 1;
+    return assetCounter.toString(16).padStart(64, '0');
+  };
+  const setCover: FakeApi['setCover'] = (bookId, assetId, override = false) => {
+    const book = books.find((b) => b.id === bookId);
+    if (!book) throw new Error('fake api: no book');
+    book.coverAssetId = assetId;
+    book.coverOverride = override;
+    book.coverUrl = assetId ? coverPath(assetId) : null;
+    book.coverPending = false;
   };
 
   const addLibrary: FakeApi['addLibrary'] = (name, location = null) => {
@@ -104,7 +131,10 @@ export function installFakeApi(): FakeApi {
       publishedDate: null,
       pages: null,
       language: null,
+      coverAssetId: null,
+      coverOverride: false,
       coverUrl: null,
+      coverPending: false,
       categories: [],
       description: null,
       notes: null,
@@ -146,6 +176,37 @@ export function installFakeApi(): FakeApi {
     const q = url.searchParams;
     const match = (re: RegExp) => re.exec(path);
     let m: RegExpExecArray | null;
+
+    // Covers
+    if (path === '/api/covers/backfill' && method === 'POST') {
+      covers.backfill = {
+        queued: covers.backfillQueued,
+        pending: covers.backfillQueued,
+        done: 0,
+        found: 0,
+        failed: 0,
+      };
+      return json({ queued: covers.backfillQueued }, 202);
+    }
+    if (path === '/api/covers/backfill' && method === 'GET') return json(covers.backfill);
+    if ((m = match(/^\/api\/books\/([^/]+)\/cover$/))) {
+      const book = books.find((b) => b.id === m![1]);
+      if (!book) return error(404, 'not_found');
+      if (method === 'DELETE') {
+        setCover(book.id, null, false);
+        return json(book);
+      }
+      if (method === 'POST') {
+        const form = body as FormData;
+        const file = form.get('file');
+        if (!(file instanceof Blob)) return error(422, 'validation_error');
+        const fallback = q.get('fallback') === 'true';
+        uploads.push({ bookId: book.id, name: file instanceof File ? file.name : '', fallback });
+        if (fallback && (book.coverAssetId || book.coverOverride)) return json(book, 202);
+        setCover(book.id, newAssetId(), !fallback);
+        return json(book);
+      }
+    }
 
     if (path === '/api/health')
       return json({
@@ -314,10 +375,14 @@ export function installFakeApi(): FakeApi {
       return json({ items: list.slice(offset, offset + limit), total: list.length, limit, offset });
     }
     if (path === '/api/books' && method === 'POST') {
-      const input = body as Partial<Book> & { title: string };
+      const { coverUrl, ...input } = body as Partial<Book> & { title: string };
       if (input.shelfId && !shelves.some((s) => s.id === input.shelfId))
         return error(422, 'unknown_shelf');
-      return json(addBook(input), 201);
+      // The real API stores the book and looks for a cover afterwards.
+      return json(
+        addBook({ ...input, coverPending: Boolean(input.isbn13) || Boolean(coverUrl) }),
+        201,
+      );
     }
     if ((m = match(/^\/api\/books\/([^/]+)\/move$/))) {
       const book = books.find((b) => b.id === m![1]);
@@ -333,8 +398,13 @@ export function installFakeApi(): FakeApi {
       if (method === 'GET') return json(book);
       if (method === 'PATCH') {
         // Same rules as the real API (apps/api/src/inventory.ts).
-        const input = body as Partial<Book>;
+        const { coverUrl, ...input } = body as Partial<Book>;
         const patch: Partial<Book> = { ...input };
+        if (coverUrl === null && book.coverOverride) {
+          patch.coverAssetId = null;
+          patch.coverOverride = false;
+          patch.coverUrl = null;
+        }
         if (input.readStatus !== undefined || input.readAt !== undefined) {
           patch.readAt = resolveReadAt(
             input.readStatus ?? book.readStatus,
@@ -360,7 +430,12 @@ export function installFakeApi(): FakeApi {
       'http://localhost',
     );
     const method = (init?.method ?? 'GET').toUpperCase();
-    const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as unknown) : undefined;
+    const body =
+      typeof init?.body === 'string'
+        ? (JSON.parse(init.body) as unknown)
+        : init?.body instanceof FormData
+          ? init.body
+          : undefined;
     calls.push({ method, path: `${url.pathname}${url.search}`, body });
     if (
       failure &&
@@ -405,6 +480,20 @@ export function installFakeApi(): FakeApi {
     set lookupDown(value) {
       lookup.down = value;
     },
+    uploads,
+    get backfill() {
+      return covers.backfill;
+    },
+    set backfill(value) {
+      covers.backfill = value;
+    },
+    get backfillQueued() {
+      return covers.backfillQueued;
+    },
+    set backfillQueued(value) {
+      covers.backfillQueued = value;
+    },
+    setCover,
     restore: () => spy.mockRestore(),
   };
 }

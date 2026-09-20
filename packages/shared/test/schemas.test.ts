@@ -66,7 +66,10 @@ describe('shared schemas', () => {
       publishedDate: '1965',
       pages: 412,
       language: 'en',
+      coverAssetId: null,
+      coverOverride: false,
       coverUrl: null,
+      coverPending: false,
       categories: ['Science fiction'],
       description: null,
       notes: null,
@@ -83,6 +86,11 @@ describe('shared schemas', () => {
     expect(bookSchema.safeParse({ ...base, readStatus: 'done' }).success).toBe(false);
     expect(bookSchema.safeParse({ ...base, readAt: '2020-1-2' }).success).toBe(false);
     expect(bookSchema.safeParse({ ...base, readAt: null }).success).toBe(true);
+    expect(bookSchema.safeParse({ ...base, coverAssetId: 'abc' }).success).toBe(false);
+    expect(
+      bookSchema.safeParse({ ...base, coverAssetId: 'a'.repeat(64), coverUrl: '/api/covers/x' })
+        .success,
+    ).toBe(true);
   });
 
   it('normalises a 0-star rating to "unrated" and leaves undefined untouched', () => {

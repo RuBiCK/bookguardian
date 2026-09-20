@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { createApp } from './app';
 import { loadConfig } from './config';
+import { createDefaultCoverService } from './covers';
 import { createAdapter } from './db/adapters';
 import { migrate } from './db/migrate';
 import { createRepositories } from './db/repositories';
@@ -22,10 +23,14 @@ if (seeded.created) console.log('[api] seeded default user, library and shelf');
 
 const repos = createRepositories(adapter);
 const lookup = createDefaultLookupService(config.lookup, repos.catalogBooks);
+const covers = createDefaultCoverService(config.covers, repos);
 const app = createApp({
-  services: { adapter, repos, lookup, version },
+  services: { adapter, repos, lookup, covers, version },
   webDist: config.webDist,
 });
+// Sweep unreferenced cover files and queue covers for books that still lack
+// one (existing libraries get theirs without anyone pressing a button).
+await covers.start();
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`[api] listening on http://localhost:${info.port} (db: ${adapter.driver})`);
@@ -35,8 +40,8 @@ const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
 async function shutdown(signal: string) {
   console.log(`[api] ${signal} received, shutting down`);
   server.close();
-  // Let catalogue refreshes in flight land before the database goes away.
-  await lookup.idle();
+  // Let catalogue refreshes and the running cover job land before the database goes away.
+  await Promise.all([lookup.idle(), covers.close()]);
   await adapter.close();
   process.exit(0);
 }

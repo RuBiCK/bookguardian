@@ -41,6 +41,7 @@ import {
 } from '@tanstack/react-query';
 import { z } from 'zod';
 import { apiRequest } from './client';
+import { COVER_POLL_MS, hasPendingCover, pagesHavePendingCover } from './covers';
 
 export const PAGE_SIZE = 60;
 
@@ -112,8 +113,18 @@ export const defaultsQueryOptions = queryOptions({
 
 export const useLibraries = () => useQuery(librariesQueryOptions);
 export const useShelves = (libraryId?: string) => useQuery(shelvesQueryOptions(libraryId));
-export const useBooks = (filter: BookFilter) => useInfiniteQuery(booksQueryOptions(filter));
-export const useBook = (id: string) => useQuery(bookQueryOptions(id));
+// Book queries poll while the API is still finding a cover for any listed book.
+export const useBooks = (filter: BookFilter) =>
+  useInfiniteQuery({
+    ...booksQueryOptions(filter),
+    refetchInterval: (query) => (pagesHavePendingCover(query.state.data) ? COVER_POLL_MS : false),
+  });
+export const useBook = (id: string) =>
+  useQuery({
+    ...bookQueryOptions(id),
+    refetchInterval: (query) =>
+      hasPendingCover(query.state.data ? [query.state.data] : undefined) ? COVER_POLL_MS : false,
+  });
 export const useDefaults = () => useQuery(defaultsQueryOptions);
 
 // ---- Cache helpers -------------------------------------------------------
@@ -223,7 +234,11 @@ export function optimisticBook(input: CreateBookRequest & { shelfId: string }): 
     publishedDate: input.publishedDate ?? null,
     pages: input.pages ?? null,
     language: input.language ?? null,
-    coverUrl: input.coverUrl ?? null,
+    coverAssetId: null,
+    coverOverride: false,
+    coverUrl: null,
+    // The API starts looking for a cover as soon as it has an ISBN or a URL to fetch.
+    coverPending: Boolean(input.isbn13) || Boolean(input.coverUrl),
     categories: input.categories ?? [],
     description: input.description ?? null,
     notes: input.notes ?? null,
@@ -286,8 +301,17 @@ export function useUpdateBook(callbacks: MutationCallbacks<Book> = {}) {
       await client.cancelQueries({ queryKey: keys.allBooks });
       await client.cancelQueries({ queryKey: keys.book(id) });
       const snap = snapshot(client);
+      // `coverUrl` on input is an instruction for the API, not the served URL.
+      const { coverUrl, ...fields } = input;
       const patch = (book: Book) =>
-        book.id === id ? { ...book, ...input, updatedAt: nowIso() } : book;
+        book.id === id
+          ? {
+              ...book,
+              ...fields,
+              updatedAt: nowIso(),
+              coverPending: book.coverPending || !!coverUrl,
+            }
+          : book;
       const before = client.getQueryData<Book>(keys.book(id));
       client.setQueryData<Book>(keys.book(id), (book) => (book ? patch(book) : book));
       patchBookLists(client, (page) => ({ ...page, items: page.items.map(patch) }));

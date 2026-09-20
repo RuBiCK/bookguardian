@@ -126,8 +126,9 @@ test.describe('scan', () => {
     const sheet = page.getByRole('dialog', { name: en.scan.result.title });
     await expect(sheet).toBeVisible({ timeout: 15_000 });
     expect(lookups).toBe(1);
-    await expect(sheet.getByText('Dune')).toBeVisible();
-    await expect(sheet.getByText('Frank Herbert')).toBeVisible();
+    // The draft card and its placeholder cover both carry the title/author.
+    await expect(sheet.locator('.draft__title', { hasText: 'Dune' })).toBeVisible();
+    await expect(sheet.locator('.draft__authors', { hasText: 'Frank Herbert' })).toBeVisible();
 
     const add = sheet.getByRole('button', { name: 'Add to My Library › Default' });
     await expect(add).toBeEnabled();

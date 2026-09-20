@@ -6,7 +6,11 @@ import { createApp, type App } from '../src/app';
 import { createRepositories, type Repositories } from '../src/db/repositories';
 import { seed, type SeedResult } from '../src/db/seed';
 import { createTestDb, type TestDb } from './adapters';
+import { fixtureCovers, type FixtureCovers, type FixtureCoversOptions } from './cover-fixtures';
 import { fixtureLookup, type FixtureLookupOptions } from './lookup-fixtures';
+
+/** Requests carrying this header act as that user (see `resolveOwner` in `app.ts`). */
+export const OWNER_HEADER = 'x-test-owner';
 
 export interface TestApp {
   app: App;
@@ -15,6 +19,8 @@ export interface TestApp {
   base: SeedResult;
   /** Recorded-fixture metadata lookup (see `lookup-fixtures.ts`). */
   lookup: ReturnType<typeof fixtureLookup>;
+  /** Cover cascade over fixtures, files in a temp dir (see `cover-fixtures.ts`). */
+  covers: FixtureCovers;
   cleanup(this: void): Promise<void>;
 }
 
@@ -25,6 +31,7 @@ export interface TestAppOptions {
   db?: TestDb;
   /** Clock / cadence for the catalogue-backed lookup. */
   lookup?: Pick<FixtureLookupOptions, 'now' | 'refreshMs' | 'missMs'>;
+  covers?: FixtureCoversOptions;
 }
 
 export async function createTestApp(options: TestAppOptions = {}): Promise<TestApp> {
@@ -32,12 +39,32 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
   const repos = createRepositories(db.adapter);
   const base = await seed(db.adapter);
   const lookup = fixtureLookup({ ...options.lookup, catalog: repos.catalogBooks });
+  const covers = fixtureCovers(repos, options.covers);
   const app = createApp({
     quiet: true,
     webDist: options.webDist,
-    services: { adapter: db.adapter, repos, lookup: lookup.service, version: '0.0.0-test' },
+    services: {
+      adapter: db.adapter,
+      repos,
+      lookup: lookup.service,
+      covers: covers.service,
+      version: '0.0.0-test',
+    },
+    resolveOwner: async (c) => c.req.header(OWNER_HEADER),
   });
-  return { app, db, repos, base, lookup, cleanup: db.cleanup };
+  return {
+    app,
+    db,
+    repos,
+    base,
+    lookup,
+    covers,
+    async cleanup() {
+      await covers.service.close();
+      covers.cleanup();
+      await db.cleanup();
+    },
+  };
 }
 
 export interface JsonResponse<T = unknown> {

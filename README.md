@@ -53,9 +53,11 @@ mkdir -p data             # Linux: create it first so it is owned by you, not ro
 docker compose up --build # http://localhost:3000
 ```
 
-- **Where the database lives:** `./data/bookguardian.db` on the host (bind
-  mounted at `/data`; WAL side files `-wal`/`-shm` sit next to it). Migrations
-  and the default "My Library / Default" seed run at boot.
+- **Where the data lives:** `./data/bookguardian.db` on the host (bind
+  mounted at `/data`; WAL side files `-wal`/`-shm` sit next to it) and the
+  cover images under `./data/covers/`. Migrations and the default
+  "My Library / Default" seed run at boot, then the API queues covers for any
+  book that still lacks one.
 - **Reset the library:** `docker compose down && rm -rf data && docker compose up`.
 - **Configuration:** the container reads the repo-root `.env` (if present);
   `DATABASE_PATH=/data/bookguardian.db`, `PORT=3000` and `WEB_DIST=/app/web` are
@@ -139,6 +141,16 @@ Metadata lookup (see [Book metadata lookup](#book-metadata-lookup)):
 | `CATALOG_REFRESH_DAYS`     | `180`   | Age past which a `catalog_books` row is refreshed in the background |
 | `CATALOG_MISS_DAYS`        | `7`     | How long an ISBN no provider knows is remembered before retrying    |
 
+Book covers (see [Book covers](#book-covers)):
+
+| Variable                  | Default                          | Notes                                                         |
+| ------------------------- | -------------------------------- | ------------------------------------------------------------- |
+| `COVERS_DIR`              | `<dir of DATABASE_PATH>/covers`  | Where the WebP files live (`/data/covers` in Docker)          |
+| `OPEN_LIBRARY_COVERS_URL` | `https://covers.openlibrary.org` | Open Library image host                                       |
+| `COVERS_MISS_DAYS`        | `30`                             | How long "no cover anywhere" is remembered for an ISBN        |
+| `COVERS_GC_DAYS`          | `90`                             | Unreferenced shared covers are deleted once older than this   |
+| `COVERS_MIN_INTERVAL_MS`  | `1000`                           | Pause between provider requests (Open Library: ≤ 1 request/s) |
+
 ### Switching the database driver
 
 The API talks to the database only through `apps/api/src/db/adapters/*`. Pick
@@ -172,7 +184,8 @@ apps/
       db/schema/          Drizzle tables per dialect (kept in parity by a test)
       db/repositories/    dialect-agnostic data access (incl. the shared catalog_books)
       lookup/             Open Library / Google Books providers + catalogue-first service
-      inventory.ts        library/shelf/book use-cases (defaults, cascade rules)
+      covers/             cover cascade, WebP store, queue + backfill + GC (ADR 0004)
+      inventory.ts        library/shelf/book use-cases (defaults, cascade rules, book DTO)
       owner.ts            resolves the owner every query is scoped by
       db/migrate.ts       migration runner    db/seed.ts  seed
   web/
@@ -180,7 +193,7 @@ apps/
     src/components/       app shell + inventory UI (Sheet, BookSheet, BookGrid, ShelfPicker…)
     src/theme/            CSS variables (light/dark) + theme hook
     src/api/              typed fetch client + TanStack Query hooks
-    e2e/                  Playwright (iPhone 14)
+    e2e/                  Playwright (iPhone 14); providers-stub.mjs stands in for Open Library
 packages/shared/
   src/schemas/            Zod entities   src/dto/  API DTOs   src/i18n/  en.json, es.json
 docs/
@@ -228,7 +241,12 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 | `GET`    | `/api/books/:id`                         | One book                                                                                                                                                                                        |
 | `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`). Reading rules apply — see below                                                                                                           |
 | `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                                                  |
-| `DELETE` | `/api/books/:id`                         | → 204                                                                                                                                                                                           |
+| `DELETE` | `/api/books/:id`                         | → 204 (cover files are left to the GC)                                                                                                                                                          |
+| `POST`   | `/api/books/:id/cover[?fallback=true]`   | Multipart `file` → the book with its new (private) cover. `fallback=true` only fills an empty slot (202 when ignored). 422 `invalid_image`, 413 `cover_too_large`                               |
+| `DELETE` | `/api/books/:id/cover`                   | Drop the user's own cover; back to the catalogue one                                                                                                                                            |
+| `GET`    | `/api/covers/:sha256(-thumb).webp`       | A stored cover (600 px / 200 px tall), `Cache-Control: … immutable`, ETag = hash. Private covers: `private`, 404 for anyone but the owner or a library-share grantee                            |
+| `POST`   | `/api/covers/backfill`                   | Queue the cascade for every coverless book of the caller (skips cached misses) → 202 `{ queued }`                                                                                               |
+| `GET`    | `/api/covers/backfill`                   | `{ queued, pending, done, found, failed }` of the caller's last backfill                                                                                                                        |
 | `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down                                             |
 | `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                                                                |
 
@@ -288,6 +306,52 @@ To reset the catalogue, delete its rows — `sqlite3 apps/api/data/bookguardian.
 'DELETE FROM catalog_books'` (or `/data/bookguardian.db` in Docker) — or delete
 the whole SQLite file in `./data` for a factory reset; it is rebuilt lazily as
 ISBNs are scanned or typed.
+
+### Book covers
+
+Every book shows a cover without anyone pasting a URL, and no cover depends on
+an external link: the API keeps its own WebP copy
+([ADR 0004](docs/adr/0004-cover-assets.md), `apps/api/src/covers/`).
+
+- **Cascade.** Adding or editing a book with an ISBN (and no cover of its own)
+  queues a background job — the book is saved immediately, `coverPending`
+  says the API is still looking. The job checks the `isbn_covers` cache, then
+  tries **Open Library** (edition record → `covers[0]` → `/b/id/<id>-L.jpg`,
+  else the rate-limited `/b/isbn/<isbn>-L.jpg?default=false`), then
+  **Google Books** (`imageLinks` large → medium → thumbnail, https, no
+  `edge=curl`) — only when `GOOGLE_BOOKS_API_KEY` is set, silently skipped
+  otherwise. Replies that are not `image/*`, the 1×1 "no cover" GIF and
+  anything under 50×50 px are discarded. Transient failures retry with
+  backoff; only a confirmed miss is cached (`COVERS_MISS_DAYS`).
+- **Files, not blobs.** Each image is resized to ≤ 600 px tall, encoded as
+  WebP (~q80) with a 200 px thumb, and written once to
+  `COVERS_DIR/<sha256[0:2]>/<sha256>.webp` (+ `-thumb`). The name is the hash
+  of the WebP, so a thousand users owning the same edition share one file, the
+  URL changes whenever the image does (nothing to invalidate) and clients cache
+  it for a year. `cover_assets` describes the files; `isbn_covers` maps an ISBN
+  to its shared asset (or remembers a miss).
+- **Yours vs shared.** A provider cover is a shared asset (`owner_id` NULL)
+  every book with that ISBN links to (`books.cover_asset_id`,
+  `cover_override = false`). A photo you take on the book page, a photo from
+  the Scan tab's cover mode (kept only if the catalogue has nothing), or a URL
+  typed in the form become a private asset only you (and people your library
+  is shared with) can load, and `cover_override = true` keeps the cascade away.
+  "Use the catalogue cover" undoes that.
+- **Placeholder.** Without an image the web app draws a 2:3 card coloured
+  from the title, with title and author (`BookCover`, white text on a dark
+  palette at ≥ 4.5:1, the same in light and dark mode), and polls every 2 s
+  while a cover is pending.
+- **Backfill.** Settings → "Find missing covers" queues every coverless book
+  (skipping cached misses) and shows "12 of 15 covers found". The API also
+  runs it once at boot, so existing libraries get covers after the upgrade.
+- **Clean-up.** Deleting a book never deletes files. A GC at boot and daily
+  removes private assets no book references and shared assets neither a book
+  nor `isbn_covers` references once they are older than `COVERS_GC_DAYS`.
+
+Tests use synthetic images rendered by `sharp` and a recorded-style provider
+fetch (`apps/api/test/cover-fixtures.ts`); the e2e suite points the API at
+`apps/web/e2e/providers-stub.mjs`, so the whole cascade runs without the
+network.
 
 ### Scan tab (web)
 

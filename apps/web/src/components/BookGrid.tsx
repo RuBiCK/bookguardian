@@ -2,8 +2,12 @@ import type { Book } from '@bookguardian/shared';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookIcon, StarIcon } from './icons';
+import { BookCover } from './BookCover';
+import { StarIcon } from './icons';
 import { QuickActionsSheet } from './QuickActionsSheet';
+
+/** Grid tiles are a third of the screen on phones, a quarter from 480px up. */
+const TILE_SIZES = '(min-width: 480px) 25vw, 33vw';
 
 /** How long a finger has to rest on a cover before quick actions open. */
 export const LONG_PRESS_MS = 450;
@@ -14,7 +18,7 @@ interface BookCardProps {
   onLongPress?: (book: Book) => void;
 }
 
-/** Cover-first tile; falls back to a title/author card when there is no cover. */
+/** Cover-first tile; `BookCover` draws a title/author card while there is no image. */
 export function BookCard({ book, onLongPress }: BookCardProps) {
   const { t } = useTranslation();
   const authors = book.authors.length > 0 ? book.authors.join(', ') : t('books.unknownAuthor');
@@ -77,14 +81,7 @@ export function BookCard({ book, onLongPress }: BookCardProps) {
       }}
     >
       <span className="book-card__cover">
-        {book.coverUrl ? (
-          <img src={book.coverUrl} alt="" loading="lazy" draggable={false} />
-        ) : (
-          <span className="book-card__placeholder" aria-hidden="true">
-            <BookIcon />
-            <span className="book-card__placeholder-title">{book.title}</span>
-          </span>
-        )}
+        <BookCover book={book} sizes={TILE_SIZES} />
         {book.readStatus !== 'to_read' ? (
           <span className={`book-card__badge book-card__badge--${book.readStatus}`}>
             {t(`readStatus.${book.readStatus}`)}

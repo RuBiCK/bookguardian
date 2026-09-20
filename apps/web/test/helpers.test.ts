@@ -39,7 +39,8 @@ describe('catalogue drafts', () => {
       pages: '412',
       language: 'en',
       categories: 'Sci-Fi, Classics',
-      coverUrl: 'https://c/x.jpg',
+      // Never pre-filled: the API fetches its own copy of the provider cover by ISBN.
+      coverUrl: '',
       description: 'Desert.',
       notes: '',
     });
@@ -66,7 +67,6 @@ describe('catalogue drafts', () => {
       publishedDate: '1965',
       pages: 412,
       language: 'en',
-      coverUrl: 'https://c/x.jpg',
       categories: ['Sci-Fi', 'Classics'],
       description: 'Desert.',
     });
@@ -145,11 +145,17 @@ describe('book form', () => {
         pages: 412,
         language: null,
         categories: [],
-        coverUrl: null,
         description: null,
         notes: null,
       },
     });
+  });
+
+  it('only sends a cover URL when one was typed (it asks the API to fetch it)', () => {
+    const typed = formToInput({ ...EMPTY_BOOK_FORM, title: 'x', coverUrl: 'https://c/x.jpg' });
+    expect(typed.ok && typed.input.coverUrl).toBe('https://c/x.jpg');
+    const bad = formToInput({ ...EMPTY_BOOK_FORM, title: 'x', coverUrl: 'ftp://c/x.jpg' });
+    expect(bad).toEqual({ ok: false, errors: { coverUrl: 'invalid' } });
   });
 
   it('round-trips a book through the form', () => {
@@ -167,7 +173,10 @@ describe('book form', () => {
       publishedDate: '1965',
       pages: 412,
       language: 'en',
-      coverUrl: 'https://c/x.jpg',
+      coverAssetId: 'a'.repeat(64),
+      coverOverride: true,
+      coverUrl: `/api/covers/${'a'.repeat(64)}.webp`,
+      coverPending: false,
       categories: ['Sci-Fi'],
       description: null,
       notes: 'n',
@@ -184,7 +193,8 @@ describe('book form', () => {
       isbn: '0441013597',
       pages: '412',
       categories: 'Sci-Fi',
-      coverUrl: 'https://c/x.jpg',
+      // The served cover path is never offered back as editable text.
+      coverUrl: '',
       notes: 'n',
       subtitle: '',
     });

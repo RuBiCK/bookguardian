@@ -45,7 +45,6 @@ describe('/api/books', () => {
       publishedDate: '1965',
       pages: 412,
       language: 'en',
-      coverUrl: 'https://covers.example.com/dune.jpg',
       categories: ['Science fiction'],
       description: 'Desert planet.',
       notes: 'Gift',
@@ -55,9 +54,11 @@ describe('/api/books', () => {
     };
     const res = await add(full);
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject(full);
+    expect(res.body).toMatchObject({ ...full, coverAssetId: null, coverOverride: false });
+    // The cascade runs in the background; nothing here is a stored cover URL.
+    await t.covers.service.idle();
     const got = await json<Book>(t.app, 'GET', `/api/books/${res.body.id}`);
-    expect(got.body).toEqual(res.body);
+    expect(got.body).toEqual({ ...res.body, coverPending: false });
 
     for (const bad of [
       {},
