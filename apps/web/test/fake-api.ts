@@ -4,10 +4,13 @@
  * screens can be exercised end-to-end without a database.
  */
 import {
+  isOverdue,
   normaliseRating,
   resolveReadAt,
   type Book,
   type BookDraft,
+  type Lending,
+  type LendingWithBook,
   type LibraryWithCounts,
   type ShelfWithCount,
 } from '@bookguardian/shared';
@@ -33,6 +36,7 @@ export interface FakeApi {
   libraries: Library[];
   shelves: Shelf[];
   books: Book[];
+  lendings: Lending[];
   /** Every request seen, oldest first. */
   calls: { method: string; path: string; body?: unknown }[];
   /** Make the next matching request fail with this status. */
@@ -45,6 +49,7 @@ export interface FakeApi {
   addLibrary(name: string, location?: string | null): Library;
   addShelf(libraryId: string, name: string, sortOrder?: number): Shelf;
   addBook(input: Partial<Book> & { title: string; shelfId?: string }): Book;
+  addLending(input: Partial<Lending> & { bookId: string; borrowerName: string }): Lending;
   restore(): void;
 }
 
@@ -61,6 +66,7 @@ export function installFakeApi(): FakeApi {
   const libraries: Library[] = [];
   const shelves: Shelf[] = [];
   const books: Book[] = [];
+  const lendings: Lending[] = [];
   const calls: FakeApi['calls'] = [];
   let failure: { matcher: { method?: string; path?: RegExp }; status: number } | null = null;
   const lookup = {
@@ -119,6 +125,47 @@ export function installFakeApi(): FakeApi {
     books.push(book);
     return book;
   };
+
+  const addLending: FakeApi['addLending'] = (input) => {
+    const ts = now();
+    const lending: Lending = {
+      id: uuid(),
+      ownerId: OWNER,
+      borrowerContact: null,
+      lentAt: ts,
+      dueAt: null,
+      returnedAt: null,
+      createdAt: ts,
+      updatedAt: ts,
+      ...input,
+    };
+    lendings.push(lending);
+    return lending;
+  };
+  // Same shape and ordering as apps/api/src/lending.ts.
+  const withBook = (l: Lending): LendingWithBook | null => {
+    const b = books.find((book) => book.id === l.bookId);
+    if (!b) return null;
+    return {
+      ...l,
+      overdue: isOverdue(l),
+      book: {
+        id: b.id,
+        title: b.title,
+        authors: b.authors,
+        coverUrl: b.coverUrl,
+        shelfId: b.shelfId,
+      },
+    };
+  };
+  const listLendings = (filter: { active?: boolean; bookId?: string; overdue?: boolean }) =>
+    [...lendings]
+      .sort((a, b) => b.lentAt.localeCompare(a.lentAt) || b.createdAt.localeCompare(a.createdAt))
+      .filter((l) => filter.active === undefined || (l.returnedAt === null) === filter.active)
+      .filter((l) => !filter.bookId || l.bookId === filter.bookId)
+      .map(withBook)
+      .filter((l): l is LendingWithBook => l !== null)
+      .filter((l) => !filter.overdue || l.overdue);
 
   const bookCount = (shelfId: string) => books.filter((b) => b.shelfId === shelfId).length;
   const withCounts = (l: Library): LibraryWithCounts => {
@@ -254,6 +301,56 @@ export function installFakeApi(): FakeApi {
       }
     }
 
+    // Lendings
+    if (path === '/api/lendings' && method === 'GET') {
+      const flag = (name: string) => (q.has(name) ? q.get(name) === 'true' : undefined);
+      const active = flag('active') ?? true;
+      return json({
+        items: listLendings({
+          active: flag('overdue') ? true : active,
+          overdue: flag('overdue'),
+          bookId: q.get('bookId') ?? undefined,
+        }),
+      });
+    }
+    if (path === '/api/lendings' && method === 'POST') {
+      const input = body as { bookId: string; borrowerName: string } & Partial<Lending>;
+      if (!books.some((b) => b.id === input.bookId)) return error(422, 'unknown_book');
+      const open = lendings.find((l) => l.bookId === input.bookId && l.returnedAt === null);
+      if (open) {
+        return error(409, 'already_lent', { lendingId: open.id, borrowerName: open.borrowerName });
+      }
+      return json(withBook(addLending(input)), 201);
+    }
+    if (path === '/api/lendings/borrowers') {
+      const seen = new Map<string, { name: string; contact: string | null; lastLentAt: string }>();
+      for (const l of listLendings({})) {
+        const key = l.borrowerName.toLowerCase();
+        if (!seen.has(key)) {
+          seen.set(key, { name: l.borrowerName, contact: l.borrowerContact, lastLentAt: l.lentAt });
+        }
+      }
+      return json({ items: [...seen.values()] });
+    }
+    if ((m = match(/^\/api\/lendings\/([^/]+)\/return$/)) && method === 'POST') {
+      const lending = lendings.find((l) => l.id === m![1]);
+      if (!lending) return error(404, 'not_found');
+      if (lending.returnedAt !== null) return error(409, 'already_returned');
+      const { returnedAt } = (body ?? {}) as { returnedAt?: string };
+      lending.returnedAt = returnedAt ?? now();
+      lending.updatedAt = now();
+      return json(withBook(lending));
+    }
+    if ((m = match(/^\/api\/lendings\/([^/]+)$/)) && method === 'GET') {
+      const item = lendings.find((l) => l.id === m![1]);
+      const full = item ? withBook(item) : null;
+      return full ? json(full) : error(404, 'not_found');
+    }
+    if ((m = match(/^\/api\/books\/([^/]+)\/lendings$/)) && method === 'GET') {
+      if (!books.some((b) => b.id === m![1])) return error(404, 'not_found');
+      return json({ items: listLendings({ bookId: m[1] }) });
+    }
+
     // Books
     if (path === '/api/books' && method === 'GET') {
       let list = [...books];
@@ -348,6 +445,9 @@ export function installFakeApi(): FakeApi {
       }
       if (method === 'DELETE') {
         books.splice(books.indexOf(book), 1);
+        for (let i = lendings.length - 1; i >= 0; i -= 1) {
+          if (lendings[i]!.bookId === book.id) lendings.splice(i, 1);
+        }
         return new Response(null, { status: 204 });
       }
     }
@@ -380,6 +480,7 @@ export function installFakeApi(): FakeApi {
     libraries,
     shelves,
     books,
+    lendings,
     calls,
     failNext: (matcher, status = 500) => {
       failure = { matcher, status };
@@ -387,6 +488,7 @@ export function installFakeApi(): FakeApi {
     addLibrary,
     addShelf,
     addBook,
+    addLending,
     get drafts() {
       return lookup.drafts;
     },
