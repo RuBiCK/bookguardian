@@ -28,7 +28,20 @@ describe('normalizeEmail / parseAllowedEmails', () => {
   it('parses a comma-separated allow-list, ignoring blanks; empty → null', () => {
     expect(parseAllowedEmails(' A@x.io, b@y.io ,, ')).toEqual(new Set(['a@x.io', 'b@y.io']));
     expect(parseAllowedEmails('')).toBeNull();
+    expect(parseAllowedEmails('  ,, ')).toBeNull();
     expect(parseAllowedEmails(undefined)).toBeNull();
+  });
+
+  it('also accepts spaces, semicolons and newlines as separators (pasted into a dashboard)', () => {
+    const expected = new Set(['rubick@gmail.com', 'marisaontur@gmail.com']);
+    expect(parseAllowedEmails('rubick@gmail.com marisaontur@gmail.com')).toEqual(expected);
+    expect(parseAllowedEmails('rubick@gmail.com, Marisaontur@gmail.com')).toEqual(expected);
+    expect(parseAllowedEmails('rubick@gmail.com;marisaontur@gmail.com')).toEqual(expected);
+    expect(parseAllowedEmails('rubick@gmail.com\nmarisaontur@gmail.com\n')).toEqual(expected);
+    expect(parseAllowedEmails('rubick@gmail.com , \r\n  marisaontur@gmail.com')).toEqual(expected);
+    expect(parseAllowedEmails('rubick@gmail.com rubick@gmail.com')).toEqual(
+      new Set(['rubick@gmail.com']),
+    );
   });
 });
 

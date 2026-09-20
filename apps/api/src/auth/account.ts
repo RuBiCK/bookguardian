@@ -64,10 +64,15 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-/** Parse `AUTH_ALLOWED_EMAILS` ("a@x.com, B@y.org") into a normalised set; empty → `null`. */
+/**
+ * Parse `AUTH_ALLOWED_EMAILS` into a normalised set; empty → `null` (no
+ * list). Commas are the documented separator, but a value pasted into a
+ * dashboard often arrives with spaces, semicolons or newlines instead, so
+ * any run of those splits too; blanks are dropped and case is folded.
+ */
 export function parseAllowedEmails(value: string | undefined): Set<string> | null {
   const emails = (value ?? '')
-    .split(',')
+    .split(/[\s,;]+/)
     .map(normalizeEmail)
     .filter((email) => email.length > 0);
   return emails.length > 0 ? new Set(emails) : null;

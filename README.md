@@ -145,14 +145,14 @@ Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 
 Accounts (see [Google sign-in](#google-sign-in)):
 
-| Variable               | Default                 | Notes                                                                                                    |
-| ---------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------- |
-| `GOOGLE_CLIENT_ID`     | —                       | OAuth client id ("Web application"); without it `/api/auth/google` is 503                                |
-| `GOOGLE_CLIENT_SECRET` | —                       | Its secret                                                                                               |
-| `AUTH_BASE_URL`        | `http://localhost:PORT` | Public origin; the redirect URI is `${AUTH_BASE_URL}/api/auth/google/callback`; https ⇒ `Secure` cookies |
-| `AUTH_COOKIE_SECRET`   | random per process      | ≥ 32 chars; signs the 10-minute cookie that holds the in-flight sign-in state                            |
-| `AUTH_ALLOWED_EMAILS`  | —                       | Comma-separated allow-list for _creating_ accounts; unset = anyone with a Google account                 |
-| `AUTH_SESSION_DAYS`    | `30`                    | Session lifetime; sliding (renewed on use past the halfway point)                                        |
+| Variable               | Default                 | Notes                                                                                                                                                |
+| ---------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`     | —                       | OAuth client id ("Web application"); without it `/api/auth/google` is 503                                                                            |
+| `GOOGLE_CLIENT_SECRET` | —                       | Its secret                                                                                                                                           |
+| `AUTH_BASE_URL`        | `http://localhost:PORT` | Public origin; the redirect URI is `${AUTH_BASE_URL}/api/auth/google/callback`; https ⇒ `Secure` cookies                                             |
+| `AUTH_COOKIE_SECRET`   | random per process      | ≥ 32 chars; signs the 10-minute cookie that holds the in-flight sign-in state                                                                        |
+| `AUTH_ALLOWED_EMAILS`  | —                       | Allow-list for _creating_ accounts (commas, spaces, semicolons or newlines separate entries; case-insensitive); unset = anyone with a Google account |
+| `AUTH_SESSION_DAYS`    | `30`                    | Session lifetime; sliding (renewed on use past the halfway point)                                                                                    |
 
 Metadata lookup (see [Book metadata lookup](#book-metadata-lookup)):
 
@@ -179,7 +179,9 @@ Book covers (see [Book covers](#book-covers)):
 Bookguardian has real accounts: people sign in with Google and see only their
 own libraries. **One account per email** — the email Google has verified is the
 person; signing in again with the same Google account always lands on the same
-user ([ADR 0005](docs/adr/0005-authentication.md)).
+user ([ADR 0005](docs/adr/0005-authentication.md)). The SPA and the API share
+one origin, so the session cookie needs no CORS and no `credentials` juggling;
+[docs/auth.md](docs/auth.md) has the deployment, flow and threat diagrams.
 
 1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
    create (or pick) a project, open **APIs & Services → Credentials → Create
@@ -205,6 +207,17 @@ user ([ADR 0005](docs/adr/0005-authentication.md)).
    In Docker / Coolify these are **runtime** variables (`.env`, the service's
    environment) — never build arguments, never in the image. The API logs the
    redirect URI it expects at boot.
+
+   **Coolify specifics:** the API reads every variable from `process.env` when
+   the process starts, so add them under the service's _Environment Variables_
+   as **Runtime → "Available in the container"**. For the two secrets
+   (`GOOGLE_CLIENT_SECRET`, `AUTH_COOKIE_SECRET`) set **Build time = "Not
+   available"** so they never end up in an image layer or a build log. Nothing
+   in this list is needed at build time — the Dockerfile builds the SPA without
+   `VITE_*` values on purpose, so the bundle keeps relative `/api` URLs; only a
+   `VITE_*` variable (if one is ever added to the Dockerfile) would need build
+   time. `AUTH_ALLOWED_EMAILS` accepts commas, spaces, semicolons or newlines
+   between addresses, so a value pasted into the dashboard just works.
 
 How it works: `GET /api/auth/google` starts an OpenID Connect authorization
 code flow with PKCE, handled entirely by the API (the SPA never sees tokens).
