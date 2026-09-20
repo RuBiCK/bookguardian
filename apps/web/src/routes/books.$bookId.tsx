@@ -1,12 +1,12 @@
-import { READ_STATUSES } from '@bookguardian/shared';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBook, useDeleteBook, useMoveBook, useSetReadStatus } from '../api/inventory';
+import { useBook, useDeleteBook, useMoveBook, useSetReading } from '../api/inventory';
 import { BookSheet } from '../components/BookSheet';
 import { ConfirmSheet } from '../components/ConfirmSheet';
 import { EmptyState } from '../components/EmptyState';
-import { BookIcon, PencilIcon, StarIcon, TrashIcon } from '../components/icons';
+import { BookIcon, PencilIcon, TrashIcon } from '../components/icons';
+import { ReadingPanel } from '../components/ReadingPanel';
 import { Screen } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
 import { useShelfLabel } from '../api/shelf-label';
@@ -18,7 +18,11 @@ export const Route = createFileRoute('/books/$bookId')({
   component: BookDetailScreen,
 });
 
-/** Book detail: cover, metadata, quick read-status toggle, move / edit / delete. */
+/**
+ * The book page: large cover, title and authors, metadata chips, your
+ * rating / status / dates, description, location, notes, and the move /
+ * edit / delete actions.
+ */
 function BookDetailScreen() {
   const { t, i18n } = useTranslation();
   const { bookId } = Route.useParams();
@@ -30,7 +34,7 @@ function BookDetailScreen() {
   const [deleting, setDeleting] = useState(false);
   const [targetShelf, setTargetShelf] = useState('');
 
-  const readStatus = useSetReadStatus({
+  const reading = useSetReading({
     onError: () => showToast(t('errors.saveFailed'), 'error'),
   });
   const moveBook = useMoveBook({ onError: () => showToast(t('errors.saveFailed'), 'error') });
@@ -55,17 +59,47 @@ function BookDetailScreen() {
 
   const b = book.data;
   const authors = b.authors.length > 0 ? b.authors.join(', ') : t('books.unknownAuthor');
+  const chips = [
+    b.publishedDate,
+    b.pages ? t('books.detail.pages', { count: b.pages }) : null,
+    b.language,
+    ...b.categories,
+  ].filter((chip): chip is string => Boolean(chip));
   const rows: [string, string | null][] = [
     [t('books.detail.publisher'), b.publisher],
     [t('books.detail.isbn'), b.isbn13 ?? b.isbn10],
-    [t('books.detail.language'), b.language],
+    [t('books.detail.addedLabel'), formatDate(b.addedAt, i18n.language)],
   ];
 
   return (
     <Screen
       title={b.title}
-      subtitle={authors}
       back={{ to: '/shelves/$shelfId', params: { shelfId: b.shelfId } }}
+      hero={
+        <div className="hero">
+          <div className="hero__cover">
+            {b.coverUrl ? (
+              <img src={b.coverUrl} alt="" />
+            ) : (
+              <span className="hero__cover-placeholder" aria-label={t('books.noCover')}>
+                <BookIcon />
+              </span>
+            )}
+          </div>
+          <h1 className="hero__title">{b.title}</h1>
+          {b.subtitle ? <p className="hero__subtitle">{b.subtitle}</p> : null}
+          <p className="hero__authors">{authors}</p>
+          {chips.length > 0 ? (
+            <p className="tags tags--center">
+              {chips.map((chip) => (
+                <span key={chip} className="pill">
+                  {chip}
+                </span>
+              ))}
+            </p>
+          ) : null}
+        </div>
+      }
       actions={
         <button
           type="button"
@@ -77,65 +111,22 @@ function BookDetailScreen() {
         </button>
       }
     >
-      <div className="detail">
-        <div className="detail__cover">
-          {b.coverUrl ? (
-            <img src={b.coverUrl} alt="" />
-          ) : (
-            <span className="detail__cover-placeholder" aria-label={t('books.noCover')}>
-              <BookIcon />
-            </span>
-          )}
-        </div>
+      <ReadingPanel
+        book={b}
+        actions={reading}
+        onInvalidDates={() => showToast(t('errors.readingDates'), 'error')}
+      />
 
-        <div className="detail__facts">
-          {b.subtitle ? <p className="detail__subtitle">{b.subtitle}</p> : null}
-          {b.publishedDate || b.pages ? (
-            <p className="muted">
-              {[
-                b.publishedDate ? t('books.detail.published', { date: b.publishedDate }) : null,
-                b.pages ? t('books.detail.pages', { count: b.pages }) : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          ) : null}
-          {b.rating !== null ? (
-            <p className="stars" aria-label={t('books.detail.rating', { rating: b.rating })}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <StarIcon key={n} filled={n <= b.rating!} />
-              ))}
-            </p>
-          ) : null}
-          {b.categories.length > 0 ? (
-            <p className="tags">
-              {b.categories.map((c) => (
-                <span key={c} className="pill">
-                  {c}
-                </span>
-              ))}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="segmented segmented--block" role="group" aria-label={t('readStatus.label')}>
-        {READ_STATUSES.map((status) => (
-          <button
-            key={status}
-            type="button"
-            className="segmented__option"
-            aria-pressed={b.readStatus === status}
-            onClick={() => readStatus.set(b, status)}
-          >
-            {t(`readStatus.${status}`)}
-          </button>
-        ))}
-      </div>
+      {b.description ? (
+        <section className="prose">
+          <h2 className="prose__title">{t('books.detail.description')}</h2>
+          <p>{b.description}</p>
+        </section>
+      ) : null}
 
       <ul className="list">
         <li className="list__row">
-          <span className="list__label">{t('books.shelf')}</span>
+          <span className="list__label">{t('books.detail.location')}</span>
           <span className="list__value">
             <span data-testid="book-shelf">{shelfLabel}</span>{' '}
             <button
@@ -158,24 +149,8 @@ function BookDetailScreen() {
             </li>
           ) : null,
         )}
-        {b.readAt ? (
-          <li className="list__row">
-            <span className="list__label">{t('books.field.readAt')}</span>
-            <span className="list__value">{formatDate(b.readAt, i18n.language)}</span>
-          </li>
-        ) : null}
-        <li className="list__row">
-          <span className="list__label">{t('books.detail.addedLabel')}</span>
-          <span className="list__value">{formatDate(b.addedAt, i18n.language)}</span>
-        </li>
       </ul>
 
-      {b.description ? (
-        <section className="prose">
-          <h2 className="prose__title">{t('books.detail.description')}</h2>
-          <p>{b.description}</p>
-        </section>
-      ) : null}
       {b.notes ? (
         <section className="prose">
           <h2 className="prose__title">{t('books.detail.notes')}</h2>

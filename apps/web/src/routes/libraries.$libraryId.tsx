@@ -12,6 +12,7 @@ import {
   useUpdateLibrary,
   useUpdateShelf,
 } from '../api/inventory';
+import { BookList } from '../components/BookList';
 import { BookSheet } from '../components/BookSheet';
 import { ConfirmSheet } from '../components/ConfirmSheet';
 import { EmptyState } from '../components/EmptyState';
@@ -34,8 +35,13 @@ export const Route = createFileRoute('/libraries/$libraryId')({
 });
 
 type ShelfSheet = { kind: 'add' } | { kind: 'edit'; shelf: ShelfWithCount } | null;
+type LibraryView = 'shelves' | 'books';
 
-/** One library: its shelves with counts, plus inline management (rename, reorder, delete). */
+/**
+ * One library: its shelves with counts, plus inline management (rename,
+ * reorder, delete). The "Books" view lists every book in the library with
+ * the same filters and sorting as a shelf.
+ */
 function LibraryDetailScreen() {
   const { t } = useTranslation();
   const { libraryId } = Route.useParams();
@@ -44,6 +50,7 @@ function LibraryDetailScreen() {
   const shelves = useShelves(libraryId);
   const library = libraries.data?.find((l) => l.id === libraryId);
 
+  const [view, setView] = useState<LibraryView>('shelves');
   const [managing, setManaging] = useState(false);
   const [adding, setAdding] = useState(false);
   const [editingLibrary, setEditingLibrary] = useState(false);
@@ -90,17 +97,37 @@ function LibraryDetailScreen() {
       subtitle={library.location ?? undefined}
       back={{ to: '/' }}
       actions={
-        <button
-          type="button"
-          className="button button--ghost button--small"
-          aria-pressed={managing}
-          onClick={() => setManaging((v) => !v)}
-        >
-          {managing ? t('common.done') : t('common.manage')}
-        </button>
+        view === 'shelves' ? (
+          <button
+            type="button"
+            className="button button--ghost button--small"
+            aria-pressed={managing}
+            onClick={() => setManaging((v) => !v)}
+          >
+            {managing ? t('common.done') : t('common.manage')}
+          </button>
+        ) : undefined
       }
     >
-      {managing ? (
+      <div className="segmented segmented--block" role="group" aria-label={t('library.title')}>
+        {(['shelves', 'books'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            className="segmented__option"
+            aria-pressed={view === option}
+            onClick={() => setView(option)}
+          >
+            {t(`library.view.${option}`)}
+          </button>
+        ))}
+      </div>
+
+      {view === 'books' ? (
+        <BookList base={{ libraryId }} searchable onAdd={() => setAdding(true)} />
+      ) : null}
+
+      {view === 'books' ? null : managing ? (
         <div className="button-row manage-bar">
           <button type="button" className="button" onClick={() => setEditingLibrary(true)}>
             <PencilIcon /> {t('library.editLibrary')}
@@ -115,7 +142,7 @@ function LibraryDetailScreen() {
         </div>
       ) : null}
 
-      {list.length === 0 ? (
+      {view === 'books' ? null : list.length === 0 ? (
         <EmptyState
           title={t('library.shelvesEmpty.title')}
           body={t('library.shelvesEmpty.body')}
@@ -167,7 +194,7 @@ function LibraryDetailScreen() {
         </ul>
       )}
 
-      {managing ? (
+      {view === 'shelves' && managing ? (
         <>
           <p className="muted">{t('library.reorderHint')}</p>
           <button

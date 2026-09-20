@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { mysqlSchema } from '../src/db/schema/mysql';
 import { postgresSchema } from '../src/db/schema/postgres';
 import { sqliteSchema } from '../src/db/schema/sqlite';
+import { listMigrationFiles } from '../src/db/migrate';
 
 type AnySchema = Record<string, Parameters<typeof getTableColumns>[0]>;
 
@@ -32,8 +33,11 @@ describe('dialect schema parity', () => {
     expect(shape(mysqlSchema as AnySchema)).toEqual(sqlite);
   });
 
-  it('every table in the drizzle schema is created by the initial migration', () => {
-    const sql = readFileSync(resolve(__dirname, '../drizzle/migrations/0001_initial.sql'), 'utf8');
+  it('every table and column in the drizzle schema is created by the migrations', () => {
+    const dir = resolve(__dirname, '../drizzle/migrations');
+    const sql = listMigrationFiles(dir)
+      .map((file) => readFileSync(join(dir, file), 'utf8'))
+      .join('\n');
     for (const [key, table] of Object.entries(sqliteSchema)) {
       if (key === 'schemaMigrations') continue; // created by the runner itself
       expect(sql, `CREATE TABLE ${getTableName(table)}`).toMatch(

@@ -3,7 +3,15 @@
  * Mirrors the routes, defaults and cascade rules the real Hono app exposes so
  * screens can be exercised end-to-end without a database.
  */
-import type { Book, BookDraft, LibraryWithCounts, ShelfWithCount } from '@bookguardian/shared';
+import {
+  applyReadingRules,
+  normaliseRating,
+  todayIso,
+  type Book,
+  type BookDraft,
+  type LibraryWithCounts,
+  type ShelfWithCount,
+} from '@bookguardian/shared';
 import { vi } from 'vitest';
 
 const OWNER = '11111111-1111-4111-8111-111111111111';
@@ -12,7 +20,12 @@ export const uuid = () => {
   counter += 1;
   return `00000000-0000-4000-8000-${String(counter).padStart(12, '0')}`;
 };
-const now = () => new Date().toISOString();
+let lastTs = 0;
+/** Strictly increasing timestamps so "newest first" is deterministic within one test. */
+const now = () => {
+  lastTs = Math.max(lastTs + 1, Date.now());
+  return new Date(lastTs).toISOString();
+};
 
 type Library = Omit<LibraryWithCounts, 'shelfCount' | 'bookCount'>;
 type Shelf = Omit<ShelfWithCount, 'bookCount'>;
@@ -98,6 +111,7 @@ export function installFakeApi(): FakeApi {
       notes: null,
       rating: null,
       readStatus: 'to_read',
+      startedAt: null,
       readAt: null,
       addedAt: ts,
       createdAt: ts,
@@ -255,6 +269,8 @@ export function installFakeApi(): FakeApi {
         list = list.filter((b) => own.includes(b.shelfId));
       }
       if (readStatus) list = list.filter((b) => b.readStatus === readStatus);
+      const minRating = Number(q.get('minRating') ?? 0);
+      if (minRating) list = list.filter((b) => (b.rating ?? 0) >= minRating);
       if (search) {
         list = list.filter((b) =>
           [
@@ -270,7 +286,31 @@ export function installFakeApi(): FakeApi {
             .includes(search),
         );
       }
-      list.sort((a, b) => b.addedAt.localeCompare(a.addedAt) || a.title.localeCompare(b.title));
+      const byAdded = (a: Book, b: Book) =>
+        b.addedAt.localeCompare(a.addedAt) || a.title.localeCompare(b.title);
+      const nullsLast = (a: string | number | null, b: string | number | null) =>
+        Number(a === null) - Number(b === null);
+      switch (q.get('sort')) {
+        case 'title':
+          list.sort((a, b) => a.title.localeCompare(b.title));
+          break;
+        case 'read':
+          list.sort(
+            (a, b) =>
+              nullsLast(a.readAt, b.readAt) ||
+              (b.readAt ?? '').localeCompare(a.readAt ?? '') ||
+              byAdded(a, b),
+          );
+          break;
+        case 'rating':
+          list.sort(
+            (a, b) =>
+              nullsLast(a.rating, b.rating) || (b.rating ?? 0) - (a.rating ?? 0) || byAdded(a, b),
+          );
+          break;
+        default:
+          list.sort(byAdded);
+      }
       const limit = Number(q.get('limit') ?? 50);
       const offset = Number(q.get('offset') ?? 0);
       return json({ items: list.slice(offset, offset + limit), total: list.length, limit, offset });
@@ -294,7 +334,14 @@ export function installFakeApi(): FakeApi {
       if (!book) return error(404, 'not_found');
       if (method === 'GET') return json(book);
       if (method === 'PATCH') {
-        Object.assign(book, body, { updatedAt: now() });
+        // Same reading rules as the real API (apps/api/src/inventory.ts).
+        const input = body as Partial<Book>;
+        const reading = applyReadingRules(book, input, todayIso());
+        if (!reading.ok) return error(422, 'invalid_reading_dates', { reason: reading.error });
+        const rating = normaliseRating(input.rating);
+        Object.assign(book, input, reading.value, rating === undefined ? {} : { rating }, {
+          updatedAt: now(),
+        });
         return json(book);
       }
       if (method === 'DELETE') {

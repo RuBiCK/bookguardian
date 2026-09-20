@@ -95,6 +95,7 @@ export const books = sqliteTable(
     notes: text('notes'),
     rating: integer('rating'),
     readStatus: text('read_status').notNull().default('to_read'),
+    startedAt: text('started_at'),
     readAt: text('read_at'),
     addedAt: text('added_at').notNull(),
     ...timestamps,

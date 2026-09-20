@@ -168,35 +168,54 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 
 ## API
 
-| Method   | Path                                     | Description                                                                                                                                                    |
-| -------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/api/health`                            | `{ status, version, uptimeSeconds, database: { driver, reachable } }` (`?shallow=true` skips the DB ping)                                                      |
-| `GET`    | `/api/defaults`                          | `{ libraryId, shelfId }` — where a new book lands when no shelf is given (most recently used shelf, else the first one)                                        |
-| `GET`    | `/api/libraries`                         | `{ items: LibraryWithCounts[] }` (`shelfCount`, `bookCount`)                                                                                                   |
-| `POST`   | `/api/libraries`                         | Create `{ name, location? }` → 201                                                                                                                             |
-| `GET`    | `/api/libraries/:id`                     | One library with counts                                                                                                                                        |
-| `PATCH`  | `/api/libraries/:id`                     | Update `{ name?, location? }`                                                                                                                                  |
-| `DELETE` | `/api/libraries/:id[?moveBooksTo=shelf]` | Delete library + shelves. 409 `library_not_empty` if it holds books and no destination is given; 409 `last_library` for the only library → `{ movedBooks }`    |
-| `GET`    | `/api/shelves[?libraryId=]`              | `{ items: ShelfWithCount[] }` ordered by `sortOrder`                                                                                                           |
-| `POST`   | `/api/shelves`                           | Create `{ libraryId, name, sortOrder? }` (appends by default) → 201                                                                                            |
-| `POST`   | `/api/shelves/reorder`                   | `{ libraryId, shelfIds }` — must list every shelf of the library once                                                                                          |
-| `GET`    | `/api/shelves/:id`                       | One shelf with `bookCount`                                                                                                                                     |
-| `PATCH`  | `/api/shelves/:id`                       | Update `{ name?, sortOrder? }`                                                                                                                                 |
-| `DELETE` | `/api/shelves/:id[?moveBooksTo=shelf]`   | Delete shelf. 409 `shelf_not_empty` without a destination; 409 `last_shelf` for a library's only shelf → `{ movedBooks }`                                      |
-| `GET`    | `/api/books`                             | `{ items, total, limit, offset }`. Filters: `q` (title/subtitle/authors/publisher/ISBN), `libraryId`, `shelfId`, `readStatus`, `category`, `sort=added\|title` |
-| `POST`   | `/api/books`                             | Create; only `title` is required, `shelfId` defaults to `/api/defaults` → 201                                                                                  |
-| `GET`    | `/api/books/:id`                         | One book                                                                                                                                                       |
-| `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`)                                                                                                           |
-| `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                 |
-| `DELETE` | `/api/books/:id`                         | → 204                                                                                                                                                          |
-| `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down            |
-| `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                               |
+| Method   | Path                                     | Description                                                                                                                                                                                     |
+| -------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/health`                            | `{ status, version, uptimeSeconds, database: { driver, reachable } }` (`?shallow=true` skips the DB ping)                                                                                       |
+| `GET`    | `/api/defaults`                          | `{ libraryId, shelfId }` — where a new book lands when no shelf is given (most recently used shelf, else the first one)                                                                         |
+| `GET`    | `/api/libraries`                         | `{ items: LibraryWithCounts[] }` (`shelfCount`, `bookCount`)                                                                                                                                    |
+| `POST`   | `/api/libraries`                         | Create `{ name, location? }` → 201                                                                                                                                                              |
+| `GET`    | `/api/libraries/:id`                     | One library with counts                                                                                                                                                                         |
+| `PATCH`  | `/api/libraries/:id`                     | Update `{ name?, location? }`                                                                                                                                                                   |
+| `DELETE` | `/api/libraries/:id[?moveBooksTo=shelf]` | Delete library + shelves. 409 `library_not_empty` if it holds books and no destination is given; 409 `last_library` for the only library → `{ movedBooks }`                                     |
+| `GET`    | `/api/shelves[?libraryId=]`              | `{ items: ShelfWithCount[] }` ordered by `sortOrder`                                                                                                                                            |
+| `POST`   | `/api/shelves`                           | Create `{ libraryId, name, sortOrder? }` (appends by default) → 201                                                                                                                             |
+| `POST`   | `/api/shelves/reorder`                   | `{ libraryId, shelfIds }` — must list every shelf of the library once                                                                                                                           |
+| `GET`    | `/api/shelves/:id`                       | One shelf with `bookCount`                                                                                                                                                                      |
+| `PATCH`  | `/api/shelves/:id`                       | Update `{ name?, sortOrder? }`                                                                                                                                                                  |
+| `DELETE` | `/api/shelves/:id[?moveBooksTo=shelf]`   | Delete shelf. 409 `shelf_not_empty` without a destination; 409 `last_shelf` for a library's only shelf → `{ movedBooks }`                                                                       |
+| `GET`    | `/api/books`                             | `{ items, total, limit, offset }`. Filters: `q` (title/subtitle/authors/publisher/ISBN), `libraryId`, `shelfId`, `readStatus`, `minRating` (1–5), `category`, `sort=added\|title\|read\|rating` |
+| `POST`   | `/api/books`                             | Create; only `title` is required, `shelfId` defaults to `/api/defaults` → 201                                                                                                                   |
+| `GET`    | `/api/books/:id`                         | One book                                                                                                                                                                                        |
+| `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`). Reading rules apply — see below                                                                                                           |
+| `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                                                  |
+| `DELETE` | `/api/books/:id`                         | → 204                                                                                                                                                                                           |
+| `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down                                             |
+| `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                                                                |
 
 Every query is scoped to the owner resolved by `apps/api/src/owner.ts` (the single
 local user for now; the seed runs on first contact so a fresh database already
 has "My Library" with a "Default" shelf).
 
 Errors always use the shared envelope `{ error: { code, message, details? } }`.
+
+### Reading life
+
+`rating` is 1–5 stars; sending `0` (or `null`) clears it and the API always
+returns `null` for an unrated book. `readStatus`, `startedAt` and `readAt`
+follow the rules in `packages/shared/src/lib/reading.ts` (shared with the web
+app so optimistic updates match the server):
+
+- moving to `read` stamps `readAt` with today unless a date is sent; moving to
+  `reading` stamps `startedAt` the same way. Dates are editable afterwards and
+  never re-stamped by unrelated edits;
+- moving back to `reading` clears `readAt`; back to `to_read` clears both;
+- a date that contradicts the resulting status (`readAt` on a book that is not
+  `read`, `startedAt` on a `to_read` book) or a `readAt` earlier than
+  `startedAt` is refused with 422 `invalid_reading_dates` and
+  `details.reason` ∈ `read_at_requires_read | started_at_requires_started | read_before_start`.
+
+`sort=read` lists the most recently finished book first (never-finished books
+last); `sort=rating` lists the best-rated first (unrated last).
 
 ### Book metadata lookup
 

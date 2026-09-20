@@ -3,12 +3,16 @@
  * listings, default-shelf resolution and the cascade rules for deleting
  * containers. Routes validate and translate to HTTP; the rules live here.
  */
-import type {
-  Book,
-  CreateBookRequest,
-  InventoryDefaults,
-  LibraryWithCounts,
-  ShelfWithCount,
+import {
+  applyReadingRules,
+  normaliseRating,
+  todayIso,
+  type Book,
+  type CreateBookRequest,
+  type InventoryDefaults,
+  type LibraryWithCounts,
+  type ShelfWithCount,
+  type UpdateBookInput,
 } from '@bookguardian/shared';
 import type { Services } from './app-env';
 import type { DatabaseAdapter } from './db/adapters';
@@ -107,6 +111,23 @@ export async function resolveDefaults(
   throw new ApiHttpError(409, 'no_shelf', 'Create a shelf before adding books');
 }
 
+/**
+ * Apply the reading-life rules (shared with the web app) to an incoming
+ * create/update payload: default dates on status changes, clear stale ones,
+ * refuse contradictory dates (422 `invalid_reading_dates`), and store a
+ * 0-star rating as "unrated".
+ */
+function withReadingRules<T extends UpdateBookInput>(current: Book | null, input: T): T {
+  const result = applyReadingRules(current, input, todayIso());
+  if (!result.ok) {
+    throw new ApiHttpError(422, 'invalid_reading_dates', 'Reading dates contradict the status', {
+      reason: result.error,
+    });
+  }
+  const rating = normaliseRating(input.rating);
+  return { ...input, ...result.value, ...(rating === undefined ? {} : { rating }) };
+}
+
 export async function createBook(
   repos: Repositories,
   ownerId: string,
@@ -116,7 +137,23 @@ export async function createBook(
   if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
     throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId: input.shelfId });
   }
-  return repos.books.create(ownerId, { ...input, shelfId });
+  return repos.books.create(ownerId, { ...withReadingRules(null, input), shelfId });
+}
+
+export async function updateBook(
+  repos: Repositories,
+  ownerId: string,
+  id: string,
+  input: UpdateBookInput,
+): Promise<Book> {
+  const current = await repos.books.findById(ownerId, id);
+  if (!current) throw notFound('Book');
+  if (input.shelfId && !(await repos.shelves.findById(ownerId, input.shelfId))) {
+    throw new ApiHttpError(422, 'unknown_shelf', 'Shelf not found', { shelfId: input.shelfId });
+  }
+  const book = await repos.books.update(ownerId, id, withReadingRules(current, input));
+  if (!book) throw notFound('Book');
+  return book;
 }
 
 export async function moveBook(

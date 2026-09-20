@@ -27,7 +27,14 @@ describe('inventory DTOs', () => {
     });
     expect(bookListQuerySchema.safeParse({ readStatus: 'burned' }).success).toBe(false);
     expect(bookListQuerySchema.safeParse({ libraryId: 'nope' }).success).toBe(false);
-    expect(bookListQuerySchema.safeParse({ sort: 'rating' }).success).toBe(false);
+    expect(bookListQuerySchema.safeParse({ sort: 'pages' }).success).toBe(false);
+    expect(bookListQuerySchema.parse({ sort: 'rating', minRating: '4' })).toMatchObject({
+      sort: 'rating',
+      minRating: 4,
+    });
+    expect(bookListQuerySchema.parse({ sort: 'read' }).sort).toBe('read');
+    expect(bookListQuerySchema.safeParse({ minRating: 0 }).success).toBe(false);
+    expect(bookListQuerySchema.safeParse({ minRating: 6 }).success).toBe(false);
     expect(bookListQuerySchema.safeParse({ category: '' }).success).toBe(false);
   });
 

@@ -6,13 +6,16 @@
  * never wait for the network on a phone.
  */
 import {
+  applyReadingRules,
   bookPageSchema,
   bookSchema,
   inventoryDefaultsSchema,
   libraryListResponseSchema,
   libraryWithCountsSchema,
+  normaliseRating,
   shelfListResponseSchema,
   shelfWithCountSchema,
+  todayIso,
   type Book,
   type BookListQuery,
   type BookPage,
@@ -21,6 +24,7 @@ import {
   type CreateShelfInput,
   type InventoryDefaults,
   type LibraryWithCounts,
+  type ReadingPatch,
   type ReadStatus,
   type ShelfWithCount,
   type UpdateBookInput,
@@ -44,7 +48,7 @@ export const PAGE_SIZE = 60;
 
 /** The filters a book list can be narrowed by (everything but paging). */
 export type BookFilter = Partial<
-  Pick<BookListQuery, 'q' | 'libraryId' | 'shelfId' | 'readStatus' | 'sort'>
+  Pick<BookListQuery, 'q' | 'libraryId' | 'shelfId' | 'readStatus' | 'minRating' | 'sort'>
 >;
 
 export const keys = {
@@ -122,6 +126,7 @@ function bookMatchesFilter(book: Book, filter: BookFilter, shelfLibrary: Map<str
   if (filter.shelfId && filter.shelfId !== book.shelfId) return false;
   if (filter.libraryId && shelfLibrary.get(book.shelfId) !== filter.libraryId) return false;
   if (filter.readStatus && filter.readStatus !== book.readStatus) return false;
+  if (filter.minRating && (book.rating ?? 0) < filter.minRating) return false;
   if (filter.q) {
     const q = filter.q.toLowerCase();
     const hay = [book.title, book.subtitle ?? '', ...book.authors].join(' ').toLowerCase();
@@ -224,8 +229,9 @@ export function optimisticBook(input: CreateBookRequest & { shelfId: string }): 
     categories: input.categories ?? [],
     description: input.description ?? null,
     notes: input.notes ?? null,
-    rating: input.rating ?? null,
+    rating: normaliseRating(input.rating) ?? null,
     readStatus: input.readStatus ?? 'to_read',
+    startedAt: input.startedAt ?? null,
     readAt: input.readAt ?? null,
     addedAt: now,
     createdAt: now,
@@ -366,19 +372,37 @@ export function useDeleteBook(callbacks: MutationCallbacks<void> = {}) {
   });
 }
 
-/** Quick read-status toggle from the detail screen. */
-export function useSetReadStatus(callbacks: MutationCallbacks<Book> = {}) {
+export type ReadingActions = ReturnType<typeof useUpdateBook> & {
+  /** 0 clears the rating. */
+  setRating(book: Book, rating: number): void;
+  /** Change the status; dates follow the shared reading rules (today stamped where needed). */
+  setStatus(book: Book, readStatus: ReadStatus): void;
+  /** Edit the started / finished dates of a book (null clears). */
+  setDates(book: Book, dates: Pick<ReadingPatch, 'startedAt' | 'readAt'>): void;
+};
+
+/**
+ * Rating / status / dates actions used by the book page and the long-press
+ * quick actions. The patch sent is exactly what the server will store, so
+ * the optimistic cache never disagrees with the reply.
+ */
+export function useSetReading(callbacks: MutationCallbacks<Book> = {}): ReadingActions {
   const update = useUpdateBook(callbacks);
+  const apply = (book: Book, patch: ReadingPatch) => {
+    const result = applyReadingRules(book, patch, todayIso());
+    // Contradictory dates are caught by the controls; nothing to send otherwise.
+    if (!result.ok) {
+      callbacks.onError?.(new Error(result.error));
+      return;
+    }
+    update.mutate({ id: book.id, input: result.value });
+  };
   return {
     ...update,
-    set: (book: Book, readStatus: ReadStatus) =>
-      update.mutate({
-        id: book.id,
-        input: {
-          readStatus,
-          readAt: readStatus === 'read' ? (book.readAt ?? nowIso().slice(0, 10)) : null,
-        },
-      }),
+    setRating: (book, rating) =>
+      update.mutate({ id: book.id, input: { rating: normaliseRating(rating) ?? null } }),
+    setStatus: (book, readStatus) => apply(book, { readStatus }),
+    setDates: (book, dates) => apply(book, dates),
   };
 }
 

@@ -45,6 +45,7 @@ describe('/api/books', () => {
       notes: 'Gift',
       rating: 5,
       readStatus: 'read',
+      startedAt: '2020-01-02',
       readAt: '2020-01-15',
     };
     const res = await add(full);
@@ -58,6 +59,10 @@ describe('/api/books', () => {
       { title: '' },
       { title: 'X', isbn13: '123' },
       { title: 'X', rating: 6 },
+      { title: 'X', rating: -1 },
+      { title: 'X', rating: 4.5 },
+      { title: 'X', readAt: '15/01/2020' },
+      { title: 'X', startedAt: '2020-1-2' },
       { title: 'X', coverUrl: 'not a url' },
       { title: 'X', readStatus: 'burned' },
       { title: 'X', pages: -1 },
@@ -134,6 +139,104 @@ describe('/api/books', () => {
     expect(onto.status).toBe(422);
   });
 
+  describe('reading life', () => {
+    const today = () => {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    };
+    const patch = (id: string, body: Record<string, unknown>) =>
+      json<Book>(t.app, 'PATCH', `/api/books/${id}`, body);
+
+    it('stores a 0-star rating as unrated and accepts 1–5', async () => {
+      const book = (await add({ title: 'Dune', rating: 0 })).body;
+      expect(book.rating).toBeNull();
+      expect((await patch(book.id, { rating: 3 })).body.rating).toBe(3);
+      expect((await patch(book.id, { rating: 5 })).body.rating).toBe(5);
+      expect((await patch(book.id, { rating: 0 })).body.rating).toBeNull();
+      expect((await patch(book.id, { rating: 2 })).body.rating).toBe(2);
+      expect((await patch(book.id, { rating: null })).body.rating).toBeNull();
+      for (const rating of [6, -1, 2.5, 'four']) {
+        const bad = await json<ErrorBody>(t.app, 'PATCH', `/api/books/${book.id}`, { rating });
+        expect(bad.status, String(rating)).toBe(422);
+        expect(bad.body.error.code).toBe('validation_error');
+      }
+    });
+
+    it('marking a book read stamps today as the finished date, editable afterwards', async () => {
+      const book = (await add({ title: 'Dune' })).body;
+      expect(book).toMatchObject({ readStatus: 'to_read', startedAt: null, readAt: null });
+
+      const read = await patch(book.id, { readStatus: 'read' });
+      expect(read.status).toBe(200);
+      expect(read.body).toMatchObject({ readStatus: 'read', readAt: today(), startedAt: null });
+
+      const edited = await patch(book.id, { readAt: '2024-05-01' });
+      expect(edited.body.readAt).toBe('2024-05-01');
+      // Unrelated edits never re-stamp the date.
+      expect((await patch(book.id, { rating: 4 })).body.readAt).toBe('2024-05-01');
+      // Clearing it is allowed while the book stays read.
+      expect((await patch(book.id, { readAt: null })).body).toMatchObject({
+        readStatus: 'read',
+        readAt: null,
+      });
+    });
+
+    it('marking a book as reading stamps the started date and clears the finished one', async () => {
+      const book = (await add({ title: 'Emma', readStatus: 'read', readAt: '2024-01-10' })).body;
+      expect(book.readAt).toBe('2024-01-10');
+      const reading = await patch(book.id, { readStatus: 'reading' });
+      expect(reading.body).toMatchObject({
+        readStatus: 'reading',
+        startedAt: today(),
+        readAt: null,
+      });
+
+      const back = await patch(book.id, { readStatus: 'to_read' });
+      expect(back.body).toMatchObject({ readStatus: 'to_read', startedAt: null, readAt: null });
+
+      const explicit = await patch(book.id, { readStatus: 'reading', startedAt: '2024-02-01' });
+      expect(explicit.body).toMatchObject({ readStatus: 'reading', startedAt: '2024-02-01' });
+      const finished = await patch(book.id, { readStatus: 'read' });
+      expect(finished.body).toMatchObject({ startedAt: '2024-02-01', readAt: today() });
+    });
+
+    it('rejects dates that contradict the status or each other', async () => {
+      const book = (await add({ title: 'Zorba' })).body;
+      const cases: [Record<string, unknown>, string][] = [
+        [{ readAt: '2024-01-01' }, 'read_at_requires_read'],
+        [{ startedAt: '2024-01-01' }, 'started_at_requires_started'],
+        [{ readStatus: 'reading', readAt: '2024-01-01' }, 'read_at_requires_read'],
+        [
+          { readStatus: 'read', startedAt: '2024-02-01', readAt: '2024-01-01' },
+          'read_before_start',
+        ],
+      ];
+      for (const [body, reason] of cases) {
+        const res = await json<ErrorBody>(t.app, 'PATCH', `/api/books/${book.id}`, body);
+        expect(res.status, JSON.stringify(body)).toBe(422);
+        expect(res.body.error.code).toBe('invalid_reading_dates');
+        expect(res.body.error.details).toEqual({ reason });
+      }
+      // Nothing was persisted by the refused patches.
+      const unchanged = await json<Book>(t.app, 'GET', `/api/books/${book.id}`);
+      expect(unchanged.body).toMatchObject({
+        readStatus: 'to_read',
+        startedAt: null,
+        readAt: null,
+      });
+
+      const onCreate = await json<ErrorBody>(t.app, 'POST', '/api/books', {
+        title: 'X',
+        readAt: '2024-01-01',
+      });
+      expect(onCreate.status).toBe(422);
+      expect(onCreate.body.error.code).toBe('invalid_reading_dates');
+      expect((await json(t.app, 'PATCH', `/api/books/${MISSING_ID}`, { rating: 1 })).status).toBe(
+        404,
+      );
+    });
+  });
+
   describe('listing', () => {
     let second: ShelfWithCount;
     let otherLibraryShelf: ShelfWithCount;
@@ -151,12 +254,20 @@ describe('/api/books', () => {
         bookCount: 0,
       };
       const seedBooks: Record<string, unknown>[] = [
-        { title: 'Dune', authors: ['Frank Herbert'], categories: ['Sci-Fi'], readStatus: 'read' },
+        {
+          title: 'Dune',
+          authors: ['Frank Herbert'],
+          categories: ['Sci-Fi'],
+          readStatus: 'read',
+          readAt: '2024-03-01',
+          rating: 5,
+        },
         {
           title: 'Emma',
           authors: ['Jane Austen'],
           categories: ['Classics'],
           readStatus: 'reading',
+          rating: 3,
         },
         {
           title: 'Neuromancer',
@@ -164,8 +275,10 @@ describe('/api/books', () => {
           categories: ['Sci-Fi', 'Cyberpunk'],
           isbn13: '9780441569595',
           shelfId: second.id,
+          readStatus: 'read',
+          readAt: '2024-06-15',
         },
-        { title: 'Zorba', publisher: 'Faber', shelfId: otherLibraryShelf.id },
+        { title: 'Zorba', publisher: 'Faber', shelfId: otherLibraryShelf.id, rating: 4 },
       ];
       for (const body of seedBooks) {
         expect((await add(body)).status).toBe(201);
@@ -212,16 +325,37 @@ describe('/api/books', () => {
       expect(inLibrary.titles).toEqual(['Neuromancer', 'Emma', 'Dune']);
       expect(inLibrary.total).toBe(3);
       expect((await titles(`?libraryId=${MISSING_ID}`)).titles).toEqual([]);
-      expect((await titles('?readStatus=read')).titles).toEqual(['Dune']);
-      expect((await titles('?readStatus=to_read')).titles).toEqual(['Zorba', 'Neuromancer']);
+      expect((await titles('?readStatus=read')).titles).toEqual(['Neuromancer', 'Dune']);
+      expect((await titles('?readStatus=to_read')).titles).toEqual(['Zorba']);
       expect((await titles('?category=Sci-Fi')).titles).toEqual(['Neuromancer', 'Dune']);
       expect((await titles('?category=sci-fi')).titles).toEqual(['Neuromancer', 'Dune']);
       expect((await titles('?category=Sci')).titles).toEqual([]);
-      expect((await titles('?category=Cyberpunk&q=gibson&readStatus=to_read')).titles).toEqual([
+      expect((await titles('?category=Cyberpunk&q=gibson&readStatus=read')).titles).toEqual([
         'Neuromancer',
       ]);
       expect((await json(t.app, 'GET', '/api/books?readStatus=nope')).status).toBe(422);
       expect((await json(t.app, 'GET', '/api/books?limit=0')).status).toBe(422);
+    });
+
+    it('filters by minimum rating and sorts by rating or recently read', async () => {
+      expect((await titles('?minRating=4')).titles).toEqual(['Zorba', 'Dune']);
+      expect((await titles('?minRating=5')).titles).toEqual(['Dune']);
+      expect((await titles('?minRating=1')).titles).toEqual(['Zorba', 'Emma', 'Dune']);
+      expect((await titles('?minRating=3&readStatus=reading')).titles).toEqual(['Emma']);
+      expect((await json(t.app, 'GET', '/api/books?minRating=0')).status).toBe(422);
+      expect((await json(t.app, 'GET', '/api/books?minRating=6')).status).toBe(422);
+
+      // Best first, unrated last.
+      expect((await titles('?sort=rating')).titles).toEqual([
+        'Dune',
+        'Zorba',
+        'Emma',
+        'Neuromancer',
+      ]);
+      // Most recently finished first, never-finished last (newest added among them first).
+      expect((await titles('?sort=read')).titles).toEqual(['Neuromancer', 'Dune', 'Zorba', 'Emma']);
+      expect((await titles('?sort=read&readStatus=read')).titles).toEqual(['Neuromancer', 'Dune']);
+      expect((await json(t.app, 'GET', '/api/books?sort=pages')).status).toBe(422);
     });
   });
 

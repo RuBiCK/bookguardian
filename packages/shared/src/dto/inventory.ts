@@ -41,7 +41,8 @@ export type ReorderShelvesInput = z.infer<typeof reorderShelvesInputSchema>;
 export const deleteContainerQuerySchema = z.object({ moveBooksTo: idSchema.optional() });
 export type DeleteContainerQuery = z.infer<typeof deleteContainerQuerySchema>;
 
-export const BOOK_SORTS = ['added', 'title'] as const;
+/** `added`/`read` are newest first (unread books last for `read`); `rating` is best first, unrated last. */
+export const BOOK_SORTS = ['added', 'title', 'read', 'rating'] as const;
 export const bookSortSchema = z.enum(BOOK_SORTS);
 export type BookSort = z.infer<typeof bookSortSchema>;
 
@@ -51,6 +52,8 @@ export const bookListQuerySchema = paginationQuerySchema.extend({
   libraryId: idSchema.optional(),
   shelfId: idSchema.optional(),
   readStatus: readStatusSchema.optional(),
+  /** Only books rated at least this many stars (1–5). */
+  minRating: z.coerce.number().int().min(1).max(5).optional(),
   category: z.string().trim().min(1).max(120).optional(),
   sort: bookSortSchema.default('added'),
 });
