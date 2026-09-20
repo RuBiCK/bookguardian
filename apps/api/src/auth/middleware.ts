@@ -20,9 +20,11 @@ export interface AuthMiddlewareOptions {
  * cookie is validated and `ownerId` (what repositories filter by) and `user`
  * are set on the context; anything else is `401 unauthenticated`.
  *
- * A path no route handles is left to `notFound` (404 rather than 401): the
- * only matches for it are `ALL`-method middlewares, so nothing is protected
- * and nothing about the API surface is hidden that the SPA does not know.
+ * A path no API route handles is left to `notFound` (404 rather than 401):
+ * the only matches for it are `ALL`-method middlewares — and, when the SPA
+ * is served from this process, its `GET /*` shell handlers, which are not
+ * API routes — so nothing is protected and nothing about the API surface is
+ * hidden that the SPA does not know.
  *
  * Tests inject `resolveOwner` to act as a given user without a session
  * (`x-test-owner` in the API test harness); production never passes one.
@@ -33,7 +35,9 @@ export function authMiddleware({
   resolveOwner,
 }: AuthMiddlewareOptions): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
-    if (!matchedRoutes(c).some((route) => route.method !== 'ALL')) return next();
+    if (!matchedRoutes(c).some((r) => r.method !== 'ALL' && r.path.startsWith('/api/'))) {
+      return next();
+    }
     const chosen = resolveOwner ? await resolveOwner(c) : undefined;
     if (chosen) {
       c.set('ownerId', chosen);

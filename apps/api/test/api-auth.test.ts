@@ -3,6 +3,9 @@
  * endpoint answered by a stubbed `fetch`, real RS256 id_tokens) and the
  * session cookie in front of the rest of the API.
  */
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthMeResponse, LibraryListResponse } from '@bookguardian/shared';
 import {
@@ -416,6 +419,30 @@ describe('sessions', () => {
     expect((await json<ErrorBody>(t.app, 'GET', '/api/auth/me')).status).toBe(401);
     expect((await json<ErrorBody>(t.app, 'GET', '/api/nope')).status).toBe(404);
     expect((await t.app.request('/api/auth/logout', { method: 'POST' })).status).toBe(204);
+  });
+
+  it('keeps unknown /api paths 404 when the SPA shell is served from the same process', async () => {
+    // With WEB_DIST the app also has `GET /*` handlers for the SPA; they must
+    // not make `/api/nope` look like a protected route (CI's Docker smoke test).
+    const dist = mkdtempSync(join(tmpdir(), 'bookguardian-dist-'));
+    writeFileSync(join(dist, 'index.html'), '<!doctype html><div id="root"></div>');
+    const served = await createTestApp({
+      sessionAuth: true,
+      webDist: dist,
+      auth: { log: () => undefined },
+    });
+    try {
+      const nope = await json<ErrorBody>(served.app, 'GET', '/api/nope');
+      expect(nope.status).toBe(404);
+      expect(nope.body.error.code).toBe('not_found');
+      expect((await json<ErrorBody>(served.app, 'GET', '/api/libraries')).status).toBe(401);
+      const shell = await served.app.request('/books/deep-link');
+      expect(shell.status).toBe(200);
+      expect(await shell.text()).toContain('<div id="root">');
+    } finally {
+      await served.cleanup();
+      rmSync(dist, { recursive: true, force: true });
+    }
   });
 
   it('a garbage cookie is 401 and gets cleared', async () => {
