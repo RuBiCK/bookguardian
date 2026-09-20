@@ -7,7 +7,14 @@ import {
   EMPTY_BOOK_FORM,
   formToInput,
 } from '../src/lib/book-form';
-import { emptyToNull, formatDate, joinList, parseIsbn, splitList } from '../src/lib/format';
+import {
+  emptyToNull,
+  formatDate,
+  initialOf,
+  joinList,
+  parseIsbn,
+  splitList,
+} from '../src/lib/format';
 import { clearToasts, dismissToast, showToast, useToasts } from '../src/lib/toast';
 
 describe('catalogue drafts', () => {
@@ -269,5 +276,14 @@ describe('toasts', () => {
       vi.advanceTimersByTime(5000);
     });
     expect(result.current).toEqual([]);
+  });
+});
+
+describe('initialOf', () => {
+  it('takes the first letter of the first word, upper-cased, or ? when empty', () => {
+    expect(initialOf('ana lector')).toBe('A');
+    expect(initialOf('  Émile Zola ')).toBe('É');
+    expect(initialOf('')).toBe('?');
+    expect(initialOf('   ')).toBe('?');
   });
 });

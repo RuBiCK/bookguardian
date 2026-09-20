@@ -1,23 +1,23 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBook, useDeleteBook, useMoveBook, useSetReadStatus } from '../api/inventory';
-import { BookCover } from '../components/BookCover';
-import { BookSheet } from '../components/BookSheet';
-import { ConfirmSheet } from '../components/ConfirmSheet';
-import { CoverSheet } from '../components/CoverSheet';
-import { EmptyState } from '../components/EmptyState';
-import { PencilIcon, TrashIcon } from '../components/icons';
-import { LendingPanel } from '../components/LendingPanel';
-import { ReadingPanel } from '../components/ReadingPanel';
-import { Screen } from '../components/Screen';
-import { Sheet } from '../components/Sheet';
-import { useShelfLabel } from '../api/shelf-label';
-import { ShelfPicker } from '../components/ShelfPicker';
-import { formatDate } from '../lib/format';
-import { showToast } from '../lib/toast';
+import { useBook, useDeleteBook, useMoveBook, useSetReadStatus } from '../../api/inventory';
+import { BookCover } from '../../components/BookCover';
+import { BookSheet } from '../../components/BookSheet';
+import { ConfirmSheet } from '../../components/ConfirmSheet';
+import { CoverSheet } from '../../components/CoverSheet';
+import { EmptyState } from '../../components/EmptyState';
+import { PencilIcon, TrashIcon } from '../../components/icons';
+import { LendingPanel } from '../../components/LendingPanel';
+import { ReadingPanel } from '../../components/ReadingPanel';
+import { Screen } from '../../components/Screen';
+import { Sheet } from '../../components/Sheet';
+import { useShelfLabel } from '../../api/shelf-label';
+import { ShelfPicker } from '../../components/ShelfPicker';
+import { formatDate } from '../../lib/format';
+import { showToast } from '../../lib/toast';
 
-export const Route = createFileRoute('/books/$bookId')({
+export const Route = createFileRoute('/_app/books/$bookId')({
   component: BookDetailScreen,
 });
 

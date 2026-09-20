@@ -9,91 +9,117 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LendingRouteImport } from './routes/lending'
-import { Route as ScanRouteImport } from './routes/scan'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as StatsRouteImport } from './routes/stats'
-import { Route as BooksBookIdRouteImport } from './routes/books.$bookId'
-import { Route as LibrariesLibraryIdRouteImport } from './routes/libraries.$libraryId'
-import { Route as ShelvesShelfIdRouteImport } from './routes/shelves.$shelfId'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppSplatRouteImport } from './routes/_app/$'
+import { Route as AppLendingRouteImport } from './routes/_app/lending'
+import { Route as AppScanRouteImport } from './routes/_app/scan'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppStatsRouteImport } from './routes/_app/stats'
+import { Route as AppBooksBookIdRouteImport } from './routes/_app/books.$bookId'
+import { Route as AppLibrariesLibraryIdRouteImport } from './routes/_app/libraries.$libraryId'
+import { Route as AppShelvesShelfIdRouteImport } from './routes/_app/shelves.$shelfId'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
-const LendingRoute = LendingRouteImport.update({
+const AppSplatRoute = AppSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLendingRoute = AppLendingRouteImport.update({
   id: '/lending',
   path: '/lending',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
-const ScanRoute = ScanRouteImport.update({
+const AppScanRoute = AppScanRouteImport.update({
   id: '/scan',
   path: '/scan',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
+const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
-const StatsRoute = StatsRouteImport.update({
+const AppStatsRoute = AppStatsRouteImport.update({
   id: '/stats',
   path: '/stats',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
-const BooksBookIdRoute = BooksBookIdRouteImport.update({
+const AppBooksBookIdRoute = AppBooksBookIdRouteImport.update({
   id: '/books/$bookId',
   path: '/books/$bookId',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
-const LibrariesLibraryIdRoute = LibrariesLibraryIdRouteImport.update({
+const AppLibrariesLibraryIdRoute = AppLibrariesLibraryIdRouteImport.update({
   id: '/libraries/$libraryId',
   path: '/libraries/$libraryId',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
-const ShelvesShelfIdRoute = ShelvesShelfIdRouteImport.update({
+const AppShelvesShelfIdRoute = AppShelvesShelfIdRouteImport.update({
   id: '/shelves/$shelfId',
   path: '/shelves/$shelfId',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/lending': typeof LendingRoute
-  '/scan': typeof ScanRoute
-  '/settings': typeof SettingsRoute
-  '/stats': typeof StatsRoute
-  '/books/$bookId': typeof BooksBookIdRoute
-  '/libraries/$libraryId': typeof LibrariesLibraryIdRoute
-  '/shelves/$shelfId': typeof ShelvesShelfIdRoute
+  '/': typeof AppIndexRoute
+  '/login': typeof LoginRoute
+  '/$': typeof AppSplatRoute
+  '/lending': typeof AppLendingRoute
+  '/scan': typeof AppScanRoute
+  '/settings': typeof AppSettingsRoute
+  '/stats': typeof AppStatsRoute
+  '/books/$bookId': typeof AppBooksBookIdRoute
+  '/libraries/$libraryId': typeof AppLibrariesLibraryIdRoute
+  '/shelves/$shelfId': typeof AppShelvesShelfIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/lending': typeof LendingRoute
-  '/scan': typeof ScanRoute
-  '/settings': typeof SettingsRoute
-  '/stats': typeof StatsRoute
-  '/books/$bookId': typeof BooksBookIdRoute
-  '/libraries/$libraryId': typeof LibrariesLibraryIdRoute
-  '/shelves/$shelfId': typeof ShelvesShelfIdRoute
+  '/login': typeof LoginRoute
+  '/$': typeof AppSplatRoute
+  '/lending': typeof AppLendingRoute
+  '/scan': typeof AppScanRoute
+  '/settings': typeof AppSettingsRoute
+  '/stats': typeof AppStatsRoute
+  '/': typeof AppIndexRoute
+  '/books/$bookId': typeof AppBooksBookIdRoute
+  '/libraries/$libraryId': typeof AppLibrariesLibraryIdRoute
+  '/shelves/$shelfId': typeof AppShelvesShelfIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/lending': typeof LendingRoute
-  '/scan': typeof ScanRoute
-  '/settings': typeof SettingsRoute
-  '/stats': typeof StatsRoute
-  '/books/$bookId': typeof BooksBookIdRoute
-  '/libraries/$libraryId': typeof LibrariesLibraryIdRoute
-  '/shelves/$shelfId': typeof ShelvesShelfIdRoute
+  '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_app/$': typeof AppSplatRoute
+  '/_app/lending': typeof AppLendingRoute
+  '/_app/scan': typeof AppScanRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/stats': typeof AppStatsRoute
+  '/_app/': typeof AppIndexRoute
+  '/_app/books/$bookId': typeof AppBooksBookIdRoute
+  '/_app/libraries/$libraryId': typeof AppLibrariesLibraryIdRoute
+  '/_app/shelves/$shelfId': typeof AppShelvesShelfIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
+    | '/$'
     | '/lending'
     | '/scan'
     | '/settings'
@@ -103,107 +129,147 @@ export interface FileRouteTypes {
     | '/shelves/$shelfId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/login'
+    | '/$'
     | '/lending'
     | '/scan'
     | '/settings'
     | '/stats'
+    | '/'
     | '/books/$bookId'
     | '/libraries/$libraryId'
     | '/shelves/$shelfId'
   id:
     | '__root__'
-    | '/'
-    | '/lending'
-    | '/scan'
-    | '/settings'
-    | '/stats'
-    | '/books/$bookId'
-    | '/libraries/$libraryId'
-    | '/shelves/$shelfId'
+    | '/_app'
+    | '/login'
+    | '/_app/$'
+    | '/_app/lending'
+    | '/_app/scan'
+    | '/_app/settings'
+    | '/_app/stats'
+    | '/_app/'
+    | '/_app/books/$bookId'
+    | '/_app/libraries/$libraryId'
+    | '/_app/shelves/$shelfId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LendingRoute: typeof LendingRoute
-  ScanRoute: typeof ScanRoute
-  SettingsRoute: typeof SettingsRoute
-  StatsRoute: typeof StatsRoute
-  BooksBookIdRoute: typeof BooksBookIdRoute
-  LibrariesLibraryIdRoute: typeof LibrariesLibraryIdRoute
-  ShelvesShelfIdRoute: typeof ShelvesShelfIdRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/lending': {
-      id: '/lending'
+    '/_app/$': {
+      id: '/_app/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof AppSplatRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/lending': {
+      id: '/_app/lending'
       path: '/lending'
       fullPath: '/lending'
-      preLoaderRoute: typeof LendingRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppLendingRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/scan': {
-      id: '/scan'
+    '/_app/scan': {
+      id: '/_app/scan'
       path: '/scan'
       fullPath: '/scan'
-      preLoaderRoute: typeof ScanRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppScanRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/settings': {
-      id: '/settings'
+    '/_app/settings': {
+      id: '/_app/settings'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/stats': {
-      id: '/stats'
+    '/_app/stats': {
+      id: '/_app/stats'
       path: '/stats'
       fullPath: '/stats'
-      preLoaderRoute: typeof StatsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppStatsRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/books/$bookId': {
-      id: '/books/$bookId'
+    '/_app/books/$bookId': {
+      id: '/_app/books/$bookId'
       path: '/books/$bookId'
       fullPath: '/books/$bookId'
-      preLoaderRoute: typeof BooksBookIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppBooksBookIdRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/libraries/$libraryId': {
-      id: '/libraries/$libraryId'
+    '/_app/libraries/$libraryId': {
+      id: '/_app/libraries/$libraryId'
       path: '/libraries/$libraryId'
       fullPath: '/libraries/$libraryId'
-      preLoaderRoute: typeof LibrariesLibraryIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppLibrariesLibraryIdRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/shelves/$shelfId': {
-      id: '/shelves/$shelfId'
+    '/_app/shelves/$shelfId': {
+      id: '/_app/shelves/$shelfId'
       path: '/shelves/$shelfId'
       fullPath: '/shelves/$shelfId'
-      preLoaderRoute: typeof ShelvesShelfIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppShelvesShelfIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppSplatRoute: typeof AppSplatRoute
+  AppLendingRoute: typeof AppLendingRoute
+  AppScanRoute: typeof AppScanRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppStatsRoute: typeof AppStatsRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppBooksBookIdRoute: typeof AppBooksBookIdRoute
+  AppLibrariesLibraryIdRoute: typeof AppLibrariesLibraryIdRoute
+  AppShelvesShelfIdRoute: typeof AppShelvesShelfIdRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppSplatRoute: AppSplatRoute,
+  AppLendingRoute: AppLendingRoute,
+  AppScanRoute: AppScanRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppStatsRoute: AppStatsRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppBooksBookIdRoute: AppBooksBookIdRoute,
+  AppLibrariesLibraryIdRoute: AppLibrariesLibraryIdRoute,
+  AppShelvesShelfIdRoute: AppShelvesShelfIdRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LendingRoute: LendingRoute,
-  ScanRoute: ScanRoute,
-  SettingsRoute: SettingsRoute,
-  StatsRoute: StatsRoute,
-  BooksBookIdRoute: BooksBookIdRoute,
-  LibrariesLibraryIdRoute: LibrariesLibraryIdRoute,
-  ShelvesShelfIdRoute: ShelvesShelfIdRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

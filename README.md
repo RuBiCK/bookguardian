@@ -140,8 +140,7 @@ Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 | `DATABASE_URL`     | —                        | Required for `postgres` / `mysql`                                                                                                            |
 | `WEB_DIST`         | —                        | Built SPA dir to serve from the API (Docker)                                                                                                 |
 | `TZ`               | system                   | Timezone for "today" (read-date default + check)                                                                                             |
-| `VITE_API_URL`     | —                        | Bakes an absolute API origin into the SPA bundle (static deploys only); leave unset so `/api` stays relative and goes through the Vite proxy |
-| `API_PROXY_TARGET` | `http://localhost:3000`  | Where the Vite dev/preview server proxies `/api` (does not touch the bundle)                                                                 |
+| `API_PROXY_TARGET` | `http://localhost:3000`  | Where the Vite dev/preview server proxies `/api`. The SPA only ever uses relative `/api` URLs (one origin); nothing is baked into the bundle |
 
 Accounts (see [Google sign-in](#google-sign-in)):
 
@@ -240,6 +239,36 @@ libraries stay exactly where they are. Later sign-ins with other emails get
 their own empty account. `pnpm db:seed --local-user` recreates that local user
 on an empty development database.
 
+#### In the app
+
+- `/login` is the only screen without a session: the app mark, one
+  "Continue with Google" button (Google's branding, light and dark) and a
+  line of context. The button is a plain link to
+  `/api/auth/google?return_to=<where you were going>`; after the callback the
+  API redirects straight back there.
+- Every other route sits under a guarded layout (`apps/web/src/routes/_app.tsx`)
+  whose `beforeLoad` resolves `GET /api/auth/me` once (TanStack Query, cached
+  for the session, re-checked when the app regains focus) and redirects to
+  `/login?redirect=<path>` without one. While that first check runs you see the
+  app-mark splash, never a flash of the login screen. A signed-in visit to
+  `/login` bounces to `redirect` or home.
+- Any `401` from any request drops the cached session and sends the app to
+  `/login` from wherever it is; 401s are never retried.
+- Sign-in failures are navigations, not fetches, so the API sends the browser
+  back to `/login?error=<code>` (`not_allowed`, `email_not_verified`,
+  `auth_not_configured`, or a generic one for `invalid_state` / `oauth_error`)
+  and the screen explains it, with the same button as the retry. Fetch
+  clients still get the JSON error envelope.
+- **Settings → Account** shows the avatar (or initial), name and email, and
+  **Sign out** (`POST /api/auth/logout`), which empties the query cache and
+  lands on `/login`.
+- **PWA:** the service worker precaches only the build output; `/api/*` is
+  never cached and navigations to `/api` (the sign-in flow) always reach the
+  server. Installing the app keeps the session cookie you already have. On
+  iOS the installed PWA has its own cookie jar, separate from Safari's, so
+  you sign in once in Safari and once more in the installed app (and the same
+  goes for signing out: each one is its own session).
+
 ### Switching the database driver
 
 The API talks to the database only through `apps/api/src/db/adapters/*`. Pick
@@ -278,11 +307,13 @@ apps/
       auth/               Google OIDC client, account resolution, sessions, auth middleware (ADR 0005)
       db/migrate.ts       migration runner    db/seed.ts  seed
   web/
-    src/routes/           TanStack file routes (tabs + libraries/$id, shelves/$id, books/$id)
+    src/routes/           TanStack file routes: login.tsx (bare) + _app/ (session guard, tab bar,
+                          libraries/$id, shelves/$id, books/$id…)
     src/components/       app shell + inventory UI (Sheet, BookSheet, BookGrid, ShelfPicker…)
     src/theme/            CSS variables (light/dark) + theme hook
-    src/api/              typed fetch client + TanStack Query hooks
-    e2e/                  Playwright (iPhone 14); providers-stub.mjs stands in for Open Library
+    src/api/              typed fetch client (401 → /login) + TanStack Query hooks; auth.ts = session
+    e2e/                  Playwright (iPhone 14); providers-stub.mjs stands in for Open Library;
+                          fixtures.ts for tests that manage their own session
 packages/shared/
   src/schemas/            Zod entities   src/dto/  API DTOs   src/i18n/  en.json, es.json
 docs/

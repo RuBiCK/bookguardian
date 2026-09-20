@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '../components/EmptyState';
-import { StatsIcon } from '../components/icons';
-import { Screen } from '../components/Screen';
+import { EmptyState } from '../../components/EmptyState';
+import { StatsIcon } from '../../components/icons';
+import { Screen } from '../../components/Screen';
 
-export const Route = createFileRoute('/stats')({
+export const Route = createFileRoute('/_app/stats')({
   component: StatsScreen,
 });
 

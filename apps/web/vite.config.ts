@@ -7,14 +7,10 @@ import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  // Where `/api` is proxied in dev/preview. `API_PROXY_TARGET` only moves the
-  // proxy; `VITE_API_URL` is also baked into the bundle, which makes the SPA
-  // call the API cross-origin, without its session cookie.
-  const apiUrl =
-    process.env.API_PROXY_TARGET ??
-    process.env.VITE_API_URL ??
-    env.VITE_API_URL ??
-    'http://localhost:3000';
+  // Where `/api` is proxied in dev/preview. The SPA only ever uses relative
+  // `/api` URLs (one origin, see docs/auth.md), so this moves the proxy and
+  // nothing is baked into the bundle.
+  const apiUrl = process.env.API_PROXY_TARGET ?? env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
   return {
     define: {
@@ -49,7 +45,14 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-          // Never cache API responses in the app shell; server state belongs to TanStack Query.
+          // Never cache API responses in the app shell; server state belongs to
+          // TanStack Query. Only the build output is precached and there is no
+          // runtimeCaching, so `/api/*` — `/api/auth/me` and `/api/auth/logout`
+          // included — always goes to the network, and navigations to /api (the
+          // Google sign-in flow and its callback) reach the server, never the
+          // SPA shell. Keep it that way: a cached `/me` could resurrect or hide
+          // a session, and a service-worker-handled `/api` fetch would also slip
+          // past Playwright's request interception in the e2e suite.
           navigateFallbackDenylist: [/^\/api\//],
         },
         devOptions: { enabled: false },

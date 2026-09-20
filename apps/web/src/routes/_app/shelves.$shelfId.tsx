@@ -1,14 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLibraries, useShelves } from '../api/inventory';
-import { BookList } from '../components/BookList';
-import { BookSheet } from '../components/BookSheet';
-import { EmptyState } from '../components/EmptyState';
-import { Fab } from '../components/Fab';
-import { Screen } from '../components/Screen';
+import { useLibraries, useShelves } from '../../api/inventory';
+import { BookList } from '../../components/BookList';
+import { BookSheet } from '../../components/BookSheet';
+import { EmptyState } from '../../components/EmptyState';
+import { Fab } from '../../components/Fab';
+import { Screen } from '../../components/Screen';
 
-export const Route = createFileRoute('/shelves/$shelfId')({
+export const Route = createFileRoute('/_app/shelves/$shelfId')({
   component: ShelfScreen,
 });
 

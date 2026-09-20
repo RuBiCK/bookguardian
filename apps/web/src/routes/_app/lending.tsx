@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useActiveLendings, useReturnLending } from '../api/lending';
-import { EmptyState } from '../components/EmptyState';
-import { BookCover } from '../components/BookCover';
-import { LendingIcon } from '../components/icons';
-import { LendingMeta } from '../components/LendingPanel';
-import { Screen } from '../components/Screen';
-import { groupByBorrower } from '../lib/lending';
-import { showToast } from '../lib/toast';
+import { useActiveLendings, useReturnLending } from '../../api/lending';
+import { EmptyState } from '../../components/EmptyState';
+import { BookCover } from '../../components/BookCover';
+import { LendingIcon } from '../../components/icons';
+import { LendingMeta } from '../../components/LendingPanel';
+import { Screen } from '../../components/Screen';
+import { groupByBorrower } from '../../lib/lending';
+import { showToast } from '../../lib/toast';
 
-export const Route = createFileRoute('/lending')({
+export const Route = createFileRoute('/_app/lending')({
   component: LendingScreen,
 });
 

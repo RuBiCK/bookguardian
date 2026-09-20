@@ -8,6 +8,7 @@ import {
   isOverdue,
   normaliseRating,
   resolveReadAt,
+  type AuthMeResponse,
   type Book,
   type BookDraft,
   type CoverBackfillStatus,
@@ -55,6 +56,8 @@ export interface FakeApi {
   backfillQueued: number;
   /** Give a book a stored cover (an asset id), as the API's cascade would. */
   setCover(bookId: string, assetId: string | null, override?: boolean): void;
+  /** Who `/api/auth/me` answers with; `null` makes every protected route a 401. */
+  user: AuthMeResponse | null;
   addLibrary(name: string, location?: string | null): Library;
   addShelf(libraryId: string, name: string, sortOrder?: number): Shelf;
   addBook(input: Partial<Book> & { title: string; shelfId?: string }): Book;
@@ -87,6 +90,14 @@ export function installFakeApi(): FakeApi {
   const covers = {
     backfill: { queued: 0, pending: 0, done: 0, found: 0, failed: 0 },
     backfillQueued: 0,
+  };
+  const auth: { user: AuthMeResponse | null } = {
+    user: {
+      id: OWNER,
+      displayName: 'Ana Lector',
+      email: 'ana@example.com',
+      avatarUrl: null,
+    },
   };
   let assetCounter = 0;
   const newAssetId = () => {
@@ -225,6 +236,24 @@ export function installFakeApi(): FakeApi {
     const match = (re: RegExp) => re.exec(path);
     let m: RegExpExecArray | null;
 
+    // Auth: the session, and everything else needs one (like `authMiddleware`).
+    if (path === '/api/auth/me') {
+      return auth.user ? json(auth.user) : error(401, 'unauthenticated');
+    }
+    if (path === '/api/auth/logout' && method === 'POST') {
+      auth.user = null;
+      return new Response(null, { status: 204 });
+    }
+    if (path === '/api/health') {
+      return json({
+        status: 'ok',
+        version: 't',
+        uptimeSeconds: 0,
+        database: { driver: 'sqlite', reachable: true },
+      });
+    }
+    if (!auth.user) return error(401, 'unauthenticated');
+
     // Covers
     if (path === '/api/covers/backfill' && method === 'POST') {
       covers.backfill = {
@@ -256,13 +285,6 @@ export function installFakeApi(): FakeApi {
       }
     }
 
-    if (path === '/api/health')
-      return json({
-        status: 'ok',
-        version: 't',
-        uptimeSeconds: 0,
-        database: { driver: 'sqlite', reachable: true },
-      });
     if (path === '/api/defaults') return json(defaults());
 
     // Lookup
@@ -597,6 +619,12 @@ export function installFakeApi(): FakeApi {
       covers.backfillQueued = value;
     },
     setCover,
+    get user() {
+      return auth.user;
+    },
+    set user(value) {
+      auth.user = value;
+    },
     restore: () => spy.mockRestore(),
   };
 }
