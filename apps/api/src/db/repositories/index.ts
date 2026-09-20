@@ -1,4 +1,5 @@
 import type { DatabaseAdapter } from '../adapters/types';
+import { createAuthIdentityRepository, type AuthIdentityRepository } from './auth-identities';
 import { createBookRepository, type BookRepository } from './books';
 import { createCatalogBookRepository, type CatalogBookRepository } from './catalog-books';
 import { createCoverAssetRepository, type CoverAssetRepository } from './cover-assets';
@@ -6,6 +7,7 @@ import { createIsbnCoverRepository, type IsbnCoverRepository } from './isbn-cove
 import { createLendingRepository, type LendingRepository } from './lendings';
 import { createLibraryRepository, type LibraryRepository } from './libraries';
 import { createLibraryShareRepository, type LibraryShareRepository } from './library-shares';
+import { createSessionRepository, type SessionRepository } from './sessions';
 import { createShelfRepository, type ShelfRepository } from './shelves';
 import { createUserRepository, type UserRepository } from './users';
 
@@ -22,6 +24,10 @@ export interface Repositories {
   coverAssets: CoverAssetRepository;
   /** ISBN → shared cover resolution cache (hits and misses). */
   isbnCovers: IsbnCoverRepository;
+  /** Provider identities (Google `sub`) → user. */
+  authIdentities: AuthIdentityRepository;
+  /** Server-side sessions behind the `bg_session` cookie. */
+  sessions: SessionRepository;
 }
 
 /** Repositories are dialect-agnostic: they only see the adapter's kit + tables. */
@@ -37,15 +43,21 @@ export function createRepositories(adapter: DatabaseAdapter): Repositories {
     catalogBooks: createCatalogBookRepository(kit, tables),
     coverAssets: createCoverAssetRepository(kit, tables),
     isbnCovers: createIsbnCoverRepository(kit, tables),
+    authIdentities: createAuthIdentityRepository(kit, tables),
+    sessions: createSessionRepository(kit, tables),
   };
 }
 
 export { NotFoundError } from './base';
 export type { CatalogBook, CatalogBookRow } from './catalog-books';
 export type { BookRecord, BookRecordPatch, NewBookRecord } from './books';
+export type { AuthIdentity, CreateAuthIdentityData } from './auth-identities';
 export type { NewCoverAsset } from './cover-assets';
+export type { CreateSessionData, Session } from './sessions';
+export type { CreateUserData, UserPatch } from './users';
 export type { IsbnCover } from './isbn-covers';
 export type {
+  AuthIdentityRepository,
   BookRepository,
   CatalogBookRepository,
   CoverAssetRepository,
@@ -53,6 +65,7 @@ export type {
   LendingRepository,
   LibraryRepository,
   LibraryShareRepository,
+  SessionRepository,
   ShelfRepository,
   UserRepository,
 };

@@ -2,15 +2,22 @@
  * Shared harness for API integration tests: a migrated + seeded SQLite
  * database behind a quiet Hono app, plus tiny JSON helpers.
  */
-import { createApp, type App } from '../src/app';
+import { createApp, type App, type AuthAppOptions } from '../src/app';
+import { createSessionService, SESSION_COOKIE } from '../src/auth';
 import { createRepositories, type Repositories } from '../src/db/repositories';
-import { seed, type SeedResult } from '../src/db/seed';
+import { seedLocalUser, type SeedResult } from '../src/db/seed';
 import { createTestDb, type TestDb } from './adapters';
 import { fixtureCovers, type FixtureCovers, type FixtureCoversOptions } from './cover-fixtures';
 import { fixtureLookup, type FixtureLookupOptions } from './lookup-fixtures';
 
 /** Requests carrying this header act as that user (see `resolveOwner` in `app.ts`). */
 export const OWNER_HEADER = 'x-test-owner';
+
+/** A cookie header string for a fresh session of `userId` (see `loginAs`). */
+export interface TestLogin {
+  token: string;
+  cookie: string;
+}
 
 export interface TestApp {
   app: App;
@@ -21,6 +28,8 @@ export interface TestApp {
   lookup: ReturnType<typeof fixtureLookup>;
   /** Cover cascade over fixtures, files in a temp dir (see `cover-fixtures.ts`). */
   covers: FixtureCovers;
+  /** Start a real database session for a user; send `cookie` as the `Cookie` header. */
+  loginAs(this: void, userId: string): Promise<TestLogin>;
   cleanup(this: void): Promise<void>;
 }
 
@@ -32,12 +41,18 @@ export interface TestAppOptions {
   /** Clock / cadence for the catalogue-backed lookup. */
   lookup?: Pick<FixtureLookupOptions, 'now' | 'refreshMs' | 'missMs'>;
   covers?: FixtureCoversOptions;
+  /**
+   * Require a session like production does: requests without `x-test-owner`
+   * go through the `bg_session` cookie instead of acting as the seeded user.
+   */
+  sessionAuth?: boolean;
+  auth?: AuthAppOptions;
 }
 
 export async function createTestApp(options: TestAppOptions = {}): Promise<TestApp> {
   const db = options.db ?? (await createTestDb());
   const repos = createRepositories(db.adapter);
-  const base = await seed(db.adapter);
+  const base = await seedLocalUser(db.adapter);
   const lookup = fixtureLookup({ ...options.lookup, catalog: repos.catalogBooks });
   const covers = fixtureCovers(repos, options.covers);
   const app = createApp({
@@ -50,8 +65,12 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
       covers: covers.service,
       version: '0.0.0-test',
     },
-    resolveOwner: async (c) => c.req.header(OWNER_HEADER),
+    auth: { env: 'test', ...options.auth },
+    resolveOwner: options.sessionAuth
+      ? async (c) => c.req.header(OWNER_HEADER)
+      : async (c) => c.req.header(OWNER_HEADER) ?? base.userId,
   });
+  const sessions = createSessionService({ repos, now: options.auth?.now });
   return {
     app,
     db,
@@ -59,6 +78,10 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
     base,
     lookup,
     covers,
+    async loginAs(userId) {
+      const { token } = await sessions.create(userId, 'vitest');
+      return { token, cookie: `${SESSION_COOKIE}=${token}` };
+    },
     async cleanup() {
       await covers.service.close();
       covers.cleanup();
@@ -78,10 +101,14 @@ export async function json<T = unknown>(
   method: string,
   path: string,
   body?: unknown,
+  cookie?: string,
 ): Promise<JsonResponse<T>> {
   const res = await app.request(path, {
     method,
-    headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+    headers: {
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(cookie === undefined ? {} : { cookie }),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();

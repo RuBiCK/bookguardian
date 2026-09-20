@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { likePattern } from '../src/db/adapters/types';
 import { createRepositories, type Repositories } from '../src/db/repositories';
-import { seed, type SeedResult } from '../src/db/seed';
+import { seedLocalUser, type SeedResult } from '../src/db/seed';
 import { describeEachAdapter, type TestDb } from './adapters';
 
 it('likePattern lower-cases and escapes LIKE wildcards', () => {
@@ -18,7 +18,7 @@ describeEachAdapter('dialect kit extensions', (adapterCase) => {
   beforeEach(async () => {
     db = await adapterCase.create();
     repos = createRepositories(db.adapter);
-    base = await seed(db.adapter);
+    base = await seedLocalUser(db.adapter);
   });
   afterEach(async () => {
     await db.cleanup();

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { createRepositories, type Repositories } from '../src/db/repositories';
-import { seed, type SeedResult } from '../src/db/seed';
+import { seedLocalUser, type SeedResult } from '../src/db/seed';
 import { describeEachAdapter, expectDbError, type TestDb } from './adapters';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -14,7 +14,7 @@ describeEachAdapter('repositories', (adapterCase) => {
   beforeEach(async () => {
     db = await adapterCase.create();
     repos = createRepositories(db.adapter);
-    base = await seed(db.adapter);
+    base = await seedLocalUser(db.adapter);
   });
   afterEach(async () => {
     await db.cleanup();

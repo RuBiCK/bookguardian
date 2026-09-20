@@ -29,8 +29,21 @@ describe('loadConfig', () => {
         gcSharedAfterMs: 90 * 86_400_000,
         minIntervalMs: 1000,
       },
+      auth: {
+        googleClientId: undefined,
+        googleClientSecret: undefined,
+        baseUrl: 'http://localhost:3000',
+        redirectUri: 'http://localhost:3000/api/auth/google/callback',
+        cookieSecret: expect.any(String) as string,
+        cookieSecretGenerated: true,
+        allowedEmails: null,
+        sessionTtlMs: 30 * 86_400_000,
+      },
       webDist: undefined,
     });
+    // A generated secret is still a real secret: 32 random bytes, different per process.
+    expect(config.auth.cookieSecret.length).toBeGreaterThanOrEqual(32);
+    expect(loadConfig({}).auth.cookieSecret).not.toBe(config.auth.cookieSecret);
   });
 
   it('reads and coerces values from the environment', () => {
@@ -53,6 +66,12 @@ describe('loadConfig', () => {
       COVERS_GC_DAYS: '10',
       COVERS_MIN_INTERVAL_MS: '0',
       WEB_DIST: '/srv/web',
+      GOOGLE_CLIENT_ID: 'client-id.apps.googleusercontent.com',
+      GOOGLE_CLIENT_SECRET: 'client-secret',
+      AUTH_BASE_URL: 'https://books.example.com/',
+      AUTH_COOKIE_SECRET: 'x'.repeat(40),
+      AUTH_ALLOWED_EMAILS: ' Alice@Example.com, bob@example.org ,,',
+      AUTH_SESSION_DAYS: '7',
     });
     expect(config).toEqual({
       env: 'production',
@@ -78,8 +97,23 @@ describe('loadConfig', () => {
         gcSharedAfterMs: 10 * 86_400_000,
         minIntervalMs: 0,
       },
+      auth: {
+        googleClientId: 'client-id.apps.googleusercontent.com',
+        googleClientSecret: 'client-secret',
+        baseUrl: 'https://books.example.com',
+        redirectUri: 'https://books.example.com/api/auth/google/callback',
+        cookieSecret: 'x'.repeat(40),
+        cookieSecretGenerated: false,
+        allowedEmails: new Set(['alice@example.com', 'bob@example.org']),
+        sessionTtlMs: 7 * 86_400_000,
+      },
       webDist: '/srv/web',
     });
+  });
+
+  it('rejects a short AUTH_COOKIE_SECRET and a non-URL AUTH_BASE_URL', () => {
+    expect(() => loadConfig({ AUTH_COOKIE_SECRET: 'short' })).toThrow(/AUTH_COOKIE_SECRET/);
+    expect(() => loadConfig({ AUTH_BASE_URL: 'books.example.com' })).toThrow(/AUTH_BASE_URL/);
   });
 
   it('keeps covers next to the SQLite file unless COVERS_DIR says otherwise', () => {

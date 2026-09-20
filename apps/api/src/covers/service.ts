@@ -47,6 +47,8 @@ export interface CoverServiceOptions {
   retry?: { attempts: number; baseDelayMs: number };
   /** Daily GC period; `0` disables the timer (tests call `gc()` themselves). */
   gcIntervalMs?: number;
+  /** Other housekeeping that rides on the same daily timer (expired sessions). */
+  gcHooks?: (() => Promise<void>)[];
   now?: () => number;
   log?: (message: string) => void;
 }
@@ -123,6 +125,7 @@ export function createCoverService({
   minIntervalMs = 1000,
   retry = { attempts: 4, baseDelayMs: 1000 },
   gcIntervalMs = DAY_MS,
+  gcHooks = [],
   now = Date.now,
   log = (message) => console.warn(`[covers] ${message}`),
 }: CoverServiceOptions): CoverService {
@@ -284,6 +287,14 @@ export function createCoverService({
     await store.remove(id);
   }
 
+  /** The daily housekeeping pass: cover GC, then whatever else rides on the timer. */
+  async function sweep() {
+    await service.gc().catch((error) => log(`gc failed: ${describe(error)}`));
+    for (const hook of gcHooks) {
+      await hook().catch((error) => log(`gc hook failed: ${describe(error)}`));
+    }
+  }
+
   const service: CoverService = {
     enqueueResolve(book) {
       if (!book.isbn13 || book.coverOverride) return;
@@ -395,13 +406,11 @@ export function createCoverService({
       return { removed };
     },
     async start() {
-      await service.gc().catch((error) => log(`gc failed: ${describe(error)}`));
+      await sweep();
       const queued = await service.backfill();
       if (queued > 0) log(`backfill queued ${queued} book(s) without a cover`);
       if (gcIntervalMs > 0) {
-        timer = setInterval(() => {
-          void service.gc().catch((error) => log(`gc failed: ${describe(error)}`));
-        }, gcIntervalMs);
+        timer = setInterval(() => void sweep(), gcIntervalMs);
         timer.unref();
       }
     },

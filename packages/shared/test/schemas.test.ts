@@ -16,15 +16,33 @@ const uuid = '0f3e2b8a-7d3c-4b2f-9a11-6f5e4d3c2b1a';
 
 describe('shared schemas', () => {
   it('accepts a well-formed user', () => {
+    const base = {
+      id: uuid,
+      displayName: 'Ana',
+      emailVerified: true,
+      createdAt: now,
+      updatedAt: now,
+    };
     expect(
       userSchema.safeParse({
-        id: uuid,
-        displayName: 'Local user',
-        email: null,
-        createdAt: now,
-        updatedAt: now,
+        ...base,
+        email: 'ana@example.com',
+        avatarUrl: 'https://lh3.googleusercontent.com/ana.png',
+        lastLoginAt: now,
       }).success,
     ).toBe(true);
+    // The unclaimed local user of a pre-accounts database.
+    expect(
+      userSchema.safeParse({
+        ...base,
+        displayName: 'Local user',
+        emailVerified: false,
+        email: null,
+        avatarUrl: null,
+        lastLoginAt: null,
+      }).success,
+    ).toBe(true);
+    expect(userSchema.safeParse({ ...base, email: 'not-an-email' }).success).toBe(false);
   });
 
   it('accepts a library with an owner', () => {

@@ -18,26 +18,33 @@ Requirements: Node 22 (`.nvmrc`) and pnpm 10 (`corepack enable` or
 ```bash
 pnpm install
 pnpm db:migrate   # creates apps/api/data/bookguardian.db and applies migrations
-pnpm db:seed      # one local user, "My Library" and a "Default" shelf
 pnpm dev          # API on http://localhost:3000, web on http://localhost:5173
 ```
 
 Open <http://localhost:5173> in a phone-sized viewport (or install it as a PWA).
-The Vite dev server proxies `/api` to the API, so the SPA uses relative URLs.
+The Vite dev server proxies `/api` to the API, so the SPA uses relative URLs
+and its session cookie travels with them.
+
+People sign in with Google, so the API needs an OAuth client before anyone can
+get past the login: see [Google sign-in](#google-sign-in) (`GOOGLE_CLIENT_ID`,
+`GOOGLE_CLIENT_SECRET`, `AUTH_BASE_URL=http://localhost:5173` for `pnpm dev`).
+`pnpm db:seed --local-user` creates the email-less local user with "My Library"
+and a "Default" shelf on an empty development database; the first Google
+sign-in claims it.
 
 ## Scripts
 
-| Command           | What it does                                                      |
-| ----------------- | ----------------------------------------------------------------- |
-| `pnpm dev`        | Run API (`tsx watch`) and web (`vite`) together                   |
-| `pnpm build`      | Build every package (`apps/api/dist`, `apps/web/dist`)            |
-| `pnpm lint`       | ESLint (type-aware, i18n literal guard) + Prettier check          |
-| `pnpm lint:fix`   | Auto-fix lint and formatting                                      |
-| `pnpm typecheck`  | `tsc --noEmit` in every package                                   |
-| `pnpm test`       | Vitest unit tests in every package                                |
-| `pnpm test:e2e`   | Playwright smoke test on an iPhone 14 viewport (builds web first) |
-| `pnpm db:migrate` | Apply pending SQL migrations to the configured database           |
-| `pnpm db:seed`    | Idempotent seed (user + default library/shelf)                    |
+| Command           | What it does                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| `pnpm dev`        | Run API (`tsx watch`) and web (`vite`) together                                        |
+| `pnpm build`      | Build every package (`apps/api/dist`, `apps/web/dist`)                                 |
+| `pnpm lint`       | ESLint (type-aware, i18n literal guard) + Prettier check                               |
+| `pnpm lint:fix`   | Auto-fix lint and formatting                                                           |
+| `pnpm typecheck`  | `tsc --noEmit` in every package                                                        |
+| `pnpm test`       | Vitest unit tests in every package                                                     |
+| `pnpm test:e2e`   | Playwright smoke test on an iPhone 14 viewport (builds web first)                      |
+| `pnpm db:migrate` | Apply pending SQL migrations to the configured database                                |
+| `pnpm db:seed`    | Idempotent seed of "My Library / Default" (`--local-user` also creates the local user) |
 
 First e2e run: `pnpm --filter @bookguardian/web exec playwright install chromium`.
 
@@ -55,15 +62,19 @@ docker compose up --build # http://localhost:3000
 
 - **Where the data lives:** `./data/bookguardian.db` on the host (bind
   mounted at `/data`; WAL side files `-wal`/`-shm` sit next to it) and the
-  cover images under `./data/covers/`. Migrations and the default
-  "My Library / Default" seed run at boot, then the API queues covers for any
-  book that still lacks one.
+  cover images under `./data/covers/`. Migrations run at boot, then the API
+  queues covers for any book that still lacks one. Users arrive by signing in
+  with Google (see [Google sign-in](#google-sign-in)); a database from before
+  accounts existed keeps its library, which the first sign-in claims.
 - **Reset the library:** `docker compose down && rm -rf data && docker compose up`.
 - **Configuration:** the container reads the repo-root `.env` (if present);
   `DATABASE_PATH=/data/bookguardian.db`, `PORT=3000` and `WEB_DIST=/app/web` are
   pinned in `docker-compose.yaml` and win over `.env`. The image runs as the
   non-root `node` user (uid 1000) and exposes a `HEALTHCHECK` on
-  `/api/health?shallow=true`.
+  `/api/health?shallow=true`. Secrets (`GOOGLE_CLIENT_SECRET`,
+  `AUTH_COOKIE_SECRET`) are runtime variables — `.env`, the shell, or the
+  Coolify environment — and are never baked into the image; the commented
+  block in `docker-compose.yaml` lists them.
 - **Camera on your phone needs HTTPS.** Browsers only expose `getUserMedia`
   on secure origins, so `http://<your-laptop-ip>:3000` will show the barcode
   and cover screens without a live camera (photo picker and typed ISBN still
@@ -121,15 +132,27 @@ for `pnpm dev`, where Vite serves the app and proxies `/api`.
 
 Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 
-| Variable        | Default                  | Notes                                             |
-| --------------- | ------------------------ | ------------------------------------------------- |
-| `PORT`          | `3000`                   | API port                                          |
-| `DB_DRIVER`     | `sqlite`                 | `sqlite` \| `postgres` \| `mysql`                 |
-| `DATABASE_PATH` | `./data/bookguardian.db` | SQLite file (relative to `apps/api`)              |
-| `DATABASE_URL`  | —                        | Required for `postgres` / `mysql`                 |
-| `WEB_DIST`      | —                        | Built SPA dir to serve from the API (Docker)      |
-| `TZ`            | system                   | Timezone for "today" (read-date default + check)  |
-| `VITE_API_URL`  | `http://localhost:3000`  | Where Vite proxies `/api`; also baked into builds |
+| Variable           | Default                  | Notes                                                                                                                                        |
+| ------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`             | `3000`                   | API port                                                                                                                                     |
+| `DB_DRIVER`        | `sqlite`                 | `sqlite` \| `postgres` \| `mysql`                                                                                                            |
+| `DATABASE_PATH`    | `./data/bookguardian.db` | SQLite file (relative to `apps/api`)                                                                                                         |
+| `DATABASE_URL`     | —                        | Required for `postgres` / `mysql`                                                                                                            |
+| `WEB_DIST`         | —                        | Built SPA dir to serve from the API (Docker)                                                                                                 |
+| `TZ`               | system                   | Timezone for "today" (read-date default + check)                                                                                             |
+| `VITE_API_URL`     | —                        | Bakes an absolute API origin into the SPA bundle (static deploys only); leave unset so `/api` stays relative and goes through the Vite proxy |
+| `API_PROXY_TARGET` | `http://localhost:3000`  | Where the Vite dev/preview server proxies `/api` (does not touch the bundle)                                                                 |
+
+Accounts (see [Google sign-in](#google-sign-in)):
+
+| Variable               | Default                 | Notes                                                                                                                                                |
+| ---------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`     | —                       | OAuth client id ("Web application"); without it `/api/auth/google` is 503                                                                            |
+| `GOOGLE_CLIENT_SECRET` | —                       | Its secret                                                                                                                                           |
+| `AUTH_BASE_URL`        | `http://localhost:PORT` | Public origin; the redirect URI is `${AUTH_BASE_URL}/api/auth/google/callback`; https ⇒ `Secure` cookies                                             |
+| `AUTH_COOKIE_SECRET`   | random per process      | ≥ 32 chars; signs the 10-minute cookie that holds the in-flight sign-in state                                                                        |
+| `AUTH_ALLOWED_EMAILS`  | —                       | Allow-list for _creating_ accounts (commas, spaces, semicolons or newlines separate entries; case-insensitive); unset = anyone with a Google account |
+| `AUTH_SESSION_DAYS`    | `30`                    | Session lifetime; sliding (renewed on use past the halfway point)                                                                                    |
 
 Metadata lookup (see [Book metadata lookup](#book-metadata-lookup)):
 
@@ -150,6 +173,72 @@ Book covers (see [Book covers](#book-covers)):
 | `COVERS_MISS_DAYS`        | `30`                             | How long "no cover anywhere" is remembered for an ISBN        |
 | `COVERS_GC_DAYS`          | `90`                             | Unreferenced shared covers are deleted once older than this   |
 | `COVERS_MIN_INTERVAL_MS`  | `1000`                           | Pause between provider requests (Open Library: ≤ 1 request/s) |
+
+### Google sign-in
+
+Bookguardian has real accounts: people sign in with Google and see only their
+own libraries. **One account per email** — the email Google has verified is the
+person; signing in again with the same Google account always lands on the same
+user ([ADR 0005](docs/adr/0005-authentication.md)). The SPA and the API share
+one origin, so the session cookie needs no CORS and no `credentials` juggling;
+[docs/auth.md](docs/auth.md) has the deployment, flow and threat diagrams.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   create (or pick) a project, open **APIs & Services → Credentials → Create
+   credentials → OAuth client ID**, application type **Web application**.
+   Configure the consent screen once if asked (external, only the
+   `email`/`profile`/`openid` scopes; no verification needed while the app is
+   in testing with a handful of users, or publish it for anyone).
+2. **Authorized JavaScript origins:** the public origin of the app, e.g.
+   `https://books.example.com` (for `pnpm dev`: `http://localhost:5173`).
+3. **Authorized redirect URIs:** exactly
+   `https://books.example.com/api/auth/google/callback` — that is
+   `${AUTH_BASE_URL}/api/auth/google/callback`, nothing else.
+4. Put the client id and secret in the API's environment:
+
+   ```bash
+   GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=GOCSPX-…
+   AUTH_BASE_URL=https://books.example.com
+   AUTH_COOKIE_SECRET=$(openssl rand -base64 32)
+   AUTH_ALLOWED_EMAILS=you@example.com        # optional: nobody else can create an account
+   ```
+
+   In Docker / Coolify these are **runtime** variables (`.env`, the service's
+   environment) — never build arguments, never in the image. The API logs the
+   redirect URI it expects at boot.
+
+   **Coolify specifics:** the API reads every variable from `process.env` when
+   the process starts, so add them under the service's _Environment Variables_
+   as **Runtime → "Available in the container"**. For the two secrets
+   (`GOOGLE_CLIENT_SECRET`, `AUTH_COOKIE_SECRET`) set **Build time = "Not
+   available"** so they never end up in an image layer or a build log. Nothing
+   in this list is needed at build time — the Dockerfile builds the SPA without
+   `VITE_*` values on purpose, so the bundle keeps relative `/api` URLs; only a
+   `VITE_*` variable (if one is ever added to the Dockerfile) would need build
+   time. `AUTH_ALLOWED_EMAILS` accepts commas, spaces, semicolons or newlines
+   between addresses, so a value pasted into the dashboard just works.
+
+How it works: `GET /api/auth/google` starts an OpenID Connect authorization
+code flow with PKCE, handled entirely by the API (the SPA never sees tokens).
+The callback verifies Google's `id_token` (signature against Google's JWKS,
+issuer, audience, expiry, nonce), requires `email_verified`, resolves the
+account and sets the `bg_session` cookie: `httpOnly`, `SameSite=Lax`, `Secure`
+on https, 30 days sliding, backed by a `sessions` row that stores only the
+SHA-256 of the token. Everything under `/api/*` except `/api/health` and
+`/api/auth/*` answers `401 unauthenticated` without a valid session.
+
+Account resolution, in order: a known Google identity → that user; a user
+that already has the (case-insensitive) email → the identity is linked to it,
+never a second user; otherwise a new user — unless `AUTH_ALLOWED_EMAILS` is set
+and the email is not on it (`403 not_allowed`, nothing created).
+
+**Existing library:** a database created before accounts existed has one local
+user without an email and all the books. The **first** Google sign-in on that
+instance claims it — the user gets the email, name and avatar, and its
+libraries stay exactly where they are. Later sign-ins with other emails get
+their own empty account. `pnpm db:seed --local-user` recreates that local user
+on an empty development database.
 
 ### Switching the database driver
 
@@ -186,7 +275,7 @@ apps/
       lookup/             Open Library / Google Books providers + catalogue-first service
       covers/             cover cascade, WebP store, queue + backfill + GC (ADR 0004)
       inventory.ts        library/shelf/book use-cases (defaults, cascade rules, book DTO)
-      owner.ts            resolves the owner every query is scoped by
+      auth/               Google OIDC client, account resolution, sessions, auth middleware (ADR 0005)
       db/migrate.ts       migration runner    db/seed.ts  seed
   web/
     src/routes/           TanStack file routes (tabs + libraries/$id, shelves/$id, books/$id)
@@ -221,44 +310,50 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 
 ## API
 
-| Method   | Path                                     | Description                                                                                                                                                                                     |
-| -------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/api/health`                            | `{ status, version, uptimeSeconds, database: { driver, reachable } }` (`?shallow=true` skips the DB ping)                                                                                       |
-| `GET`    | `/api/defaults`                          | `{ libraryId, shelfId }` — where a new book lands when no shelf is given (most recently used shelf, else the first one)                                                                         |
-| `GET`    | `/api/libraries`                         | `{ items: LibraryWithCounts[] }` (`shelfCount`, `bookCount`)                                                                                                                                    |
-| `POST`   | `/api/libraries`                         | Create `{ name, location? }` → 201                                                                                                                                                              |
-| `GET`    | `/api/libraries/:id`                     | One library with counts                                                                                                                                                                         |
-| `PATCH`  | `/api/libraries/:id`                     | Update `{ name?, location? }`                                                                                                                                                                   |
-| `DELETE` | `/api/libraries/:id[?moveBooksTo=shelf]` | Delete library + shelves. 409 `library_not_empty` if it holds books and no destination is given; 409 `last_library` for the only library → `{ movedBooks }`                                     |
-| `GET`    | `/api/shelves[?libraryId=]`              | `{ items: ShelfWithCount[] }` ordered by `sortOrder`                                                                                                                                            |
-| `POST`   | `/api/shelves`                           | Create `{ libraryId, name, sortOrder? }` (appends by default) → 201                                                                                                                             |
-| `POST`   | `/api/shelves/reorder`                   | `{ libraryId, shelfIds }` — must list every shelf of the library once                                                                                                                           |
-| `GET`    | `/api/shelves/:id`                       | One shelf with `bookCount`                                                                                                                                                                      |
-| `PATCH`  | `/api/shelves/:id`                       | Update `{ name?, sortOrder? }`                                                                                                                                                                  |
-| `DELETE` | `/api/shelves/:id[?moveBooksTo=shelf]`   | Delete shelf. 409 `shelf_not_empty` without a destination; 409 `last_shelf` for a library's only shelf → `{ movedBooks }`                                                                       |
-| `GET`    | `/api/books`                             | `{ items, total, limit, offset }`. Filters: `q` (title/subtitle/authors/publisher/ISBN), `libraryId`, `shelfId`, `readStatus`, `minRating` (1–5), `category`, `sort=added\|title\|read\|rating` |
-| `POST`   | `/api/books`                             | Create; only `title` is required, `shelfId` defaults to `/api/defaults` → 201                                                                                                                   |
-| `GET`    | `/api/books/:id`                         | One book                                                                                                                                                                                        |
-| `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`). Reading rules apply — see below                                                                                                           |
-| `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                                                  |
-| `DELETE` | `/api/books/:id`                         | → 204 (its lendings go with it; cover files are left to the GC)                                                                                                                                 |
-| `POST`   | `/api/books/:id/cover[?fallback=true]`   | Multipart `file` → the book with its new (private) cover. `fallback=true` only fills an empty slot (202 when ignored). 422 `invalid_image`, 413 `cover_too_large`                               |
-| `DELETE` | `/api/books/:id/cover`                   | Drop the user's own cover; back to the catalogue one                                                                                                                                            |
-| `GET`    | `/api/covers/:sha256(-thumb).webp`       | A stored cover (600 px / 200 px tall), `Cache-Control: … immutable`, ETag = hash. Private covers: `private`, 404 for anyone but the owner or a library-share grantee                            |
-| `POST`   | `/api/covers/backfill`                   | Queue the cascade for every coverless book of the caller (skips cached misses) → 202 `{ queued }`                                                                                               |
-| `GET`    | `/api/covers/backfill`                   | `{ queued, pending, done, found, failed }` of the caller's last backfill                                                                                                                        |
-| `GET`    | `/api/books/:id/lendings`                | `{ items: LendingWithBook[] }` — the book's lending history, newest first (the open lending, if any, comes first)                                                                               |
-| `GET`    | `/api/lendings`                          | `{ items: LendingWithBook[] }` — active lendings, newest first. `active=false` adds returned ones, `overdue=true` keeps only overdue ones, `bookId` narrows to one book                         |
-| `POST`   | `/api/lendings`                          | Lend `{ bookId, borrowerName, borrowerContact?, lentAt? (default now), dueAt? }` → 201. 409 `already_lent` while the book is out; 422 `unknown_book`                                            |
-| `GET`    | `/api/lendings/borrowers`                | `{ items: Borrower[] }` — everyone lent to before, most recent first, for the autocomplete                                                                                                      |
-| `GET`    | `/api/lendings/:id`                      | One lending with its book summary                                                                                                                                                               |
-| `POST`   | `/api/lendings/:id/return`               | `{ returnedAt? }` (default now) → the closed lending. 409 `already_returned`; 422 `returned_before_lent`                                                                                        |
-| `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down                                             |
-| `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                                                                |
+| Method   | Path                                     | Description                                                                                                                                                                                       |
+| -------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/health`                            | `{ status, version, uptimeSeconds, database: { driver, reachable } }` (`?shallow=true` skips the DB ping)                                                                                         |
+| `GET`    | `/api/auth/google[?return_to=/path]`     | 302 to Google (OIDC code + PKCE). `return_to` must be a relative SPA path. 503 `auth_not_configured` without `GOOGLE_CLIENT_ID`/`SECRET`                                                          |
+| `GET`    | `/api/auth/google/callback`              | Google's redirect target. Verifies state + `id_token`, resolves the account, sets `bg_session`, 302 to `return_to`. 400 `invalid_state` / `oauth_error`, 403 `email_not_verified` / `not_allowed` |
+| `GET`    | `/api/auth/me`                           | `{ id, displayName, email, avatarUrl }` of the signed-in user, or 401                                                                                                                             |
+| `POST`   | `/api/auth/logout`                       | Deletes the session row and clears the cookie → 204                                                                                                                                               |
+| `POST`   | `/api/auth/test-login`                   | `{ email, name? }` → signs in without Google. **Only registered when `NODE_ENV=test`** (Playwright); 404 otherwise                                                                                |
+| `GET`    | `/api/defaults`                          | `{ libraryId, shelfId }` — where a new book lands when no shelf is given (most recently used shelf, else the first one)                                                                           |
+| `GET`    | `/api/libraries`                         | `{ items: LibraryWithCounts[] }` (`shelfCount`, `bookCount`)                                                                                                                                      |
+| `POST`   | `/api/libraries`                         | Create `{ name, location? }` → 201                                                                                                                                                                |
+| `GET`    | `/api/libraries/:id`                     | One library with counts                                                                                                                                                                           |
+| `PATCH`  | `/api/libraries/:id`                     | Update `{ name?, location? }`                                                                                                                                                                     |
+| `DELETE` | `/api/libraries/:id[?moveBooksTo=shelf]` | Delete library + shelves. 409 `library_not_empty` if it holds books and no destination is given; 409 `last_library` for the only library → `{ movedBooks }`                                       |
+| `GET`    | `/api/shelves[?libraryId=]`              | `{ items: ShelfWithCount[] }` ordered by `sortOrder`                                                                                                                                              |
+| `POST`   | `/api/shelves`                           | Create `{ libraryId, name, sortOrder? }` (appends by default) → 201                                                                                                                               |
+| `POST`   | `/api/shelves/reorder`                   | `{ libraryId, shelfIds }` — must list every shelf of the library once                                                                                                                             |
+| `GET`    | `/api/shelves/:id`                       | One shelf with `bookCount`                                                                                                                                                                        |
+| `PATCH`  | `/api/shelves/:id`                       | Update `{ name?, sortOrder? }`                                                                                                                                                                    |
+| `DELETE` | `/api/shelves/:id[?moveBooksTo=shelf]`   | Delete shelf. 409 `shelf_not_empty` without a destination; 409 `last_shelf` for a library's only shelf → `{ movedBooks }`                                                                         |
+| `GET`    | `/api/books`                             | `{ items, total, limit, offset }`. Filters: `q` (title/subtitle/authors/publisher/ISBN), `libraryId`, `shelfId`, `readStatus`, `minRating` (1–5), `category`, `sort=added\|title\|read\|rating`   |
+| `POST`   | `/api/books`                             | Create; only `title` is required, `shelfId` defaults to `/api/defaults` → 201                                                                                                                     |
+| `GET`    | `/api/books/:id`                         | One book                                                                                                                                                                                          |
+| `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`). Reading rules apply — see below                                                                                                             |
+| `POST`   | `/api/books/:id/move`                    | `{ shelfId }` → the moved book                                                                                                                                                                    |
+| `DELETE` | `/api/books/:id`                         | → 204 (its lendings go with it; cover files are left to the GC)                                                                                                                                   |
+| `POST`   | `/api/books/:id/cover[?fallback=true]`   | Multipart `file` → the book with its new (private) cover. `fallback=true` only fills an empty slot (202 when ignored). 422 `invalid_image`, 413 `cover_too_large`                                 |
+| `DELETE` | `/api/books/:id/cover`                   | Drop the user's own cover; back to the catalogue one                                                                                                                                              |
+| `GET`    | `/api/covers/:sha256(-thumb).webp`       | A stored cover (600 px / 200 px tall), `Cache-Control: … immutable`, ETag = hash. Private covers: `private`, 404 for anyone but the owner or a library-share grantee                              |
+| `POST`   | `/api/covers/backfill`                   | Queue the cascade for every coverless book of the caller (skips cached misses) → 202 `{ queued }`                                                                                                 |
+| `GET`    | `/api/covers/backfill`                   | `{ queued, pending, done, found, failed }` of the caller's last backfill                                                                                                                          |
+| `GET`    | `/api/books/:id/lendings`                | `{ items: LendingWithBook[] }` — the book's lending history, newest first (the open lending, if any, comes first)                                                                                 |
+| `GET`    | `/api/lendings`                          | `{ items: LendingWithBook[] }` — active lendings, newest first. `active=false` adds returned ones, `overdue=true` keeps only overdue ones, `bookId` narrows to one book                           |
+| `POST`   | `/api/lendings`                          | Lend `{ bookId, borrowerName, borrowerContact?, lentAt? (default now), dueAt? }` → 201. 409 `already_lent` while the book is out; 422 `unknown_book`                                              |
+| `GET`    | `/api/lendings/borrowers`                | `{ items: Borrower[] }` — everyone lent to before, most recent first, for the autocomplete                                                                                                        |
+| `GET`    | `/api/lendings/:id`                      | One lending with its book summary                                                                                                                                                                 |
+| `POST`   | `/api/lendings/:id/return`               | `{ returnedAt? }` (default now) → the closed lending. 409 `already_returned`; 422 `returned_before_lent`                                                                                          |
+| `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down                                               |
+| `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                                                                  |
 
-Every query is scoped to the owner resolved by `apps/api/src/owner.ts` (the single
-local user for now; the seed runs on first contact so a fresh database already
-has "My Library" with a "Default" shelf).
+Every query is scoped to the signed-in user: `apps/api/src/auth/middleware.ts`
+turns the `bg_session` cookie into `ownerId`, and every repository filters by
+it. Without a valid session, everything but `/api/health` and `/api/auth/*` is
+`401 unauthenticated`.
 
 Errors always use the shared envelope `{ error: { code, message, details? } }`.
 

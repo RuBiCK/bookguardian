@@ -1,7 +1,9 @@
+import { randomBytes } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
 import { dbDriverSchema } from '@bookguardian/shared';
+import { parseAllowedEmails } from './auth/account';
 
 // `.env` in the package directory wins over the repository root one.
 loadDotenv({
@@ -37,6 +39,18 @@ const envSchema = z.object({
   // Built SPA directory (`apps/web/dist`). When set, the API serves it too, so
   // one process (the Docker image) is one origin. Unset in `pnpm dev`.
   WEB_DIST: z.string().min(1).optional(),
+  // Accounts: Google sign-in (OIDC). Without the client id/secret the API
+  // boots but `/api/auth/google` answers 503 `auth_not_configured`.
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  // Public origin of the app; the redirect URI registered in Google Cloud is
+  // `${AUTH_BASE_URL}/api/auth/google/callback`. Defaults to localhost:PORT.
+  AUTH_BASE_URL: z.url().optional(),
+  // Signs the short-lived cookie that carries the in-flight OAuth state.
+  AUTH_COOKIE_SECRET: z.string().min(32).optional(),
+  // Comma-separated emails allowed to create an account (unset = anyone).
+  AUTH_ALLOWED_EMAILS: z.string().optional(),
+  AUTH_SESSION_DAYS: z.coerce.number().int().min(1).max(400).default(30),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -75,18 +89,36 @@ export interface CoversConfig {
   minIntervalMs: number;
 }
 
+export interface AuthConfig {
+  /** Both set ⇒ Google sign-in is enabled. */
+  googleClientId?: string;
+  googleClientSecret?: string;
+  /** Public origin, no trailing slash. */
+  baseUrl: string;
+  /** `${baseUrl}/api/auth/google/callback` — what Google Cloud must list. */
+  redirectUri: string;
+  cookieSecret: string;
+  /** `true` when no `AUTH_COOKIE_SECRET` was given and a per-process one is in use. */
+  cookieSecretGenerated: boolean;
+  /** Normalised allow-list, or `null` for "anyone with a Google account". */
+  allowedEmails: Set<string> | null;
+  sessionTtlMs: number;
+}
+
 export interface AppConfig {
   env: Env['NODE_ENV'];
   port: number;
   db: DbConfig;
   lookup: LookupConfig;
   covers: CoversConfig;
+  auth: AuthConfig;
   /** Absolute path of the built web app to serve, if any. */
   webDist?: string;
 }
 
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
   const env = envSchema.parse(source);
+  const authBaseUrl = (env.AUTH_BASE_URL ?? `http://localhost:${env.PORT}`).replace(/\/$/, '');
   return {
     env: env.NODE_ENV,
     port: env.PORT,
@@ -114,6 +146,16 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       missMs: env.COVERS_MISS_DAYS * DAY_MS,
       gcSharedAfterMs: env.COVERS_GC_DAYS * DAY_MS,
       minIntervalMs: env.COVERS_MIN_INTERVAL_MS,
+    },
+    auth: {
+      googleClientId: env.GOOGLE_CLIENT_ID,
+      googleClientSecret: env.GOOGLE_CLIENT_SECRET,
+      baseUrl: authBaseUrl,
+      redirectUri: `${authBaseUrl}/api/auth/google/callback`,
+      cookieSecret: env.AUTH_COOKIE_SECRET ?? randomBytes(32).toString('base64url'),
+      cookieSecretGenerated: env.AUTH_COOKIE_SECRET === undefined,
+      allowedEmails: parseAllowedEmails(env.AUTH_ALLOWED_EMAILS),
+      sessionTtlMs: env.AUTH_SESSION_DAYS * DAY_MS,
     },
     webDist: env.WEB_DIST === undefined ? undefined : resolve(env.WEB_DIST),
   };

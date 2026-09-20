@@ -1,3 +1,4 @@
+import type { User } from '@bookguardian/shared';
 import type { CoverService } from './covers';
 import type { DatabaseAdapter } from './db/adapters';
 import type { Repositories } from './db/repositories';
@@ -15,7 +16,9 @@ export interface Services {
 export interface AppEnv {
   Variables: {
     services: Services;
-    /** Id of the user whose data this request may touch (see `owner.ts`). */
+    /** Id of the user whose data this request may touch (see `auth/middleware.ts`). */
     ownerId: string;
+    /** The signed-in user; unset when the test seam picked the owner directly. */
+    user?: User;
   };
 }

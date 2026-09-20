@@ -49,6 +49,9 @@ export const users = pgTable('users', {
   id: id(),
   displayName: varchar('display_name', { length: 120 }).notNull(),
   email: varchar('email', { length: 254 }),
+  emailVerified: intBoolean('email_verified').notNull().default(false),
+  avatarUrl: varchar('avatar_url', { length: 2048 }),
+  lastLoginAt: ts('last_login_at'),
   ...timestamps,
 });
 
@@ -212,6 +215,49 @@ export const isbnCovers = pgTable(
   (t) => [index('idx_isbn_covers_asset').on(t.coverAssetId)],
 );
 
+/**
+ * A provider identity (`google` + the `sub` claim) and the user it maps to.
+ * See `0004_auth.sql` and ADR 0005: one account per email, a user may hold
+ * several identities, an identity belongs to exactly one user.
+ */
+export const authIdentities = pgTable(
+  'auth_identities',
+  {
+    id: id(),
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: varchar('provider', { length: 32 }).notNull(),
+    providerSubject: varchar('provider_subject', { length: 255 }).notNull(),
+    emailAtLink: varchar('email_at_link', { length: 254 }),
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_auth_identities_subject').on(t.provider, t.providerSubject),
+    index('idx_auth_identities_user').on(t.userId),
+  ],
+);
+
+/** Server-side sessions; only the SHA-256 of the cookie token is stored. */
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: id(),
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    createdAt: ts('created_at').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+    lastSeenAt: ts('last_seen_at').notNull(),
+    userAgent: varchar('user_agent', { length: 512 }),
+  },
+  (t) => [
+    uniqueIndex('uq_sessions_token_hash').on(t.tokenHash),
+    index('idx_sessions_user').on(t.userId),
+  ],
+);
+
 export const postgresSchema = {
   schemaMigrations,
   users,
@@ -223,4 +269,6 @@ export const postgresSchema = {
   catalogBooks,
   coverAssets,
   isbnCovers,
+  authIdentities,
+  sessions,
 };

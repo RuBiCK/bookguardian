@@ -33,6 +33,7 @@ export interface DefaultCoverConfig {
 export function createDefaultCoverService(
   config: DefaultCoverConfig,
   repos: Repositories,
+  extras: { gcHooks?: (() => Promise<void>)[] } = {},
 ): CoverService {
   const log = (message: string) => console.warn(`[covers] ${message}`);
   if (!config.googleBooksApiKey) {
@@ -59,6 +60,7 @@ export function createDefaultCoverService(
     missMs: config.missMs,
     gcSharedAfterMs: config.gcSharedAfterMs,
     minIntervalMs: config.minIntervalMs,
+    gcHooks: extras.gcHooks,
     log,
   });
 }
