@@ -225,11 +225,14 @@ test.describe('gestures', () => {
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect(row).toHaveAttribute('data-open', 'true');
-    // Let the content finish sliding aside before tapping what it uncovered.
+    // Let the content finish sliding aside before pressing what it uncovered.
     await row
       .locator('.swipe__content')
       .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
-    await row.getByRole('button', { name: en.quick.markRead }).tap();
+    // A pointer click rather than a synthetic tap: on Linux runners Chromium's
+    // gesture recogniser does not turn a CDP tap that follows a CDP touch
+    // sequence into a click, while a real finger does.
+    await row.getByRole('button', { name: en.quick.markRead }).click();
     await expect(row).toContainText(en.readStatus.read);
     await expect(row).not.toHaveAttribute('data-open', 'true');
     // Never any sideways overflow while swiping.
