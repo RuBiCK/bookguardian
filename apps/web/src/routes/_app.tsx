@@ -1,6 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect, useRouter } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ensureSession, useSession } from '../api/auth';
+import { OfflineBanner } from '../components/OfflineBanner';
+import { PullToRefresh } from '../components/PullToRefresh';
 import { TabBar } from '../components/TabBar';
 
 /**
@@ -25,8 +29,11 @@ export const Route = createFileRoute('/_app')({
 });
 
 function AppShell() {
+  const { t } = useTranslation();
   const session = useSession();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const mainRef = useRef<HTMLElement>(null);
 
   // The guard only runs on navigation. When the session query turns null
   // afterwards — a 401 from any request, a focus re-check that finds the
@@ -42,9 +49,16 @@ function AppShell() {
     });
   }, [session.data, router]);
 
+  const refresh = useCallback(() => queryClient.refetchQueries({ type: 'active' }), [queryClient]);
+
   return (
     <div className="app-shell">
-      <main className="app-shell__main">
+      <a href="#main" className="skip-link">
+        {t('a11y.skipToContent')}
+      </a>
+      <PullToRefresh onRefresh={refresh} contentRef={mainRef} />
+      <main id="main" ref={mainRef} className="app-shell__main" tabIndex={-1}>
+        <OfflineBanner />
         <Outlet />
       </main>
       <TabBar />

@@ -28,6 +28,7 @@ export interface RenderAppOptions {
 export async function renderApp(path = '/', { session = TEST_USER }: RenderAppOptions = {}) {
   const queryClient = createQueryClient();
   queryClient.setDefaultOptions({
+    ...queryClient.getDefaultOptions(),
     queries: { ...queryClient.getDefaultOptions().queries, retry: false, retryDelay: 0 },
   });
   if (session !== 'fetch') queryClient.setQueryData(SESSION_KEY, session);

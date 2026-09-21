@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBook, useDeleteBook, useMoveBook, useSetReadStatus } from '../../api/inventory';
+import { useBook, useDeleteBook, useSetReadStatus } from '../../api/inventory';
 import { BookCover } from '../../components/BookCover';
 import { BookSheet } from '../../components/BookSheet';
 import { ConfirmSheet } from '../../components/ConfirmSheet';
@@ -9,12 +9,13 @@ import { CoverSheet } from '../../components/CoverSheet';
 import { EmptyState } from '../../components/EmptyState';
 import { PencilIcon, TrashIcon } from '../../components/icons';
 import { LendingPanel } from '../../components/LendingPanel';
+import { MoveBookSheet } from '../../components/MoveBookSheet';
 import { ReadingPanel } from '../../components/ReadingPanel';
 import { Screen } from '../../components/Screen';
-import { Sheet } from '../../components/Sheet';
 import { useShelfLabel } from '../../api/shelf-label';
-import { ShelfPicker } from '../../components/ShelfPicker';
+import { BookPageSkeleton } from '../../components/Skeleton';
 import { formatDate } from '../../lib/format';
+import { markOpened } from '../../lib/last-opened';
 import { showToast } from '../../lib/toast';
 
 export const Route = createFileRoute('/_app/books/$bookId')({
@@ -36,27 +37,28 @@ function BookDetailScreen() {
   const [changingCover, setChangingCover] = useState(false);
   const [moving, setMoving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [targetShelf, setTargetShelf] = useState('');
+
+  // This is now the book a list should morph back into on the way out.
+  useEffect(() => markOpened(bookId), [bookId]);
 
   const reading = useSetReadStatus({
     onError: () => showToast(t('errors.saveFailed'), 'error'),
   });
-  const moveBook = useMoveBook({ onError: () => showToast(t('errors.saveFailed'), 'error') });
   const deleteBook = useDeleteBook({
     onError: () => showToast(t('errors.deleteFailed'), 'error'),
   });
 
   if (book.isPending) {
     return (
-      <Screen title={t('common.loading')} back={{ to: '/' }}>
-        <p className="muted">{t('common.loading')}</p>
+      <Screen title={t('common.loading')} back={{ to: '/' }} hero={<BookPageSkeleton />}>
+        {null}
       </Screen>
     );
   }
   if (!book.data) {
     return (
       <Screen title={t('errors.notFound')} back={{ to: '/' }}>
-        <EmptyState title={t('books.detail.notFound')} action={<span />} />
+        <EmptyState title={t('books.detail.notFound')} illustration="search" />
       </Screen>
     );
   }
@@ -137,10 +139,7 @@ function BookDetailScreen() {
             <button
               type="button"
               className="button button--ghost button--small"
-              onClick={() => {
-                setTargetShelf(b.shelfId);
-                setMoving(true);
-              }}
+              onClick={() => setMoving(true)}
             >
               {t('common.move')}
             </button>
@@ -174,29 +173,7 @@ function BookDetailScreen() {
       <BookSheet open={editing} onClose={() => setEditing(false)} book={b} />
       <CoverSheet open={changingCover} book={b} onClose={() => setChangingCover(false)} />
 
-      <Sheet
-        open={moving}
-        title={t('books.moveToShelf')}
-        onClose={() => setMoving(false)}
-        footer={
-          <button
-            type="button"
-            className="button button--primary button--block"
-            disabled={!targetShelf || targetShelf === b.shelfId}
-            onClick={() => {
-              moveBook.mutate({ id: b.id, shelfId: targetShelf });
-              setMoving(false);
-            }}
-          >
-            {t('common.move')}
-          </button>
-        }
-      >
-        <div className="field">
-          <span className="field__label">{t('books.shelf')}</span>
-          <ShelfPicker value={targetShelf} onChange={setTargetShelf} label={t('books.shelf')} />
-        </div>
-      </Sheet>
+      <MoveBookSheet open={moving} book={b} onClose={() => setMoving(false)} />
 
       <ConfirmSheet
         open={deleting}

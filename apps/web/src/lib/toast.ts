@@ -1,3 +1,5 @@
+import { onlineManager } from '@tanstack/react-query';
+import i18next from 'i18next';
 import { useSyncExternalStore } from 'react';
 
 export interface Toast {
@@ -30,6 +32,8 @@ function remove(id: number) {
  * different messages still stack so an error never hides a confirmation.
  */
 export function showToast(message: string, tone: Toast['tone'] = 'info', ttlMs = 3000) {
+  // Offline, every failed write has the same cause; say so instead of "couldn't save".
+  if (tone === 'error' && !onlineManager.isOnline()) message = i18next.t('errors.offline');
   const duplicate = toasts.find((t) => t.message === message && t.tone === tone);
   if (duplicate) remove(duplicate.id);
   const toast: Toast = { id: nextId++, message, tone };

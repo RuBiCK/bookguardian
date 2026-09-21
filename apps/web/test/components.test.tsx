@@ -8,19 +8,31 @@ import { StarRating } from '../src/components/StarRating';
 import { TABS } from '../src/components/tabs';
 
 describe('EmptyState', () => {
-  it('renders title, body and the default "coming soon" pill', () => {
+  it('renders title, body and a decorative illustration', () => {
     render(<EmptyState title="Nothing here" body="Add something." />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    const status = screen.getByRole('status');
+    expect(status).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Nothing here' })).toBeInTheDocument();
     expect(screen.getByText('Add something.')).toBeInTheDocument();
-    expect(screen.getByText(en.common.comingSoon)).toBeInTheDocument();
+    const art = status.querySelector('svg.empty__illustration');
+    expect(art).not.toBeNull();
+    expect(art).toHaveAttribute('aria-hidden', 'true');
+    expect(status.querySelector('button')).toBeNull(); // no action unless one is given
   });
 
-  it('omits the body and swaps the action when provided', () => {
-    render(<EmptyState title="T" action={<button type="button">Add</button>} />);
-    expect(screen.queryByText(en.common.comingSoon)).not.toBeInTheDocument();
+  it('omits the body, swaps the illustration and renders the action when provided', () => {
+    render(
+      <EmptyState title="T" illustration="lending" action={<button type="button">Add</button>} />,
+    );
     expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
     expect(screen.getByRole('status').querySelector('p')).toBeNull();
+    expect(screen.getByRole('status').querySelector('svg path[d^="M86 63h40"]')).not.toBeNull();
+  });
+
+  it('takes a small icon instead of an illustration', () => {
+    render(<EmptyState title="T" icon={<span data-testid="icon" />} />);
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+    expect(screen.getByRole('status').querySelector('.empty__illustration')).toBeNull();
   });
 });
 

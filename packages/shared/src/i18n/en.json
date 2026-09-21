@@ -27,7 +27,6 @@
     "moveUp": "Move up",
     "moveDown": "Move down",
     "optional": "optional",
-    "comingSoon": "Coming soon",
     "search": "Search",
     "clear": "Clear",
     "confirm": "Confirm",
@@ -39,7 +38,8 @@
     "notFound": "We couldn't find that page.",
     "saveFailed": "Couldn't save. Your change was undone.",
     "deleteFailed": "Couldn't delete. Nothing was changed.",
-    "validation": "Please check the highlighted fields."
+    "validation": "Please check the highlighted fields.",
+    "offline": "You're offline. Changes can't be saved until you're back online."
   },
   "auth": {
     "title": "Sign in",
@@ -185,6 +185,11 @@
       "readIn": "Read in {{period}}",
       "status": "{{value}}",
       "clear": "Show all books"
+    },
+    "view": {
+      "label": "View",
+      "grid": "Grid",
+      "list": "List"
     }
   },
   "scan": {
@@ -385,5 +390,36 @@
     "title": "Title",
     "read": "Recently read",
     "rating": "Top rated"
+  },
+  "offline": {
+    "title": "You're offline",
+    "body": "Showing your saved library. Changes will save once you're back online."
+  },
+  "refresh": {
+    "pull": "Pull to refresh",
+    "release": "Release to refresh",
+    "refreshing": "Refreshing…"
+  },
+  "quick": {
+    "lend": "Lend",
+    "return": "Returned",
+    "markRead": "Mark read",
+    "markUnread": "Mark unread",
+    "move": "Move",
+    "more": "More actions",
+    "swipeHint": "Swipe a row left for quick actions"
+  },
+  "install": {
+    "label": "Install app",
+    "title": "Add Bookguardian to your home screen",
+    "body": "Opens full screen, keeps your library readable offline.",
+    "button": "Install",
+    "dismiss": "Not now",
+    "ios": "Tap Share, then “Add to Home Screen”.",
+    "installed": "Installed",
+    "unavailable": "Open this site in your phone's browser to install it."
+  },
+  "a11y": {
+    "skipToContent": "Skip to content"
   }
 }

@@ -2,9 +2,15 @@ import { BOOK_SORTS, type BookSort, type ReadStatus } from '@bookguardian/shared
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBooks, type BookFilter } from '../api/inventory';
+import { BOOK_VIEW_KEY, BOOK_VIEWS, type BookView } from '../lib/book-view';
+import { useStoredValue } from '../lib/stored-value';
+import { BookActionsProvider } from './BookActions';
 import { BookGrid } from './BookGrid';
+import { BookRows } from './BookRows';
 import { EmptyState } from './EmptyState';
+import { GridIcon, ListIcon } from './icons';
 import { SearchBar } from './SearchBar';
+import { BookGridSkeleton, CardListSkeleton } from './Skeleton';
 import { StatusChips } from './StatusChips';
 
 /** Rating chips: exactly five stars, or at least four / three. */
@@ -25,9 +31,10 @@ interface BookListProps {
 }
 
 /**
- * Filterable, sortable, paged cover grid shared by the shelf screen, the
- * library "Books" view and the global search. Filters are one tap each and
- * stay on one thumb-scrollable row.
+ * Filterable, sortable, paged book list shared by the shelf screen, the
+ * library "Books" view and the global search. Covers in a grid or one row
+ * per book (remembered); filters are one tap each and stay on one
+ * thumb-scrollable row.
  */
 export function BookList({ base, searchable = false, initialStatus, onAdd }: BookListProps) {
   const { t } = useTranslation();
@@ -35,6 +42,7 @@ export function BookList({ base, searchable = false, initialStatus, onAdd }: Boo
   const [status, setStatus] = useState<ReadStatus | undefined>(initialStatus);
   const [minRating, setMinRating] = useState<number | undefined>(undefined);
   const [sort, setSort] = useState<BookSort>('added');
+  const [view, setView] = useStoredValue<BookView>(BOOK_VIEW_KEY, BOOK_VIEWS, 'grid');
 
   const { q: baseQuery, shelfId, libraryId, ...narrowing } = base;
   const q = (searchable ? query : (baseQuery ?? '')).trim() || undefined;
@@ -61,50 +69,71 @@ export function BookList({ base, searchable = false, initialStatus, onAdd }: Boo
         <SearchBar value={query} onChange={setQuery} placeholder={t('books.searchPlaceholder')} />
       ) : null}
       <StatusChips value={status} onChange={setStatus} />
-      <div className="chips" role="group" aria-label={t('filters.rating')}>
-        <label className="chip chip--select">
-          <span className="visually-hidden">{t('filters.sort')}</span>
-          <select
-            className="chip__select"
-            value={sort}
-            onChange={(event) => setSort(event.target.value as BookSort)}
-          >
-            {BOOK_SORTS.map((option) => (
-              <option key={option} value={option}>
-                {t(`sort.${option}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="chip"
-          aria-pressed={minRating === undefined}
-          onClick={() => setMinRating(undefined)}
-        >
-          {t('filters.anyRating')}
-        </button>
-        {RATING_OPTIONS.map((stars) => (
+      <div className="list-toolbar">
+        <div className="chips" role="group" aria-label={t('filters.rating')}>
+          <label className="chip chip--select">
+            <span className="visually-hidden">{t('filters.sort')}</span>
+            <select
+              className="chip__select"
+              value={sort}
+              onChange={(event) => setSort(event.target.value as BookSort)}
+            >
+              {BOOK_SORTS.map((option) => (
+                <option key={option} value={option}>
+                  {t(`sort.${option}`)}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
-            key={stars}
             type="button"
             className="chip"
-            aria-pressed={minRating === stars}
-            onClick={() => setMinRating(stars)}
+            aria-pressed={minRating === undefined}
+            onClick={() => setMinRating(undefined)}
           >
-            {stars === 5
-              ? t('filters.exactStars', { count: 5 })
-              : t('filters.minStars', { count: stars })}
+            {t('filters.anyRating')}
           </button>
-        ))}
+          {RATING_OPTIONS.map((stars) => (
+            <button
+              key={stars}
+              type="button"
+              className="chip"
+              aria-pressed={minRating === stars}
+              onClick={() => setMinRating(stars)}
+            >
+              {stars === 5
+                ? t('filters.exactStars', { count: 5 })
+                : t('filters.minStars', { count: stars })}
+            </button>
+          ))}
+        </div>
+        <div className="segmented view-toggle" role="group" aria-label={t('books.view.label')}>
+          {BOOK_VIEWS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className="segmented__option"
+              aria-pressed={view === option}
+              aria-label={t(`books.view.${option}`)}
+              onClick={() => setView(option)}
+            >
+              {option === 'grid' ? <GridIcon /> : <ListIcon />}
+            </button>
+          ))}
+        </div>
       </div>
 
       {books.isPending ? (
-        <p className="muted">{t('common.loading')}</p>
-      ) : books.isError ? (
+        view === 'grid' ? (
+          <BookGridSkeleton />
+        ) : (
+          <CardListSkeleton count={5} />
+        )
+      ) : books.data === undefined ? (
         <EmptyState
           title={t('errors.generic')}
           body={t('errors.network')}
+          illustration="offline"
           action={
             <button type="button" className="button" onClick={() => void books.refetch()}>
               {t('common.retry')}
@@ -115,10 +144,9 @@ export function BookList({ base, searchable = false, initialStatus, onAdd }: Boo
         <EmptyState
           title={filtering ? t('books.empty.noResults') : t('books.empty.title')}
           body={filtering ? undefined : t('books.empty.body')}
+          illustration={filtering ? 'search' : 'books'}
           action={
-            filtering || !onAdd ? (
-              <span />
-            ) : (
+            filtering || !onAdd ? undefined : (
               <button type="button" className="button button--primary" onClick={onAdd}>
                 {t('books.add')}
               </button>
@@ -126,10 +154,12 @@ export function BookList({ base, searchable = false, initialStatus, onAdd }: Boo
           }
         />
       ) : (
-        <>
-          <BookGrid books={items} />
+        <BookActionsProvider books={items}>
+          {view === 'grid' ? <BookGrid books={items} /> : <BookRows books={items} />}
           <p className="muted">{t('books.showing', { shown: items.length, total })}</p>
-          <p className="muted book-list__hint">{t('reading.longPressHint')}</p>
+          <p className="muted book-list__hint">
+            {view === 'grid' ? t('reading.longPressHint') : t('quick.swipeHint')}
+          </p>
           {books.hasNextPage ? (
             <button
               type="button"
@@ -140,7 +170,7 @@ export function BookList({ base, searchable = false, initialStatus, onAdd }: Boo
               {t('books.loadMore')}
             </button>
           ) : null}
-        </>
+        </BookActionsProvider>
       )}
     </>
   );

@@ -6,6 +6,7 @@ import { formatDate } from '../lib/format';
 import { showToast } from '../lib/toast';
 import { LendingIcon } from './icons';
 import { LendSheet } from './LendSheet';
+import { Skeleton } from './Skeleton';
 
 interface LendingPanelProps {
   book: Book;
@@ -47,7 +48,7 @@ export function LendingPanel({ book }: LendingPanelProps) {
       <h2 className="lending__title">{t('lending.title')}</h2>
 
       {lendings.isPending ? (
-        <p className="muted">{t('common.loading')}</p>
+        <Skeleton variant="block" height={44} />
       ) : current ? (
         <div className="lending__current">
           <span className="lending__icon" aria-hidden="true">

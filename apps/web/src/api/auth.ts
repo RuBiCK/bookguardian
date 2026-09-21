@@ -19,6 +19,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import { z } from 'zod';
+import { clearPersistedQueries } from '../lib/persist';
 import { apiRequest, isUnauthenticated } from './client';
 
 export type Session = AuthMeResponse | null;
@@ -87,9 +88,10 @@ export function useLogout(options: { onSuccess?: () => void; onError?: () => voi
     mutationFn: () =>
       apiRequest('/api/auth/logout', noContent, { method: 'POST', onUnauthenticated: 'ignore' }),
     onSuccess: async () => {
-      // Nothing of the previous account may survive in memory.
+      // Nothing of the previous account may survive in memory or on disk.
       await queryClient.cancelQueries();
       queryClient.clear();
+      await clearPersistedQueries();
       dropSession(queryClient);
       options.onSuccess?.();
     },
@@ -111,6 +113,7 @@ export function useDeleteAccount(options: { onSuccess?: () => void; onError?: ()
     onSuccess: async () => {
       await queryClient.cancelQueries();
       queryClient.clear();
+      await clearPersistedQueries();
       dropSession(queryClient);
       options.onSuccess?.();
     },

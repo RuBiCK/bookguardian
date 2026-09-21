@@ -18,6 +18,12 @@ export function initI18n(lng: string = detectLocale()) {
     interpolation: { escapeValue: false }, // React already escapes
     returnNull: false,
   });
+  // Screen readers pick the voice from <html lang>; keep it honest.
+  const syncLang = (language: string) => {
+    if (typeof document !== 'undefined') document.documentElement.lang = language;
+  };
+  syncLang(i18next.language ?? lng);
+  i18next.on('languageChanged', syncLang);
   return i18next;
 }
 
