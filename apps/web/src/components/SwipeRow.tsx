@@ -31,6 +31,8 @@ export const ACTION_WIDTH = 76;
 const SWIPE_SLOP_PX = 10;
 /** Movement samples closer together than this carry no usable velocity. */
 const MIN_SAMPLE_MS = 8;
+/** How long after a swipe its synthetic click is still ignored. */
+const SWIPE_CLICK_GRACE_MS = 150;
 
 /**
  * Push the row to the left to uncover its actions; let go past halfway (or
@@ -119,7 +121,12 @@ export function SwipeRow({
     if (g?.id !== event.pointerId) return;
     gesture.current = null;
     if (!g.swiping) return;
+    // Swallow only the click this same gesture may synthesise (it arrives at
+    // once); a tap a moment later is a real tap on whatever is under it.
     swiped.current = true;
+    setTimeout(() => {
+      swiped.current = false;
+    }, SWIPE_CLICK_GRACE_MS);
     setDragging(false);
     const flickOpen = g.velocity < -0.5;
     const flickClose = g.velocity > 0.5;
