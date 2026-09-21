@@ -117,10 +117,9 @@ test.describe('stats', () => {
 
     // The "Read" tile opens the list with the status chip already pressed.
     await tiles.getByTestId('stat-tile-read').tap();
-    await expect(page.getByRole('button', { name: en.readStatus.read, exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(
+      page.getByRole('button', { name: en.readStatus.read, exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('book-card')).toHaveCount(2);
   });
 });
