@@ -11,9 +11,13 @@ interface SheetProps {
   footer?: ReactNode;
 }
 
+/** Sheets currently open, bottom to top: only the topmost answers Escape. */
+const openSheets: symbol[] = [];
+
 /**
  * Bottom sheet: slides up from the tab bar edge so its controls sit in thumb
  * reach. Closes on backdrop tap and Escape; locks page scroll while open.
+ * Sheets stack (search results over the add form): Escape closes the top one.
  */
 export function Sheet({ open, title, onClose, children, footer }: SheetProps) {
   const { t } = useTranslation();
@@ -22,10 +26,12 @@ export function Sheet({ open, title, onClose, children, footer }: SheetProps) {
 
   useEffect(() => {
     if (!open) return;
+    const id = Symbol(titleId);
+    openSheets.push(id);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape' && openSheets.at(-1) === id) onClose();
     };
     document.addEventListener('keydown', onKey);
     // Focus the first field so the keyboard opens right away on phones.
@@ -34,10 +40,11 @@ export function Sheet({ open, title, onClose, children, footer }: SheetProps) {
     );
     first?.focus();
     return () => {
+      openSheets.splice(openSheets.indexOf(id), 1);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, titleId]);
 
   if (!open) return null;
 

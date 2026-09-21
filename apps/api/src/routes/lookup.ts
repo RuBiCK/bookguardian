@@ -33,8 +33,8 @@ export const lookupRoutes = new Hono<AppEnv>()
   })
   .get('/search', validate('query', lookupSearchQuerySchema), async (c) => {
     const { lookup } = c.get('services');
-    const { q, limit } = c.req.valid('query');
-    const items = await lookup.search(q, limit).catch(unavailable);
+    const { limit, isbn, ...fields } = c.req.valid('query');
+    const items = await lookup.search({ ...fields, isbn13: isbn }, limit).catch(unavailable);
     const body: LookupSearchResponse = { items };
     c.header('Cache-Control', CACHE_CONTROL);
     return c.json(body);

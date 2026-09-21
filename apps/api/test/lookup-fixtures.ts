@@ -79,10 +79,19 @@ export function fixtureFetch(): FixtureFetch {
       return { status: 200, body: fixture('openlibrary-work-OL893414W') };
     if (at === `${OPEN_LIBRARY}/search.json` && url.searchParams.get('q')?.includes('dune'))
       return { status: 200, body: fixture('openlibrary-search-dune') };
+    // A structured query (the add-book form): title and/or author, no free text.
+    if (
+      at === `${OPEN_LIBRARY}/search.json` &&
+      (url.searchParams.get('title')?.includes('dune') ||
+        url.searchParams.get('author')?.includes('herbert'))
+    )
+      return { status: 200, body: fixture('openlibrary-search-title-dune-author-herbert') };
     if (at === `${OPEN_LIBRARY}/search.json`) return { status: 200, body: { docs: [] } };
     if (at.startsWith(OPEN_LIBRARY)) return { status: 404, body: { error: 'notfound' } };
     if (at === `${GOOGLE_BOOKS}/volumes`) {
       const q = url.searchParams.get('q') ?? '';
+      if (q.includes('intitle:"dune') || q.includes('inauthor:"frank herbert'))
+        return { status: 200, body: fixture('google-search-intitle-dune-inauthor-herbert') };
       if (q === 'isbn:9780441013593' || q.includes('dune'))
         return { status: 200, body: GOOGLE_DUNE };
       return { status: 200, body: { kind: 'books#volumes', totalItems: 0 } };

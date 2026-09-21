@@ -185,6 +185,26 @@
       "readIn": "Leído en {{period}}",
       "status": "{{value}}",
       "clear": "Ver todos los libros"
+    },
+    "search": {
+      "action": "Buscar en línea",
+      "hint": "Rellena lo que sepas y busca en Open Library y Google Books.",
+      "title": "Resultados de la búsqueda",
+      "searching": "Buscando en Open Library y Google Books…",
+      "empty": {
+        "title": "Sin coincidencias en línea",
+        "body": "Nada coincide con lo que has escrito. Revisa la ortografía, añade un autor o un ISBN, o quédate con tus datos."
+      },
+      "keepTyped": "Conservar lo que escribí",
+      "error": {
+        "title": "No se pudo buscar",
+        "body": "Los catálogos de libros no están disponibles ahora mismo."
+      },
+      "isbn": "ISBN {{isbn}}",
+      "pick": "Usar «{{title}}»",
+      "filledFrom": "Rellenado desde {{source}}",
+      "useOnline": "Usar valor en línea: {{value}}",
+      "useOnlineLabel": "Usar valor en línea para {{field}}: {{value}}"
     }
   },
   "scan": {

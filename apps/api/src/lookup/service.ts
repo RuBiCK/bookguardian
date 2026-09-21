@@ -9,7 +9,10 @@
  * untouched. A miss is remembered for `missMs` so unknown ISBNs do not hammer
  * the providers, then retried (new books do show up later).
  *
- * Free-text search results are volatile and only cached in memory, but every
+ * Search (free text and/or the fields of a half-filled form) asks every
+ * provider at once and merges the answers: the same ISBN from two providers
+ * is one result, exact ISBN matches come first, then title + author matches
+ * (see `rank.ts`). Results are volatile and only cached in memory, but every
  * result with an ISBN-13 is stored opportunistically so tapping a candidate
  * never fetches again.
  *
@@ -18,12 +21,19 @@
  * gets a `LookupUnavailableError` so the UI can say "try again" rather than
  * "unknown book".
  */
-import type { BookDraft } from '@bookguardian/shared';
+import type { BookDraft, LookupSearchResult } from '@bookguardian/shared';
 import { hitRow, missRow, type CatalogBookRepository } from '../db/repositories/catalog-books';
 import { TtlCache } from './cache';
 import { googleBooksProvider } from './google-books';
 import { openLibraryProvider } from './open-library';
-import { ProviderError, type FetchLike, type LookupProvider, type ProviderContext } from './types';
+import { mergeResults } from './rank';
+import {
+  ProviderError,
+  type FetchLike,
+  type LookupProvider,
+  type ProviderContext,
+  type SearchQuery,
+} from './types';
 
 export class LookupUnavailableError extends Error {
   constructor(public readonly causes: ProviderError[]) {
@@ -35,8 +45,8 @@ export class LookupUnavailableError extends Error {
 export interface LookupService {
   /** `null` when no provider knows the ISBN. */
   byIsbn(isbn13: string): Promise<BookDraft | null>;
-  /** Best matches for a free-text query, at most `limit`. */
-  search(query: string, limit: number): Promise<BookDraft[]>;
+  /** Best matches across every provider, deduplicated and ranked, at most `limit`. */
+  search(query: SearchQuery, limit: number): Promise<LookupSearchResult[]>;
   /** Resolves once every background refresh in flight has settled (shutdown, tests). */
   idle(): Promise<void>;
 }
@@ -76,7 +86,7 @@ export function createLookupService({
   log = (message) => console.warn(`[lookup] ${message}`),
 }: LookupServiceOptions): LookupService {
   const ctx: ProviderContext = { fetch, timeoutMs };
-  const searchCache = new TtlCache<BookDraft[]>({
+  const searchCache = new TtlCache<LookupSearchResult[]>({
     ttlMs: cacheTtlMs,
     maxEntries: cacheMaxEntries,
     now,
@@ -98,6 +108,11 @@ export function createLookupService({
     return promise;
   }
 
+  const asProviderError = (provider: LookupProvider, error: unknown) =>
+    error instanceof ProviderError
+      ? error
+      : new ProviderError(provider.name, error instanceof Error ? error.message : 'failed');
+
   async function firstResult<T>(
     attempt: (provider: LookupProvider) => Promise<T | null>,
   ): Promise<T | null> {
@@ -107,10 +122,7 @@ export function createLookupService({
         const result = await attempt(provider);
         if (result !== null) return result;
       } catch (error) {
-        const failure =
-          error instanceof ProviderError
-            ? error
-            : new ProviderError(provider.name, error instanceof Error ? error.message : 'failed');
+        const failure = asProviderError(provider, error);
         failures.push(failure);
         log(failure.message);
       }
@@ -119,6 +131,25 @@ export function createLookupService({
       throw new LookupUnavailableError(failures);
     }
     return null;
+  }
+
+  /** Ask every provider at once; a failed one contributes nothing, all failing is an error. */
+  async function allResults(query: SearchQuery, limit: number): Promise<BookDraft[][]> {
+    const settled = await Promise.allSettled(
+      providers.map((provider) => provider.search(query, limit, ctx)),
+    );
+    const failures: ProviderError[] = [];
+    const results = settled.map((outcome, index) => {
+      if (outcome.status === 'fulfilled') return outcome.value;
+      const failure = asProviderError(providers[index]!, outcome.reason);
+      failures.push(failure);
+      log(failure.message);
+      return [];
+    });
+    if (failures.length > 0 && failures.length === providers.length) {
+      throw new LookupUnavailableError(failures);
+    }
+    return results;
   }
 
   const fetchIsbn = (isbn13: string) =>
@@ -188,16 +219,12 @@ export function createLookupService({
     },
 
     search(query, limit) {
-      const normalized = query.trim().replace(/\s+/g, ' ').toLowerCase();
-      const key = `${limit}:${normalized}`;
+      const normalized = normalizeQuery(query);
+      const key = `${limit}:${JSON.stringify(normalized)}`;
       const cached = searchCache.get(key);
       if (cached !== undefined) return Promise.resolve(cached);
       return dedupe(`search:${key}`, async () => {
-        const items =
-          (await firstResult(async (provider) => {
-            const results = await provider.search(normalized, limit, ctx);
-            return results.length > 0 ? results : null;
-          })) ?? [];
+        const items = mergeResults(await allResults(normalized, limit), normalized, limit);
         searchCache.set(key, items);
         await storeSearchResults(items);
         return items;
@@ -208,6 +235,26 @@ export function createLookupService({
       while (refreshing.size > 0) await Promise.allSettled([...refreshing.values()]);
     },
   };
+}
+
+/** Same search, same key: text fields lower-cased and single-spaced, blanks dropped, stable field order. */
+export function normalizeQuery(query: SearchQuery): SearchQuery {
+  const clean = (value: string | undefined) => {
+    const text = value?.trim().replace(/\s+/g, ' ').toLowerCase();
+    return text === '' ? undefined : text;
+  };
+  const normalized: SearchQuery = {};
+  const q = clean(query.q);
+  const title = clean(query.title);
+  const author = clean(query.author);
+  const publisher = clean(query.publisher);
+  if (q) normalized.q = q;
+  if (title) normalized.title = title;
+  if (author) normalized.author = author;
+  if (query.isbn13) normalized.isbn13 = query.isbn13;
+  if (publisher) normalized.publisher = publisher;
+  if (query.year) normalized.year = query.year;
+  return normalized;
 }
 
 export interface DefaultLookupConfig {

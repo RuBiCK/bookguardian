@@ -185,6 +185,26 @@
       "readIn": "Read in {{period}}",
       "status": "{{value}}",
       "clear": "Show all books"
+    },
+    "search": {
+      "action": "Search online",
+      "hint": "Fill in what you know, then search Open Library and Google Books.",
+      "title": "Search results",
+      "searching": "Searching Open Library and Google Books…",
+      "empty": {
+        "title": "No matches online",
+        "body": "Nothing matches what you typed. Check the spelling, add an author or an ISBN, or keep your own data."
+      },
+      "keepTyped": "Keep the data I typed",
+      "error": {
+        "title": "Couldn't search",
+        "body": "The book catalogues are unreachable right now."
+      },
+      "isbn": "ISBN {{isbn}}",
+      "pick": "Use “{{title}}”",
+      "filledFrom": "Filled from {{source}}",
+      "useOnline": "Use online value: {{value}}",
+      "useOnlineLabel": "Use online value for {{field}}: {{value}}"
     }
   },
   "scan": {

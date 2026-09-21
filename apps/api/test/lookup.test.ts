@@ -4,11 +4,17 @@ import {
   createLookupService,
   googleBooksProvider,
   LookupUnavailableError,
+  mergeResults,
+  normalizeQuery,
   openLibraryProvider,
   ProviderError,
+  resultIdOf,
+  score,
   TtlCache,
   type LookupProvider,
 } from '../src/lookup';
+import { volumesQuery } from '../src/lookup/google-books';
+import { searchParams } from '../src/lookup/open-library';
 import {
   finalizeDraft,
   httpsUrl,
@@ -212,7 +218,7 @@ describe('openLibraryProvider', () => {
 
   it('turns search docs into drafts using the preferred edition', async () => {
     const fetch = fixtureFetch();
-    const results = await provider.search('dune frank herbert', 3, ctxFor(fetch));
+    const results = await provider.search({ q: 'dune frank herbert' }, 3, ctxFor(fetch));
     expect(results).toHaveLength(3);
     expect(results[0]).toEqual({
       isbn10: '0425038912',
@@ -264,7 +270,7 @@ describe('openLibraryProvider', () => {
           }
         : undefined,
     );
-    const results = await provider.search('sparse', 5, ctxFor(fetch));
+    const results = await provider.search({ q: 'sparse' }, 5, ctxFor(fetch));
     expect(results).toEqual([
       expect.objectContaining({
         title: 'Only a title',
@@ -274,7 +280,7 @@ describe('openLibraryProvider', () => {
         sourceId: '/works/OL1W',
       }),
     ]);
-    expect(await provider.search('nothing', 5, ctxFor(fetch))).toEqual([]);
+    expect(await provider.search({ q: 'nothing' }, 5, ctxFor(fetch))).toEqual([]);
   });
 });
 
@@ -305,9 +311,9 @@ describe('googleBooksProvider', () => {
     expect(url.searchParams.get('key')).toBe('k3y');
     expect(url.searchParams.get('printType')).toBe('books');
 
-    const results = await provider.search('dune', 2, ctxFor(fetch));
+    const results = await provider.search({ q: 'dune' }, 2, ctxFor(fetch));
     expect(results).toHaveLength(1);
-    expect(await provider.search('nothing', 2, ctxFor(fetch))).toEqual([]);
+    expect(await provider.search({ q: 'nothing' }, 2, ctxFor(fetch))).toEqual([]);
     expect(await provider.byIsbn('9780000000002', ctxFor(fetch))).toBeNull();
   });
 
@@ -336,7 +342,7 @@ describe('googleBooksProvider', () => {
       isbn10: null,
       coverUrl: 'https://i/x',
     });
-    expect(await provider.search('untitled', 5, ctxFor(fetch))).toEqual([]);
+    expect(await provider.search({ q: 'untitled' }, 5, ctxFor(fetch))).toEqual([]);
     expect(fetch.calls.every((c) => !c.includes('key='))).toBe(true);
   });
 
@@ -432,7 +438,7 @@ describe('lookup service', () => {
     await expect(service.byIsbn('9780441013593')).rejects.toMatchObject({
       causes: [expect.objectContaining({ message: 'open_library: kaboom' })],
     });
-    await expect(service.search('x', 5)).rejects.toMatchObject({
+    await expect(service.search({ q: 'x' }, 5)).rejects.toMatchObject({
       causes: [expect.objectContaining({ message: 'open_library: failed' })],
     });
     expect(log).toEqual(['open_library: kaboom', 'open_library: failed']);
@@ -440,23 +446,23 @@ describe('lookup service', () => {
 
   it('searches with normalised, cached queries and falls back to Google', async () => {
     const { service, fetch } = fixtureLookup();
-    const items = await service.search('  Dune   Frank Herbert ', 5);
+    const items = await service.search({ q: '  Dune   Frank Herbert ' }, 5);
     expect(items).toHaveLength(5);
     expect(new URL(fetch.calls[0]!).searchParams.get('q')).toBe('dune frank herbert');
     const before = fetch.calls.length;
-    expect(await service.search('dune frank herbert', 5)).toEqual(items);
+    expect(await service.search({ q: 'dune frank herbert' }, 5)).toEqual(items);
     expect(fetch.calls.length).toBe(before);
     // A different limit is a different cache key.
-    expect(await service.search('dune frank herbert', 2)).toHaveLength(2);
+    expect(await service.search({ q: 'dune frank herbert' }, 2)).toHaveLength(2);
 
     fetch.route((url) =>
       url.origin === OPEN_LIBRARY && url.pathname === '/search.json'
         ? { status: 200, body: { docs: [] } }
         : undefined,
     );
-    const google = await service.search('dune messiah', 5);
+    const google = await service.search({ q: 'dune messiah' }, 5);
     expect(google.map((d) => d.source)).toEqual(['google_books']);
-    expect(await service.search('nothing at all', 5)).toEqual([]);
+    expect(await service.search({ q: 'nothing at all' }, 5)).toEqual([]);
   });
 
   it('uses global fetch and console.warn by default', async () => {
@@ -473,5 +479,216 @@ describe('lookup service', () => {
       console.warn = warn;
     }
     expect(logged[0]).toMatch(/^\[lookup\] open_library:/);
+  });
+});
+
+const DRAFT: BookDraft = {
+  isbn10: '0441013597',
+  isbn13: '9780441013593',
+  title: 'Dune',
+  subtitle: null,
+  authors: ['Frank Herbert'],
+  publisher: 'Ace Books',
+  publishedDate: '2005',
+  pages: 528,
+  language: 'en',
+  coverUrl: 'https://covers.openlibrary.org/b/id/1-L.jpg',
+  categories: ['Science fiction'],
+  description: null,
+  source: 'open_library',
+  sourceId: '/books/OL1M',
+};
+
+describe('structured queries → provider requests', () => {
+  it('maps fields onto Open Library search parameters', () => {
+    const params = searchParams({
+      q: 'dune',
+      title: 'dune',
+      author: 'frank herbert',
+      isbn13: '9780441013593',
+      publisher: 'ace',
+      year: 1965,
+    });
+    expect(Object.fromEntries(params)).toEqual({
+      q: 'dune first_publish_year:1965',
+      title: 'dune',
+      author: 'frank herbert',
+      isbn: '9780441013593',
+      publisher: 'ace',
+    });
+    expect(Object.fromEntries(searchParams({ year: 1965 }))).toEqual({
+      q: 'first_publish_year:1965',
+    });
+    expect(Object.fromEntries(searchParams({ title: 'emma' }))).toEqual({ title: 'emma' });
+  });
+
+  it('maps fields onto Google Books operators and quotes phrases', () => {
+    expect(
+      volumesQuery({
+        q: 'dune',
+        title: 'dune  "messiah"',
+        author: 'frank herbert',
+        isbn13: '9780441013593',
+        publisher: 'ace books',
+      }),
+    ).toBe(
+      'dune intitle:"dune messiah" inauthor:"frank herbert" isbn:9780441013593 inpublisher:"ace books"',
+    );
+    // Google has no year field: a year alone means nothing to ask.
+    expect(volumesQuery({ year: 1965 })).toBe('');
+  });
+
+  it('sends the structured request and skips Google when only a year is given', async () => {
+    const fetch = fixtureFetch();
+    const ol = openLibraryProvider({ baseUrl: OPEN_LIBRARY });
+    const results = await ol.search({ title: 'dune', author: 'frank herbert' }, 5, ctxFor(fetch));
+    expect(results.map((r) => r.isbn13)).toEqual(['9780441013593', '9780441172696']);
+    const url = new URL(fetch.calls[0]!);
+    expect(url.searchParams.get('title')).toBe('dune');
+    expect(url.searchParams.get('author')).toBe('frank herbert');
+    expect(url.searchParams.get('q')).toBeNull();
+
+    const google = googleBooksProvider({ baseUrl: GOOGLE_BOOKS });
+    expect(await google.search({ year: 1965 }, 5, ctxFor(fetch))).toEqual([]);
+    expect(fetch.calls).toHaveLength(1);
+    const hits = await google.search({ title: 'dune', author: 'frank herbert' }, 5, ctxFor(fetch));
+    expect(hits.map((r) => r.isbn13)).toEqual(['9780441013593', '9780441104024']);
+    expect(new URL(fetch.calls[1]!).searchParams.get('q')).toBe(
+      'intitle:"dune" inauthor:"frank herbert"',
+    );
+  });
+});
+
+describe('merge and rank', () => {
+  const google: BookDraft = {
+    ...DRAFT,
+    subtitle: 'Deluxe Edition',
+    publisher: 'Penguin',
+    description: 'Set on the desert planet Arrakis…',
+    source: 'google_books',
+    sourceId: 'B1hSG45JCX4C',
+  };
+  const messiah: BookDraft = {
+    ...DRAFT,
+    isbn10: '0441172695',
+    isbn13: '9780441172696',
+    title: 'Dune Messiah',
+    sourceId: '/books/OL2M',
+  };
+  const untitled: BookDraft = { ...DRAFT, isbn10: null, isbn13: null, sourceId: null };
+
+  it('scores exact ISBN, then title + author, then single-field matches', () => {
+    expect(score(DRAFT, { isbn13: '9780441013593' })).toBe(100);
+    expect(score(DRAFT, { isbn13: '9780441172696' })).toBe(0);
+    expect(score(DRAFT, { title: 'DUNE', author: 'Herbert' })).toBe(20);
+    expect(score(messiah, { title: 'dune messiah', author: 'frank' })).toBe(20);
+    expect(score(DRAFT, { title: 'dune messiah' })).toBe(0);
+    expect(score(DRAFT, { title: 'dune', author: 'asimov' })).toBe(10);
+    expect(score(DRAFT, { author: 'hérbert', publisher: 'ace', year: 2005 })).toBe(13);
+    expect(score(DRAFT, { q: 'anything' })).toBe(0);
+  });
+
+  it('deduplicates the same ISBN across providers, filling blanks from the second', () => {
+    const merged = mergeResults([[DRAFT, messiah], [google]], { title: 'dune' }, 10);
+    expect(merged.map((r) => r.resultId)).toEqual([
+      'open_library:/books/OL1M',
+      'open_library:/books/OL2M',
+    ]);
+    // Open Library's record wins, Google only fills what it lacked.
+    expect(merged[0]).toMatchObject({
+      source: 'open_library',
+      publisher: 'Ace Books',
+      subtitle: 'Deluxe Edition',
+      description: 'Set on the desert planet Arrakis…',
+    });
+  });
+
+  it('puts an exact ISBN match first, keeps provider order otherwise and caps at the limit', () => {
+    const ranked = mergeResults(
+      [
+        [DRAFT, messiah],
+        [google, untitled],
+      ],
+      {
+        author: 'herbert',
+        isbn13: '9780441172696',
+      },
+      10,
+    );
+    expect(ranked.map((r) => r.title)).toEqual(['Dune Messiah', 'Dune', 'Dune']);
+    expect(mergeResults([[DRAFT, messiah], [untitled]], {}, 2).map((r) => r.title)).toEqual([
+      'Dune',
+      'Dune Messiah',
+    ]);
+  });
+
+  it('derives a stable result id from the provider key, else the ISBN, else the text', () => {
+    expect(resultIdOf(DRAFT)).toBe('open_library:/books/OL1M');
+    expect(resultIdOf({ ...DRAFT, sourceId: null })).toBe('open_library:9780441013593');
+    expect(resultIdOf(untitled)).toBe('open_library:dune frank herbert');
+  });
+
+  it('normalises a query for caching: trimmed, lower-cased, blanks dropped', () => {
+    expect(
+      normalizeQuery({
+        q: '  Dune   Messiah ',
+        title: '',
+        author: ' Frank  HERBERT',
+        isbn13: '9780441013593',
+        publisher: '   ',
+        year: 1969,
+      }),
+    ).toEqual({ q: 'dune messiah', author: 'frank herbert', isbn13: '9780441013593', year: 1969 });
+    expect(normalizeQuery({})).toEqual({});
+  });
+});
+
+describe('lookup service — structured search', () => {
+  it('asks every provider at once and merges their answers by ISBN', async () => {
+    const { service, fetch } = fixtureLookup();
+    const items = await service.search({ title: ' Dune ', author: 'Frank Herbert' }, 5);
+    expect(items.map((i) => [i.resultId, i.isbn13])).toEqual([
+      ['open_library:/books/OL24347578M', '9780441013593'],
+      ['open_library:/books/OL7500946M', '9780441172696'],
+      ['google_books:Ez1sAAAAMAAJ', '9780441104024'],
+    ]);
+    // The duplicate Dune contributed what Open Library's record lacked.
+    expect(items[0]).toMatchObject({
+      source: 'open_library',
+      publisher: 'Ace Books',
+      description: 'Set on the desert planet Arrakis…',
+    });
+    const [ol, google] = fetch.calls.map((c) => new URL(c));
+    expect(ol!.origin).toBe(OPEN_LIBRARY);
+    expect(ol!.searchParams.get('title')).toBe('dune');
+    expect(google!.pathname).toBe('/v1/volumes');
+    expect(google!.searchParams.get('q')).toBe('intitle:"dune" inauthor:"frank herbert"');
+    // Same query, different spacing/case: served from the cache.
+    expect(await service.search({ title: 'dune', author: ' frank  herbert ' }, 5)).toEqual(items);
+    expect(fetch.calls).toHaveLength(2);
+  });
+
+  it('ranks an exact ISBN match first whichever provider found it', async () => {
+    const { service } = fixtureLookup();
+    const items = await service.search({ author: 'Frank Herbert', isbn13: '9780441104024' }, 5);
+    expect(items[0]).toMatchObject({ isbn13: '9780441104024', source: 'google_books' });
+    expect(items).toHaveLength(3);
+  });
+
+  it('carries on when one provider fails a search and throws when both do', async () => {
+    const { service, fetch, log } = fixtureLookup();
+    fetch.route((url) =>
+      url.origin === OPEN_LIBRARY && url.pathname === '/search.json'
+        ? { status: 500, body: {} }
+        : undefined,
+    );
+    const items = await service.search({ title: 'dune', author: 'herbert' }, 5);
+    expect(items.map((i) => i.source)).toEqual(['google_books', 'google_books']);
+    expect(log).toEqual(['open_library: HTTP 500']);
+
+    fetch.route(() => ({ status: 503, body: {} }));
+    await expect(service.search({ title: 'emma' }, 5)).rejects.toBeInstanceOf(
+      LookupUnavailableError,
+    );
   });
 });

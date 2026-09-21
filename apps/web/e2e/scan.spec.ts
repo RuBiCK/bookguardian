@@ -239,7 +239,7 @@ test.describe('scan', () => {
     test.skip(!process.env.E2E_NETWORK, 'needs network access for tesseract.js assets');
     test.setTimeout(180_000);
     await page.route('**/api/lookup/search**', (route) =>
-      route.fulfill({ json: { items: [DRAFT] } }),
+      route.fulfill({ json: { items: [{ ...DRAFT, resultId: 'open_library:/books/OL1M' }] } }),
     );
     await page.goto('/scan');
     await page.getByRole('button', { name: en.scan.mode.cover }).tap();
