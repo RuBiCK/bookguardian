@@ -2,7 +2,7 @@
 
 Working rules for any AI coding harness (Claude Code, Codex, Cursor, Copilot,
 Multica runs, …) contributing to this repository. Humans are welcome to follow
-them too. `CLAUDE.md` is an alias for this file.
+them too.
 
 ## What this is
 
