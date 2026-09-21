@@ -1,7 +1,9 @@
 /**
  * Google Books volumes API (https://developers.google.com/books/docs/v1/using).
  * Works without a key but anonymous quota is tiny; set GOOGLE_BOOKS_API_KEY
- * in production. Used as the fallback when Open Library has no record.
+ * in production. Used as the fallback when Open Library has no record, and
+ * searched alongside it. Structured fields become the API's own operators
+ * (`intitle:`, `inauthor:`, `isbn:`, `inpublisher:`); it has no year field.
  */
 import type { BookDraft } from '@bookguardian/shared';
 import {
@@ -14,7 +16,7 @@ import {
   stringList,
   text,
 } from './normalize';
-import { fetchJson, type LookupProvider } from './types';
+import { fetchJson, type LookupProvider, type SearchQuery } from './types';
 
 interface GoogleImageLinks {
   thumbnail?: string;
@@ -80,6 +82,22 @@ function toDraft(volume: GoogleVolume): BookDraft | null {
   });
 }
 
+/** Quote a phrase for the `q` operators; Google reads `intitle:"dune messiah"` as one phrase. */
+const phrase = (value: string) => `"${value.replace(/"/g, ' ').replace(/\s+/g, ' ').trim()}"`;
+
+/** The `q` string for a structured query: free text plus one operator per field. */
+export function volumesQuery(query: SearchQuery): string {
+  return [
+    query.q,
+    query.title ? `intitle:${phrase(query.title)}` : null,
+    query.author ? `inauthor:${phrase(query.author)}` : null,
+    query.isbn13 ? `isbn:${query.isbn13}` : null,
+    query.publisher ? `inpublisher:${phrase(query.publisher)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 export function googleBooksProvider({ baseUrl, apiKey }: GoogleBooksOptions): LookupProvider {
   const base = baseUrl.replace(/\/$/, '');
   const name = 'google_books' as const;
@@ -111,7 +129,9 @@ export function googleBooksProvider({ baseUrl, apiKey }: GoogleBooksOptions): Lo
     },
 
     async search(query, limit, ctx) {
-      const { body } = await fetchJson<GoogleVolumesResponse>(ctx, name, volumesUrl(query, limit));
+      const q = volumesQuery(query);
+      if (!q) return []; // only a year: nothing Google can look up
+      const { body } = await fetchJson<GoogleVolumesResponse>(ctx, name, volumesUrl(q, limit));
       const drafts: BookDraft[] = [];
       for (const volume of body?.items ?? []) {
         const draft = toDraft(volume);

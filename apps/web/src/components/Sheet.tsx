@@ -30,11 +30,16 @@ const EXIT_MS = 200;
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Sheets currently open, bottom to top: only the topmost answers the keyboard. */
+const openSheets: symbol[] = [];
+
 /**
  * Bottom sheet: springs up from the tab bar edge so its controls sit in
  * thumb reach, slides back down when dismissed, and follows a finger that
  * drags the grip. Closes on backdrop tap, Escape and a downward swipe;
  * traps focus while open and hands it back to the control that opened it.
+ * Sheets stack (search results over the add form): Escape and the focus
+ * trap belong to the top one.
  */
 export function Sheet({ open, title, onClose, children, footer }: SheetProps) {
   const { t } = useTranslation();
@@ -96,11 +101,14 @@ export function Sheet({ open, title, onClose, children, footer }: SheetProps) {
   // Open: lock page scroll, listen for Escape, trap Tab, move focus in.
   useEffect(() => {
     if (!open) return;
+    const id = Symbol(titleId);
+    openSheets.push(id);
     openerRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (event: KeyboardEvent) => {
+      if (openSheets.at(-1) !== id) return;
       if (event.key === 'Escape') {
         onCloseRef.current();
         return;
@@ -126,13 +134,14 @@ export function Sheet({ open, title, onClose, children, footer }: SheetProps) {
     );
     (first ?? panelRef.current)?.focus();
     return () => {
+      openSheets.splice(openSheets.indexOf(id), 1);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKey);
       // Hand focus back to whatever opened the sheet, if it is still there.
       const opener = openerRef.current;
       if (opener?.isConnected) opener.focus();
     };
-  }, [open]);
+  }, [open, titleId]);
 
   const onGripDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.button || closing) return;

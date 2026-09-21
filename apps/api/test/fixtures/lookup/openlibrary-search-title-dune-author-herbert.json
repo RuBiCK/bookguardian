@@ -1,0 +1,64 @@
+{
+  "numFound": 2,
+  "start": 0,
+  "numFoundExact": true,
+  "num_found": 2,
+  "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+  "q": "",
+  "offset": null,
+  "docs": [
+    {
+      "author_name": ["Frank Herbert"],
+      "cover_i": 11481354,
+      "first_publish_year": 1965,
+      "key": "/works/OL893414W",
+      "number_of_pages_median": 607,
+      "title": "Dune",
+      "subject": ["Dune (Imaginary place)", "Fiction", "Science fiction"],
+      "editions": {
+        "numFound": 161,
+        "start": 0,
+        "numFoundExact": true,
+        "docs": [
+          {
+            "key": "/books/OL24347578M",
+            "title": "Dune",
+            "cover_i": 12645114,
+            "language": ["eng"],
+            "publisher": ["Ace Books"],
+            "publish_date": ["2005"],
+            "isbn": ["9780441013593", "0441013597"],
+            "number_of_pages": 528
+          }
+        ]
+      }
+    },
+    {
+      "author_name": ["Frank Herbert"],
+      "cover_i": 980253,
+      "first_publish_year": 1969,
+      "key": "/works/OL893461W",
+      "number_of_pages_median": 279,
+      "title": "Dune Messiah",
+      "subject": ["Dune (Imaginary place)", "Fiction", "Science fiction"],
+      "editions": {
+        "numFound": 60,
+        "start": 0,
+        "numFoundExact": true,
+        "docs": [
+          {
+            "key": "/books/OL7500946M",
+            "title": "Dune Messiah",
+            "subtitle": "Dune Chronicles, Book 2",
+            "cover_i": 8226196,
+            "language": ["eng"],
+            "publisher": ["Ace Books"],
+            "publish_date": ["1987"],
+            "isbn": ["9780441172696", "0441172695"],
+            "number_of_pages": 331
+          }
+        ]
+      }
+    }
+  ]
+}

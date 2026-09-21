@@ -4,7 +4,9 @@
  * ISBN lookups read the edition record, then the work (description, subjects)
  * and each author (names) — three small requests, all cached by the service.
  * Search asks for the best-matching edition per work (`editions.*` fields) so
- * a result carries one concrete ISBN, publisher and language.
+ * a result carries one concrete ISBN, publisher and language. Structured
+ * fields map onto the search API's own parameters (`title=`, `author=`,
+ * `isbn=`, `publisher=`); the year rides in `q` as a Solr field query.
  */
 import type { BookDraft } from '@bookguardian/shared';
 import {
@@ -17,7 +19,7 @@ import {
   stringList,
   text,
 } from './normalize';
-import { fetchJson, type LookupProvider, type ProviderContext } from './types';
+import { fetchJson, type LookupProvider, type ProviderContext, type SearchQuery } from './types';
 
 interface OlEdition {
   key?: string;
@@ -103,6 +105,20 @@ export interface OpenLibraryOptions {
   lang?: string;
 }
 
+/** The search API's own parameters for a structured query (`q` carries free text and the year). */
+export function searchParams(query: SearchQuery): URLSearchParams {
+  const params = new URLSearchParams();
+  const q = [query.q, query.year ? `first_publish_year:${query.year}` : null]
+    .filter(Boolean)
+    .join(' ');
+  if (q) params.set('q', q);
+  if (query.title) params.set('title', query.title);
+  if (query.author) params.set('author', query.author);
+  if (query.isbn13) params.set('isbn', query.isbn13);
+  if (query.publisher) params.set('publisher', query.publisher);
+  return params;
+}
+
 export function openLibraryProvider({ baseUrl, lang = 'en' }: OpenLibraryOptions): LookupProvider {
   const base = baseUrl.replace(/\/$/, '');
   const name = 'open_library' as const;
@@ -169,12 +185,10 @@ export function openLibraryProvider({ baseUrl, lang = 'en' }: OpenLibraryOptions
     },
 
     async search(query, limit, ctx) {
-      const params = new URLSearchParams({
-        q: query,
-        limit: String(limit),
-        lang,
-        fields: SEARCH_FIELDS,
-      });
+      const params = searchParams(query);
+      params.set('limit', String(limit));
+      params.set('lang', lang);
+      params.set('fields', SEARCH_FIELDS);
       const { body } = await fetchJson<OlSearchResponse>(
         ctx,
         name,

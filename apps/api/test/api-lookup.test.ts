@@ -54,6 +54,36 @@ describe('/api/lookup', () => {
     expect((await json(t.app, 'GET', '/api/lookup/search?q=dune&limit=99')).status).toBe(422);
   });
 
+  it('searches structured fields, deduplicated across providers with exact ISBN first', async () => {
+    const res = await json<LookupSearchResponse>(
+      t.app,
+      'GET',
+      '/api/lookup/search?title=Dune&author=Frank%20Herbert&q=&limit=10',
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.items.map((i) => [i.title, i.source, i.resultId])).toEqual([
+      ['Dune', 'open_library', 'open_library:/books/OL24347578M'],
+      ['Dune Messiah', 'open_library', 'open_library:/books/OL7500946M'],
+      ['Children of Dune', 'google_books', 'google_books:Ez1sAAAAMAAJ'],
+    ]);
+    expect(new Set(res.body.items.map((i) => i.isbn13)).size).toBe(3);
+
+    const exact = await json<LookupSearchResponse>(
+      t.app,
+      'GET',
+      '/api/lookup/search?author=Frank%20Herbert&isbn=0-441-10402-9',
+    );
+    expect(exact.body.items[0]).toMatchObject({ isbn13: '9780441104024', source: 'google_books' });
+
+    const nothing = await json<LookupSearchResponse>(t.app, 'GET', '/api/lookup/search?year=1965');
+    expect(nothing.status).toBe(200);
+    expect(nothing.body.items).toEqual([]);
+
+    expect((await json(t.app, 'GET', '/api/lookup/search?limit=3')).status).toBe(422);
+    expect((await json(t.app, 'GET', '/api/lookup/search?isbn=123')).status).toBe(422);
+    expect((await json(t.app, 'GET', '/api/lookup/search?title=&author=%20')).status).toBe(422);
+  });
+
   it('answers 503 when every provider is down', async () => {
     t.lookup.fetch.route(() => ({ status: 500, body: {} }));
     const res = await json<ErrorBody>(t.app, 'GET', '/api/lookup/isbn/9780441172719');
@@ -164,14 +194,31 @@ describe('/api/lookup with the shared catalogue', () => {
     expect(t.lookup.fetch.calls.filter((c) => c.includes('/isbn/'))).toHaveLength(1);
   });
 
+  it('upserts every structured-search hit with an ISBN into the catalogue', async () => {
+    const search = await json<LookupSearchResponse>(
+      t.app,
+      'GET',
+      '/api/lookup/search?title=Dune&author=Frank%20Herbert',
+    );
+    expect(search.body.items).toHaveLength(3);
+    expect(await t.repos.catalogBooks.count()).toBe(3);
+    const calls = providerCalls(t);
+    for (const { resultId: _id, ...draft } of search.body.items) {
+      const res = await json<BookDraft>(t.app, 'GET', `/api/lookup/isbn/${draft.isbn13}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(draft);
+    }
+    expect(providerCalls(t)).toBe(calls);
+  });
+
   it('fills the catalogue from search results so tapping a candidate is free', async () => {
     const search = await json<LookupSearchResponse>(
       t.app,
       'GET',
       '/api/lookup/search?q=dune&limit=5',
     );
-    const candidate = search.body.items.find((i) => i.isbn13)!;
-    expect(candidate).toBeDefined();
+    const { resultId, ...candidate } = search.body.items.find((i) => i.isbn13)!;
+    expect(resultId).toBe(`open_library:${candidate.sourceId}`);
     const calls = providerCalls(t);
     const res = await json<BookDraft>(t.app, 'GET', `/api/lookup/isbn/${candidate.isbn13}`);
     expect(res.status).toBe(200);

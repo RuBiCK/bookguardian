@@ -314,13 +314,14 @@ describe('DB-first lookup service', () => {
 
   it('stores search results opportunistically so a later ISBN lookup is free', async () => {
     const { service, fetch } = lookup();
-    const items = await service.search('dune', 5);
+    const items = await service.search({ q: 'dune' }, 5);
     const withIsbn = items.filter((i) => i.isbn13);
     expect(withIsbn.length).toBeGreaterThan(0);
     expect(await repos.catalogBooks.count()).toBe(withIsbn.length);
 
     const before = fetch.calls.length;
-    const target = withIsbn[0]!;
+    const { resultId, ...target } = withIsbn[0]!;
+    expect(resultId).toMatch(/^open_library:/);
     expect(await service.byIsbn(target.isbn13!)).toEqual(target);
     expect(fetch.calls.length).toBe(before);
 
@@ -338,7 +339,7 @@ describe('DB-first lookup service', () => {
         { fetchedAt: at(T0), refreshedAt: at(T0) },
       ),
     );
-    await other.service.search('dune', 5);
+    await other.service.search({ q: 'dune' }, 5);
     expect((await repos.catalogBooks.find(target.isbn13!))?.draft?.title).toBe('Full record');
   });
 
@@ -348,7 +349,7 @@ describe('DB-first lookup service', () => {
       saveIfUnknown: () => Promise.reject(new Error('disk full')),
     };
     const { service, log } = fixtureLookup({ catalog: broken, now: clock, fetch: fixtureFetch() });
-    expect((await service.search('dune', 2)).length).toBe(2);
+    expect((await service.search({ q: 'dune' }, 2)).length).toBe(2);
     expect(log[0]).toMatch(/^could not store \d{13}: disk full$/);
   });
 

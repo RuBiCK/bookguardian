@@ -5,6 +5,8 @@ export {
   createDefaultLookupService,
   createLookupService,
   LookupUnavailableError,
+  normalizeQuery,
   type LookupService,
 } from './service';
-export { ProviderError, type FetchLike, type LookupProvider } from './types';
+export { mergeResults, resultIdOf, score } from './rank';
+export { ProviderError, type FetchLike, type LookupProvider, type SearchQuery } from './types';

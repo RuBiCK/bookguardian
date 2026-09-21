@@ -1,8 +1,10 @@
 import {
   createBookInputSchema,
+  yearOf,
   type Book,
   type BookDraft,
   type CreateBookInput,
+  type LookupSearchInput,
 } from '@bookguardian/shared';
 import { emptyToNull, joinList, parseIsbn, splitList } from './format';
 
@@ -154,4 +156,69 @@ export function formToInput(values: BookFormValues): BookFormResult {
 
   if (Object.keys(errors).length > 0 || !parsed.success) return { ok: false, errors };
   return { ok: true, input: parsed.data };
+}
+
+/** Fields "Search online" can query; typing in any of them enables the search. */
+export const SEARCHABLE_FIELDS = ['title', 'authors', 'isbn', 'publisher', 'year'] as const;
+export type SearchableField = (typeof SEARCHABLE_FIELDS)[number];
+
+/**
+ * The lookup query for a half-filled form: every searchable field with text,
+ * the year reduced to four digits, an ISBN only when it is a real one (a
+ * mistyped ISBN would sink the whole search; Save reports it instead).
+ * Empty when there is nothing to search for.
+ */
+export function searchFieldsOf(values: BookFormValues): LookupSearchInput {
+  const fields: LookupSearchInput = {};
+  if (values.title.trim()) fields.title = values.title.trim();
+  if (values.authors.trim()) fields.author = values.authors.trim();
+  const isbn = parseIsbn(values.isbn);
+  if (isbn && isbn !== 'invalid') fields.isbn = isbn.isbn13;
+  if (values.publisher.trim()) fields.publisher = values.publisher.trim();
+  const year = yearOf(values.year);
+  if (year) fields.year = String(year);
+  return fields;
+}
+
+/** What the user typed and an online result disagree on: field → the online value, one tap to take it. */
+export type OnlineSuggestions = Partial<Record<BookFormField, string>>;
+
+const MERGEABLE_FIELDS = [
+  'title',
+  'authors',
+  'subtitle',
+  'publisher',
+  'year',
+  'pages',
+  'language',
+  'categories',
+  'description',
+] as const;
+
+const sameText = (a: string, b: string) =>
+  a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * Fill the form from a picked online result without losing what the user
+ * typed: empty fields take the result's value, filled ones are kept and the
+ * differing online value comes back as a suggestion chip. The ISBN is a key,
+ * not an opinion, so the result's always wins. The cover goes through the
+ * API's own pipeline — by ISBN when there is one, else from the provider URL.
+ */
+export function mergeDraftIntoForm(
+  values: BookFormValues,
+  draft: BookDraft,
+): { values: BookFormValues; suggestions: OnlineSuggestions } {
+  const online = draftToForm(draft);
+  const next = { ...values };
+  const suggestions: OnlineSuggestions = {};
+  for (const field of MERGEABLE_FIELDS) {
+    const theirs = online[field];
+    if (!theirs) continue;
+    if (!values[field].trim()) next[field] = theirs;
+    else if (!sameText(values[field], theirs)) suggestions[field] = theirs;
+  }
+  if (online.isbn) next.isbn = online.isbn;
+  if (!draft.isbn13 && draft.coverUrl && !values.coverUrl.trim()) next.coverUrl = draft.coverUrl;
+  return { values: next, suggestions };
 }
