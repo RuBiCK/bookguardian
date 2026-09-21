@@ -209,6 +209,12 @@ Before a screen ships:
   the book page, pull-to-refresh → data refetches on focus anyway).
 - `<html lang>` follows the active locale.
 
+## Reference screenshots
+
+`docs/design/screenshots/` holds the before/after pairs of the polish pass
+(BOOK-7) at 390 px in both themes — the visual baseline later work is
+compared against. Regenerate the "after" side with the screenshot tour below.
+
 ## Checking your work
 
 ```sh
