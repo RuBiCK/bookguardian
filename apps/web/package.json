@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@bookguardian/shared": "workspace:*",
+    "@tanstack/query-sync-storage-persister": "^5.102.8",
     "@tanstack/react-query": "^5.90.0",
+    "@tanstack/react-query-persist-client": "^5.102.8",
     "@tanstack/react-router": "^1.132.0",
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",

@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActiveLendings, useReturnLending } from '../../api/lending';
 import { EmptyState } from '../../components/EmptyState';
 import { BookCover } from '../../components/BookCover';
-import { LendingIcon } from '../../components/icons';
 import { LendingMeta } from '../../components/LendingPanel';
 import { Screen } from '../../components/Screen';
+import { CardListSkeleton } from '../../components/Skeleton';
 import { groupByBorrower } from '../../lib/lending';
+import { transitionName, useListTransitionActive, withViewTransition } from '../../lib/motion';
 import { showToast } from '../../lib/toast';
 
 export const Route = createFileRoute('/_app/lending')({
@@ -24,15 +26,17 @@ function LendingScreen() {
   const items = lendings.data ?? [];
   const groups = groupByBorrower(items);
   const overdue = items.filter((l) => l.overdue).length;
+  const naming = useListTransitionActive();
 
   return (
     <Screen title={t('lending.title')}>
       {lendings.isPending ? (
-        <p className="muted">{t('common.loading')}</p>
-      ) : lendings.isError ? (
+        <CardListSkeleton />
+      ) : lendings.data === undefined ? (
         <EmptyState
           title={t('errors.generic')}
           body={t('errors.network')}
+          illustration="offline"
           action={
             <button type="button" className="button" onClick={() => void lendings.refetch()}>
               {t('common.retry')}
@@ -43,7 +47,7 @@ function LendingScreen() {
         <EmptyState
           title={t('lending.empty.title')}
           body={t('lending.empty.body')}
-          icon={<LendingIcon />}
+          illustration="lending"
           action={
             <Link to="/" className="button button--primary">
               {t('nav.library')}
@@ -77,11 +81,19 @@ function LendingScreen() {
                 ) : null}
               </h2>
               <ul className="cards">
-                {group.items.map((lending) => (
+                {group.items.map((lending, i) => (
                   <li
                     key={lending.id}
                     className={`card lending-row${lending.overdue ? ' lending-row--overdue' : ''}`}
                     data-testid="lending-row"
+                    style={
+                      {
+                        '--i': i,
+                        viewTransitionName: naming
+                          ? transitionName('lending', lending.id)
+                          : undefined,
+                      } as CSSProperties
+                    }
                   >
                     <Link
                       to="/books/$bookId"
@@ -103,7 +115,7 @@ function LendingScreen() {
                       type="button"
                       className="button button--small"
                       onClick={() => {
-                        giveBack.mutate(lending);
+                        withViewTransition(() => giveBack.mutate(lending));
                         showToast(t('lending.returnedToast', { title: lending.book.title }));
                       }}
                     >

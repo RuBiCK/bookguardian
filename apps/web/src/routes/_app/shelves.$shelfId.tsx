@@ -7,6 +7,7 @@ import { BookSheet } from '../../components/BookSheet';
 import { EmptyState } from '../../components/EmptyState';
 import { Fab } from '../../components/Fab';
 import { Screen } from '../../components/Screen';
+import { BookGridSkeleton } from '../../components/Skeleton';
 
 export const Route = createFileRoute('/_app/shelves/$shelfId')({
   component: ShelfScreen,
@@ -25,14 +26,14 @@ function ShelfScreen() {
   if (shelves.isPending) {
     return (
       <Screen title={t('common.loading')} back={{ to: '/' }}>
-        <p className="muted">{t('common.loading')}</p>
+        <BookGridSkeleton />
       </Screen>
     );
   }
   if (!shelf) {
     return (
       <Screen title={t('errors.notFound')} back={{ to: '/' }}>
-        <EmptyState title={t('errors.notFound')} action={<span />} />
+        <EmptyState title={t('errors.notFound')} illustration="search" />
       </Screen>
     );
   }

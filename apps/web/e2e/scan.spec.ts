@@ -132,7 +132,9 @@ test.describe('scan', () => {
 
     const add = sheet.getByRole('button', { name: 'Add to My Library › Default' });
     await expect(add).toBeEnabled();
-    // The whole sheet, including the primary action, sits in thumb reach.
+    // The whole sheet, including the primary action, sits in thumb reach
+    // (measured once the sheet has finished springing up).
+    await sheet.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
     const box = await add.boundingBox();
     expect(box!.y + box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
     await add.tap();

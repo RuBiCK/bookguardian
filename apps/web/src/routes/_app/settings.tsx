@@ -7,6 +7,7 @@ import { useHealth } from '../../api/health';
 import { Avatar } from '../../components/Avatar';
 import { DeleteAccountSheet } from '../../components/DeleteAccountSheet';
 import { Screen } from '../../components/Screen';
+import { useInstallPrompt } from '../../lib/install';
 import { showToast } from '../../lib/toast';
 import { THEMES, useTheme } from '../../theme/useTheme';
 
@@ -94,12 +95,37 @@ function SettingsScreen() {
             </span>
           ) : null}
         </li>
+        <InstallRow />
         <li className="list__row">
           <span className="list__label">{t('app.name')}</span>
           <span className="list__value">{t('settings.version', { version: __APP_VERSION__ })}</span>
         </li>
       </ul>
     </Screen>
+  );
+}
+
+/** Put the app on the home screen: a button where the browser offers one, instructions on iOS. */
+function InstallRow() {
+  const { t } = useTranslation();
+  const { platform, install } = useInstallPrompt();
+  return (
+    <li className="list__row list__row--install" data-testid="install-row">
+      <span className="list__label">{t('install.label')}</span>
+      <span className="list__value" data-platform={platform}>
+        {platform === 'prompt' ? (
+          <button type="button" className="button button--small" onClick={() => void install()}>
+            {t('install.button')}
+          </button>
+        ) : platform === 'installed' ? (
+          t('install.installed')
+        ) : platform === 'ios' ? (
+          t('install.ios')
+        ) : (
+          t('install.unavailable')
+        )}
+      </span>
+    </li>
   );
 }
 

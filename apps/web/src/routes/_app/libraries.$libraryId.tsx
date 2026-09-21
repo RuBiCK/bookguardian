@@ -1,6 +1,6 @@
 import type { LibraryWithCounts, ShelfWithCount } from '@bookguardian/shared';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCreateShelf,
@@ -28,6 +28,7 @@ import {
 } from '../../components/icons';
 import { NameSheet } from '../../components/NameSheet';
 import { Screen } from '../../components/Screen';
+import { CardListSkeleton } from '../../components/Skeleton';
 import { showToast } from '../../lib/toast';
 
 export const Route = createFileRoute('/_app/libraries/$libraryId')({
@@ -70,14 +71,14 @@ function LibraryDetailScreen() {
   if (libraries.isPending || shelves.isPending) {
     return (
       <Screen title={t('common.loading')} back={{ to: '/' }}>
-        <p className="muted">{t('common.loading')}</p>
+        <CardListSkeleton />
       </Screen>
     );
   }
   if (!library) {
     return (
       <Screen title={t('errors.notFound')} back={{ to: '/' }}>
-        <EmptyState title={t('errors.notFound')} action={<span />} />
+        <EmptyState title={t('errors.notFound')} illustration="search" />
       </Screen>
     );
   }
@@ -146,7 +147,7 @@ function LibraryDetailScreen() {
         <EmptyState
           title={t('library.shelvesEmpty.title')}
           body={t('library.shelvesEmpty.body')}
-          icon={<ShelfIcon />}
+          illustration="shelves"
           action={
             <button
               type="button"
@@ -160,7 +161,7 @@ function LibraryDetailScreen() {
       ) : (
         <ul className="cards" data-testid="shelf-list">
           {list.map((shelf, index) => (
-            <li key={shelf.id}>
+            <li key={shelf.id} style={{ '--i': index } as CSSProperties}>
               {managing ? (
                 <ShelfManageRow
                   shelf={shelf}

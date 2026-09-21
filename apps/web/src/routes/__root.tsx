@@ -22,7 +22,7 @@ export function NotFound() {
   const { t } = useTranslation();
   return (
     <Screen title={t('errors.notFound')}>
-      <EmptyState title={t('errors.notFound')} action={<span />} />
+      <EmptyState title={t('errors.notFound')} illustration="search" />
     </Screen>
   );
 }

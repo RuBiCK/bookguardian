@@ -1,11 +1,12 @@
 import type { Book } from '@bookguardian/shared';
 import { Link } from '@tanstack/react-router';
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLentBookIds } from '../api/lending';
+import { markOpened, useIsLastOpened } from '../lib/last-opened';
+import { haptic } from '../lib/motion';
+import { useBookActions } from './useBookActions';
 import { BookCover } from './BookCover';
 import { StarIcon } from './icons';
-import { QuickActionsSheet } from './QuickActionsSheet';
 
 /** Grid tiles are a third of the screen on phones, a quarter from 480px up. */
 const TILE_SIZES = '(min-width: 480px) 25vw, 33vw';
@@ -21,12 +22,17 @@ interface BookCardProps {
   onLongPress?: (book: Book) => void;
 }
 
-/** Cover-first tile; `BookCover` draws a title/author card while there is no image. */
+/**
+ * Cover-first tile; `BookCover` draws a title/author card while there is no
+ * image. The last-opened book's cover carries the shared view-transition
+ * name, so it morphs into the book page hero and back.
+ */
 export function BookCard({ book, lent = false, onLongPress }: BookCardProps) {
   const { t } = useTranslation();
   const authors = book.authors.length > 0 ? book.authors.join(', ') : t('books.unknownAuthor');
   const press = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
   const fired = useRef(false);
+  const shared = useIsLastOpened(book.id);
 
   const cancel = () => {
     if (press.current) clearTimeout(press.current.timer);
@@ -42,6 +48,7 @@ export function BookCard({ book, lent = false, onLongPress }: BookCardProps) {
       timer: setTimeout(() => {
         press.current = null;
         fired.current = true;
+        haptic();
         onLongPress(book);
       }, LONG_PRESS_MS),
     };
@@ -63,6 +70,7 @@ export function BookCard({ book, lent = false, onLongPress }: BookCardProps) {
       className="book-card"
       data-testid="book-card"
       aria-label={`${book.title} — ${authors}`}
+      viewTransition
       onPointerDown={start}
       onPointerMove={move}
       onPointerUp={cancel}
@@ -73,7 +81,9 @@ export function BookCard({ book, lent = false, onLongPress }: BookCardProps) {
         if (fired.current) {
           event.preventDefault();
           fired.current = false;
+          return;
         }
+        markOpened(book.id);
       }}
       onContextMenu={(event) => {
         // Right-click on desktop, and the callout iOS would show, both become quick actions.
@@ -83,7 +93,10 @@ export function BookCard({ book, lent = false, onLongPress }: BookCardProps) {
         onLongPress(book);
       }}
     >
-      <span className="book-card__cover">
+      <span
+        className="book-card__cover"
+        style={shared ? { viewTransitionName: 'book-cover' } : undefined}
+      >
         <BookCover book={book} sizes={TILE_SIZES} />
         {book.readStatus !== 'to_read' ? (
           <span className={`book-card__badge book-card__badge--${book.readStatus}`}>
@@ -114,20 +127,18 @@ interface BookGridProps {
 
 /** Cover grid; a long press (or right-click) on any cover opens the quick actions sheet. */
 export function BookGrid({ books }: BookGridProps) {
-  const [quick, setQuick] = useState<Book | null>(null);
-  const lent = useLentBookIds();
-  // Show the live copy of the book so the sheet reflects optimistic updates.
-  const current = quick ? (books.find((b) => b.id === quick.id) ?? quick) : null;
+  const actions = useBookActions();
   return (
-    <>
-      <ul className="book-grid" data-testid="book-grid">
-        {books.map((book) => (
-          <li key={book.id}>
-            <BookCard book={book} lent={lent.has(book.id)} onLongPress={setQuick} />
-          </li>
-        ))}
-      </ul>
-      <QuickActionsSheet book={current} onClose={() => setQuick(null)} />
-    </>
+    <ul className="book-grid" data-testid="book-grid">
+      {books.map((book, i) => (
+        <li key={book.id} style={{ '--i': i } as CSSProperties}>
+          <BookCard
+            book={book}
+            lent={actions.lent.has(book.id)}
+            onLongPress={(b) => actions.open('quick', b)}
+          />
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -27,7 +27,6 @@
     "moveUp": "Subir",
     "moveDown": "Bajar",
     "optional": "opcional",
-    "comingSoon": "Próximamente",
     "search": "Buscar",
     "clear": "Limpiar",
     "confirm": "Confirmar",
@@ -39,7 +38,8 @@
     "notFound": "No encontramos esa página.",
     "saveFailed": "No se pudo guardar. Se ha deshecho el cambio.",
     "deleteFailed": "No se pudo eliminar. No se ha cambiado nada.",
-    "validation": "Revisa los campos marcados."
+    "validation": "Revisa los campos marcados.",
+    "offline": "Sin conexión. Los cambios no se guardarán hasta que vuelvas a estar en línea."
   },
   "auth": {
     "title": "Acceder",
@@ -185,6 +185,11 @@
       "readIn": "Leído en {{period}}",
       "status": "{{value}}",
       "clear": "Ver todos los libros"
+    },
+    "view": {
+      "label": "Vista",
+      "grid": "Cuadrícula",
+      "list": "Lista"
     },
     "search": {
       "action": "Buscar en línea",
@@ -405,5 +410,36 @@
     "title": "Título",
     "read": "Leídos recientemente",
     "rating": "Mejor valorados"
+  },
+  "offline": {
+    "title": "Sin conexión",
+    "body": "Mostrando tu biblioteca guardada. Los cambios se guardarán cuando vuelva la conexión."
+  },
+  "refresh": {
+    "pull": "Desliza para actualizar",
+    "release": "Suelta para actualizar",
+    "refreshing": "Actualizando…"
+  },
+  "quick": {
+    "lend": "Prestar",
+    "return": "Devuelto",
+    "markRead": "Marcar leído",
+    "markUnread": "Marcar no leído",
+    "move": "Mover",
+    "more": "Más acciones",
+    "swipeHint": "Desliza una fila a la izquierda para ver acciones rápidas"
+  },
+  "install": {
+    "label": "Instalar app",
+    "title": "Añade Bookguardian a tu pantalla de inicio",
+    "body": "Se abre a pantalla completa y tu biblioteca se puede leer sin conexión.",
+    "button": "Instalar",
+    "dismiss": "Ahora no",
+    "ios": "Toca Compartir y luego “Añadir a pantalla de inicio”.",
+    "installed": "Instalada",
+    "unavailable": "Abre este sitio en el navegador de tu móvil para instalarlo."
+  },
+  "a11y": {
+    "skipToContent": "Ir al contenido"
   }
 }

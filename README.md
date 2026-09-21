@@ -329,6 +329,7 @@ packages/shared/
 docs/
   adr/                    architecture decision records
   data-model.md           ER diagram and field notes
+  design.md               visual language: tokens, motion, gestures, offline, a11y rules
 Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on /data)
 ```
 
@@ -345,6 +346,9 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
   people using it (`TZ` in `.env` / Docker).
 - Every list has an empty state, every action is optimistic, everything must
   work with one thumb on a 390px-wide screen. Light and dark themes from day one.
+  Tap targets are 44px, motion respects `prefers-reduced-motion`, and the
+  library stays readable offline — the rules are in [docs/design.md](docs/design.md)
+  and the e2e suite audits them on 390px and 360px viewports.
 - One PR per issue, opened only after `pnpm lint && pnpm typecheck && pnpm test`
   pass locally. CI runs the same plus a build and the e2e smoke test.
 - Deviations from the stack are recorded as ADRs in `docs/adr/`.

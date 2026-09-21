@@ -3,8 +3,8 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useStats } from '../../api/stats';
 import { EmptyState } from '../../components/EmptyState';
-import { StatsIcon } from '../../components/icons';
 import { Screen } from '../../components/Screen';
+import { StatsSkeleton } from '../../components/Skeleton';
 import { BarRows, type BarRow } from '../../components/stats/BarRows';
 import { ColumnChart, type Column } from '../../components/stats/ColumnChart';
 import { DonutChart } from '../../components/stats/DonutChart';
@@ -39,11 +39,12 @@ function StatsScreen() {
   return (
     <Screen title={t('stats.title')}>
       {stats.isPending ? (
-        <p className="muted">{t('common.loading')}</p>
-      ) : stats.isError ? (
+        <StatsSkeleton />
+      ) : stats.data === undefined ? (
         <EmptyState
           title={t('errors.generic')}
           body={t('errors.network')}
+          illustration="offline"
           action={
             <button type="button" className="button" onClick={() => void stats.refetch()}>
               {t('common.retry')}
@@ -54,7 +55,7 @@ function StatsScreen() {
         <EmptyState
           title={t('stats.empty.title')}
           body={t('stats.empty.body')}
-          icon={<StatsIcon />}
+          illustration="stats"
           action={
             <Link to="/" className="button button--primary">
               {t('nav.library')}

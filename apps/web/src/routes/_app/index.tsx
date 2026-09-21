@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateLibrary, useLibraries } from '../../api/inventory';
 import { BookList } from '../../components/BookList';
@@ -7,9 +7,11 @@ import { BookSheet } from '../../components/BookSheet';
 import { EmptyState } from '../../components/EmptyState';
 import { Fab } from '../../components/Fab';
 import { ChevronRightIcon, LibraryIcon, PlusIcon } from '../../components/icons';
+import { InstallBanner } from '../../components/InstallBanner';
 import { NameSheet } from '../../components/NameSheet';
 import { Screen } from '../../components/Screen';
 import { SearchBar } from '../../components/SearchBar';
+import { CardListSkeleton } from '../../components/Skeleton';
 import { showToast } from '../../lib/toast';
 
 export const Route = createFileRoute('/_app/')({
@@ -40,16 +42,18 @@ function LibraryScreen() {
         </button>
       }
     >
+      {query.trim() ? null : <InstallBanner />}
       <SearchBar value={query} onChange={setQuery} placeholder={t('books.searchPlaceholder')} />
 
       {query.trim() ? (
         <BookList base={{ q: query.trim() }} />
       ) : libraries.isPending ? (
-        <p className="muted">{t('common.loading')}</p>
-      ) : libraries.isError ? (
+        <CardListSkeleton count={2} />
+      ) : libraries.data === undefined ? (
         <EmptyState
           title={t('errors.generic')}
           body={t('errors.network')}
+          illustration="offline"
           action={
             <button type="button" className="button" onClick={() => void libraries.refetch()}>
               {t('common.retry')}
@@ -60,7 +64,7 @@ function LibraryScreen() {
         <EmptyState
           title={t('library.empty.title')}
           body={t('library.empty.body')}
-          icon={<LibraryIcon />}
+          illustration="shelves"
           action={
             <button
               type="button"
@@ -73,8 +77,8 @@ function LibraryScreen() {
         />
       ) : (
         <ul className="cards" data-testid="library-list">
-          {libraries.data.map((library) => (
-            <li key={library.id}>
+          {libraries.data.map((library, i) => (
+            <li key={library.id} style={{ '--i': i } as CSSProperties}>
               <Link
                 to="/libraries/$libraryId"
                 params={{ libraryId: library.id }}

@@ -15,6 +15,9 @@ export function createAppRouter(context: RouterContext, history?: RouterHistory)
     history,
     defaultPreload: 'intent',
     scrollRestoration: true,
+    // Screens cross-fade and the tapped cover morphs into the book page
+    // (View Transitions API; a no-op where unsupported).
+    defaultViewTransition: true,
     // The session guard awaits `/api/auth/me` before the first screen renders:
     // show the app shell's splash meanwhile, never a flash of `/login`.
     defaultPendingComponent: Splash,

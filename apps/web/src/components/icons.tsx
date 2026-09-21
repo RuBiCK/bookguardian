@@ -135,3 +135,77 @@ export const ImageIcon = (props: IconProps) => (
     <path d="M21 16l-5-5-7 7M13 14l-2-2-5 5" />
   </svg>
 );
+
+export const GridIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </svg>
+);
+
+export const ListIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M8 6h13M8 12h13M8 18h13" />
+    <path d="M3 6h.01M3 12h.01M3 18h.01" strokeWidth={3} />
+  </svg>
+);
+
+export const MoreIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <circle cx="5" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="19" cy="12" r="1.2" fill="currentColor" />
+  </svg>
+);
+
+export const CheckIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </svg>
+);
+
+export const UndoIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M9 14L4 9l5-5" />
+    <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+  </svg>
+);
+
+export const MoveIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <path d="M9 13h6M13 11l2 2-2 2" />
+  </svg>
+);
+
+export const RefreshIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M20 12a8 8 0 1 1-2.3-5.7" />
+    <path d="M20 4v5h-5" />
+  </svg>
+);
+
+export const WifiOffIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M2 2l20 20" />
+    <path d="M5 12.5a10 10 0 0 1 3.4-2.4M8.5 16a5 5 0 0 1 3.5-1.5M2 9a15 15 0 0 1 5-3" />
+    <path d="M12.5 5.1A15 15 0 0 1 22 9M15.6 10.4A10 10 0 0 1 19 12.5" />
+    <path d="M12 19.5h.01" strokeWidth={3} />
+  </svg>
+);
+
+export const DownloadIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M12 4v11M7 10l5 5 5-5" />
+    <path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" />
+  </svg>
+);
+
+export const ShareIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M12 3v12M8 7l4-4 4 4" />
+    <path d="M5 11v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8" />
+  </svg>
+);
