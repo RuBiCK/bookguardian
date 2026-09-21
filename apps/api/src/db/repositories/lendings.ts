@@ -15,6 +15,8 @@ export interface LendingRepository {
   /** Newest first (by `lentAt`), optionally narrowed to open/returned ones or one book. */
   list(ownerId: string, filter?: LendingFilter): Promise<Lending[]>;
   listOpen(ownerId: string): Promise<Lending[]>;
+  /** How many books are out right now. */
+  countOpen(ownerId: string): Promise<number>;
   listByBook(ownerId: string, bookId: string): Promise<Lending[]>;
   /** The lending that currently keeps the book out, if any (at most one by rule). */
   findActiveByBook(ownerId: string, bookId: string): Promise<Lending | null>;
@@ -51,6 +53,8 @@ export function createLendingRepository(kit: DialectKit, tables: Tables): Lendin
     },
     list,
     listOpen: (ownerId) => list(ownerId, { active: true }),
+    countOpen: (ownerId) =>
+      kit.count(lendings, allOf(eq(lendings.ownerId, ownerId), isNull(lendings.returnedAt))),
     listByBook: (ownerId, bookId) => list(ownerId, { bookId }),
     async findActiveByBook(ownerId, bookId) {
       const [row] = await kit.select(lendings, {

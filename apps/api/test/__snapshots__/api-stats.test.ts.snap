@@ -1,0 +1,308 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`GET /api/stats > matches the snapshot for the fixture (fixed ids and clock) 1`] = `
+{
+  "byCategory": {
+    "other": 0,
+    "top": [
+      {
+        "count": 3,
+        "key": "Science fiction",
+      },
+      {
+        "count": 2,
+        "key": "Fantasy",
+      },
+      {
+        "count": 2,
+        "key": "Fiction",
+      },
+      {
+        "count": 1,
+        "key": "Cyberpunk",
+      },
+      {
+        "count": 1,
+        "key": "Essay",
+      },
+      {
+        "count": 1,
+        "key": "Magical realism",
+      },
+    ],
+  },
+  "byLanguage": {
+    "other": 0,
+    "top": [
+      {
+        "count": 6,
+        "key": "en",
+      },
+      {
+        "count": 1,
+        "key": "es",
+      },
+      {
+        "count": 1,
+        "key": "fr",
+      },
+    ],
+  },
+  "byLibrary": [
+    {
+      "count": 6,
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Home",
+    },
+    {
+      "count": 2,
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Office",
+    },
+  ],
+  "byRating": [
+    {
+      "count": 0,
+      "rating": 1,
+    },
+    {
+      "count": 0,
+      "rating": 2,
+    },
+    {
+      "count": 1,
+      "rating": 3,
+    },
+    {
+      "count": 2,
+      "rating": 4,
+    },
+    {
+      "count": 2,
+      "rating": 5,
+    },
+  ],
+  "byReadStatus": {
+    "read": 4,
+    "reading": 1,
+    "to_read": 3,
+  },
+  "byShelf": [
+    {
+      "count": 4,
+      "id": "00000000-0000-4000-8000-000000000003",
+      "libraryId": "00000000-0000-4000-8000-000000000001",
+      "libraryName": "Home",
+      "name": "Novels",
+    },
+    {
+      "count": 2,
+      "id": "00000000-0000-4000-8000-000000000005",
+      "libraryId": "00000000-0000-4000-8000-000000000002",
+      "libraryName": "Office",
+      "name": "Desk",
+    },
+    {
+      "count": 2,
+      "id": "00000000-0000-4000-8000-000000000004",
+      "libraryId": "00000000-0000-4000-8000-000000000001",
+      "libraryName": "Home",
+      "name": "Essays",
+    },
+    {
+      "count": 0,
+      "id": "00000000-0000-4000-8000-000000000006",
+      "libraryId": "00000000-0000-4000-8000-000000000002",
+      "libraryName": "Office",
+      "name": "Empty",
+    },
+  ],
+  "readByMonth": [
+    {
+      "count": 0,
+      "month": "2024-10",
+    },
+    {
+      "count": 0,
+      "month": "2024-11",
+    },
+    {
+      "count": 0,
+      "month": "2024-12",
+    },
+    {
+      "count": 1,
+      "month": "2025-01",
+    },
+    {
+      "count": 0,
+      "month": "2025-02",
+    },
+    {
+      "count": 0,
+      "month": "2025-03",
+    },
+    {
+      "count": 0,
+      "month": "2025-04",
+    },
+    {
+      "count": 0,
+      "month": "2025-05",
+    },
+    {
+      "count": 0,
+      "month": "2025-06",
+    },
+    {
+      "count": 0,
+      "month": "2025-07",
+    },
+    {
+      "count": 0,
+      "month": "2025-08",
+    },
+    {
+      "count": 0,
+      "month": "2025-09",
+    },
+    {
+      "count": 0,
+      "month": "2025-10",
+    },
+    {
+      "count": 0,
+      "month": "2025-11",
+    },
+    {
+      "count": 0,
+      "month": "2025-12",
+    },
+    {
+      "count": 0,
+      "month": "2026-01",
+    },
+    {
+      "count": 0,
+      "month": "2026-02",
+    },
+    {
+      "count": 0,
+      "month": "2026-03",
+    },
+    {
+      "count": 0,
+      "month": "2026-04",
+    },
+    {
+      "count": 0,
+      "month": "2026-05",
+    },
+    {
+      "count": 0,
+      "month": "2026-06",
+    },
+    {
+      "count": 0,
+      "month": "2026-07",
+    },
+    {
+      "count": 2,
+      "month": "2026-08",
+    },
+    {
+      "count": 0,
+      "month": "2026-09",
+    },
+  ],
+  "readByYear": [
+    {
+      "count": 1,
+      "year": "2019",
+    },
+    {
+      "count": 1,
+      "year": "2025",
+    },
+    {
+      "count": 2,
+      "year": "2026",
+    },
+  ],
+  "topAuthors": {
+    "other": 0,
+    "top": [
+      {
+        "count": 2,
+        "key": "Frank Herbert",
+      },
+      {
+        "count": 2,
+        "key": "Terry Pratchett",
+      },
+      {
+        "count": 1,
+        "key": "Gabriel García Márquez",
+      },
+      {
+        "count": 1,
+        "key": "Michel de Montaigne",
+      },
+      {
+        "count": 1,
+        "key": "Neil Gaiman",
+      },
+      {
+        "count": 1,
+        "key": "Virginia Woolf",
+      },
+      {
+        "count": 1,
+        "key": "William Gibson",
+      },
+    ],
+  },
+  "topPublishers": {
+    "other": 0,
+    "top": [
+      {
+        "count": 1,
+        "key": "Ace",
+      },
+      {
+        "count": 1,
+        "key": "Chilton",
+      },
+      {
+        "count": 1,
+        "key": "Colin Smythe",
+      },
+      {
+        "count": 1,
+        "key": "Gollancz",
+      },
+      {
+        "count": 1,
+        "key": "Hogarth",
+      },
+      {
+        "count": 1,
+        "key": "Putnam",
+      },
+      {
+        "count": 1,
+        "key": "Sudamericana",
+      },
+    ],
+  },
+  "totals": {
+    "books": 8,
+    "lent": 2,
+    "pages": 2076,
+    "rated": 5,
+    "read": 4,
+    "reading": 1,
+    "toRead": 3,
+  },
+}
+`;

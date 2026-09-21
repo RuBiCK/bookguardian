@@ -11,10 +11,15 @@ import { StatusChips } from './StatusChips';
 const RATING_OPTIONS = [5, 4, 3] as const;
 
 interface BookListProps {
-  /** Where the list is scoped: a shelf, a library, or a global search. */
-  base: Pick<BookFilter, 'shelfId' | 'libraryId' | 'q'>;
+  /**
+   * Where the list is scoped: a shelf, a library, a global search, or one of
+   * the Stats drill-downs (category, language, author, rating, read period).
+   */
+  base: Omit<BookFilter, 'readStatus' | 'minRating' | 'sort'>;
   /** Show a search box above the filters. */
   searchable?: boolean;
+  /** Status chip pressed on first render (a stats tile opening "Read" books). */
+  initialStatus?: ReadStatus;
   /** Offered by the empty state when nothing filters the list. */
   onAdd?: () => void;
 }
@@ -24,16 +29,29 @@ interface BookListProps {
  * library "Books" view and the global search. Filters are one tap each and
  * stay on one thumb-scrollable row.
  */
-export function BookList({ base, searchable = false, onAdd }: BookListProps) {
+export function BookList({ base, searchable = false, initialStatus, onAdd }: BookListProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<ReadStatus | undefined>(undefined);
+  const [status, setStatus] = useState<ReadStatus | undefined>(initialStatus);
   const [minRating, setMinRating] = useState<number | undefined>(undefined);
   const [sort, setSort] = useState<BookSort>('added');
 
-  const q = (searchable ? query : (base.q ?? '')).trim() || undefined;
-  const filtering = q !== undefined || status !== undefined || minRating !== undefined;
-  const books = useBooks({ ...base, q, readStatus: status, minRating, sort });
+  const { q: baseQuery, shelfId, libraryId, ...narrowing } = base;
+  const q = (searchable ? query : (baseQuery ?? '')).trim() || undefined;
+  const filtering =
+    q !== undefined ||
+    status !== undefined ||
+    minRating !== undefined ||
+    Object.values(narrowing).some((value) => value !== undefined);
+  const books = useBooks({
+    ...narrowing,
+    shelfId,
+    libraryId,
+    q,
+    readStatus: status,
+    minRating,
+    sort,
+  });
   const items = books.data?.pages.flatMap((p) => p.items) ?? [];
   const total = books.data?.pages[0]?.total ?? 0;
 

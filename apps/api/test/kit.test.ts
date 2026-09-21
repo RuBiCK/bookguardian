@@ -53,6 +53,40 @@ describeEachAdapter('dialect kit extensions', (adapterCase) => {
     ).toEqual([{ key: other.id, count: 1 }]);
   });
 
+  it('countByPrefix, countByJsonArray and sum aggregate for the stats', async () => {
+    const { kit, tables } = db.adapter;
+    const owned = eq(tables.books.ownerId, base.userId);
+    const add = (title: string, extra: Record<string, unknown>) =>
+      repos.books.create(base.userId, { shelfId: base.shelfId, title, ...extra });
+    await add('A', { readAt: '2026-01-10', authors: ['X', 'Y'], pages: 100 });
+    await add('B', { readAt: '2026-01-25', authors: ['X'], pages: 50 });
+    await add('C', { readAt: '2025-12-31', authors: [], pages: null });
+    await add('D', { readAt: null, authors: ['Z'] });
+
+    const sorted = (groups: { key: string; count: number }[]) =>
+      [...groups].sort((a, b) => a.key.localeCompare(b.key));
+    // NULLs are left out; the prefix length picks month or year.
+    expect(sorted(await kit.countByPrefix(tables.books, tables.books.readAt, 7, owned))).toEqual([
+      { key: '2025-12', count: 1 },
+      { key: '2026-01', count: 2 },
+    ]);
+    expect(sorted(await kit.countByPrefix(tables.books, tables.books.readAt, 4))).toEqual([
+      { key: '2025', count: 1 },
+      { key: '2026', count: 2 },
+    ]);
+    // One group per array element; a book with two authors counts towards both.
+    expect(sorted(await kit.countByJsonArray(tables.books, tables.books.authors, owned))).toEqual([
+      { key: 'X', count: 2 },
+      { key: 'Y', count: 1 },
+      { key: 'Z', count: 1 },
+    ]);
+    expect(
+      await kit.countByJsonArray(tables.books, tables.books.authors, eq(tables.books.title, 'C')),
+    ).toEqual([]);
+    expect(await kit.sum(tables.books, tables.books.pages, owned)).toBe(150);
+    expect(await kit.sum(tables.books, tables.books.pages, eq(tables.books.title, 'D'))).toBe(0);
+  });
+
   it('contains matches case-insensitively and treats wildcards literally', async () => {
     const { kit, tables } = db.adapter;
     await repos.books.create(base.userId, { shelfId: base.shelfId, title: '100% Wool' });

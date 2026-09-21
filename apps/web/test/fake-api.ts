@@ -8,6 +8,8 @@ import {
   isOverdue,
   normaliseRating,
   resolveReadAt,
+  STATS_MONTHS,
+  STATS_TOP_N,
   type AuthMeResponse,
   type Book,
   type BookDraft,
@@ -16,6 +18,7 @@ import {
   type LendingWithBook,
   type LibraryWithCounts,
   type ShelfWithCount,
+  type Stats,
 } from '@bookguardian/shared';
 import { vi } from 'vitest';
 
@@ -228,6 +231,73 @@ export function installFakeApi(): FakeApi {
       : sortedShelves(shelves.filter((s) => s.libraryId === libraries[0]?.id))[0];
     if (!shelf) throw new Error('fake api: no shelf');
     return { libraryId: shelf.libraryId, shelfId: shelf.id };
+  };
+
+  const computeStats = (): Stats => {
+    const groups = (values: (string | null)[]) => {
+      const counts = new Map<string, number>();
+      for (const v of values) if (v !== null) counts.set(v, (counts.get(v) ?? 0) + 1);
+      return [...counts]
+        .map(([key, count]) => ({ key, count }))
+        .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+    };
+    const topN = (all: { key: string; count: number }[]) => ({
+      top: all.slice(0, STATS_TOP_N),
+      other: all.slice(STATS_TOP_N).reduce((n, g) => n + g.count, 0),
+    });
+    const byStatus = (status: Book['readStatus']) =>
+      books.filter((b) => b.readStatus === status).length;
+    const read = books.filter((b) => b.readStatus === 'read' && b.readAt);
+    const today = new Date();
+    const months = Array.from({ length: STATS_MONTHS }, (_, i) => {
+      const d = new Date(today.getFullYear(), today.getMonth() - (STATS_MONTHS - 1 - i), 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const libraryName = new Map(libraries.map((l) => [l.id, l.name]));
+    const byShelf = shelves
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        libraryId: s.libraryId,
+        libraryName: libraryName.get(s.libraryId) ?? '',
+        count: bookCount(s.id),
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    return {
+      totals: {
+        books: books.length,
+        read: byStatus('read'),
+        reading: byStatus('reading'),
+        toRead: byStatus('to_read'),
+        lent: lendings.filter((l) => l.returnedAt === null).length,
+        rated: books.filter((b) => b.rating !== null).length,
+        pages: books.reduce((n, b) => n + (b.pages ?? 0), 0),
+      },
+      byLibrary: libraries
+        .map((l) => ({ id: l.id, name: l.name, count: withCounts(l).bookCount }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+      byShelf,
+      byReadStatus: {
+        to_read: byStatus('to_read'),
+        reading: byStatus('reading'),
+        read: byStatus('read'),
+      },
+      byCategory: topN(groups(books.flatMap((b) => b.categories))),
+      byLanguage: topN(groups(books.map((b) => b.language))),
+      byRating: [1, 2, 3, 4, 5].map((rating) => ({
+        rating,
+        count: books.filter((b) => b.rating === rating).length,
+      })),
+      readByMonth: months.map((month) => ({
+        month,
+        count: read.filter((b) => b.readAt!.startsWith(month)).length,
+      })),
+      readByYear: groups(read.map((b) => b.readAt!.slice(0, 4)))
+        .map((g) => ({ year: g.key, count: g.count }))
+        .sort((a, b) => a.year.localeCompare(b.year)),
+      topAuthors: topN(groups(books.flatMap((b) => b.authors))),
+      topPublishers: topN(groups(books.map((b) => b.publisher))),
+    };
   };
 
   const handle = (method: string, url: URL, body: unknown): Response => {
@@ -448,6 +518,9 @@ export function installFakeApi(): FakeApi {
       return json({ items: listLendings({ bookId: m[1] }) });
     }
 
+    // Stats: the same shape and rules as apps/api/src/stats.ts.
+    if (path === '/api/stats' && method === 'GET') return json(computeStats());
+
     // Books
     if (path === '/api/books' && method === 'GET') {
       let list = [...books];
@@ -463,6 +536,20 @@ export function installFakeApi(): FakeApi {
       if (readStatus) list = list.filter((b) => b.readStatus === readStatus);
       const minRating = Number(q.get('minRating') ?? 0);
       if (minRating) list = list.filter((b) => (b.rating ?? 0) >= minRating);
+      const rating = Number(q.get('rating') ?? 0);
+      if (rating) list = list.filter((b) => b.rating === rating);
+      const category = q.get('category');
+      if (category) list = list.filter((b) => b.categories.includes(category));
+      const author = q.get('author');
+      if (author) list = list.filter((b) => b.authors.includes(author));
+      const language = q.get('language');
+      if (language) list = list.filter((b) => b.language === language);
+      const publisher = q.get('publisher');
+      if (publisher) list = list.filter((b) => b.publisher === publisher);
+      const readFrom = q.get('readFrom');
+      if (readFrom) list = list.filter((b) => b.readAt !== null && b.readAt >= readFrom);
+      const readTo = q.get('readTo');
+      if (readTo) list = list.filter((b) => b.readAt !== null && b.readAt <= readTo);
       if (search) {
         list = list.filter((b) =>
           [

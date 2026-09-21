@@ -5,3 +5,4 @@ export * from './lending';
 export * from './lookup';
 export * from './covers';
 export * from './auth';
+export * from './stats';

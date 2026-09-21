@@ -5,7 +5,7 @@
  * Postgres adapter — wired but not yet exercised by an automated test.
  * Set `DB_DRIVER=postgres` and `DATABASE_URL=postgres://…` to use it.
  */
-import { count, ilike, sql, type Column, type SQL, type Table } from 'drizzle-orm';
+import { and, count, ilike, isNotNull, sql, type Column, type SQL, type Table } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -52,6 +52,31 @@ function createKit(db: PostgresJsDatabase): DialectKit {
         .where(where)
         .groupBy(column as unknown as PgColumn);
       return rows.map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    async countByPrefix(table: Table, column: Column, length: number, where?: SQL) {
+      const prefix = sql`substr(${column}, 1, ${length})`;
+      const rows = await db
+        .select({ key: prefix, count: count() })
+        .from(table as unknown as PgTable)
+        .where(and(isNotNull(column), where))
+        .groupBy(prefix);
+      return rows.map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    async countByJsonArray(table: Table, column: Column, where?: SQL) {
+      // The column is TEXT holding JSON; cast and unnest it.
+      const rows = await db.execute<{ key: unknown; count: unknown }>(
+        sql`select je.value as key, count(*) as count from ${table}, jsonb_array_elements_text(${column}::jsonb) as je(value) ${
+          where ? sql`where ${where}` : sql``
+        } group by je.value`,
+      );
+      return [...rows].map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    async sum(table: Table, column: Column, where?: SQL) {
+      const [row] = await db
+        .select({ value: sql<number | string | null>`sum(${column})` })
+        .from(table as unknown as PgTable)
+        .where(where);
+      return Number(row?.value ?? 0);
     },
     contains(column: Column, needle: string) {
       // Postgres LIKE is case-sensitive; ILIKE with the default `\` escape does the job.

@@ -20,6 +20,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import { apiRequest } from './client';
+import { statsKey } from './stats';
 
 export const lendingKeys = {
   all: ['lendings'] as const,
@@ -157,7 +158,11 @@ export function useLendBook(callbacks: MutationCallbacks<LendingWithBook> = {}) 
       context?.snap.restore();
       callbacks.onError?.(error);
     },
-    onSettled: () => client.invalidateQueries({ queryKey: lendingKeys.all }),
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: lendingKeys.all }),
+        client.invalidateQueries({ queryKey: statsKey }),
+      ]),
   });
 }
 
@@ -194,6 +199,10 @@ export function useReturnLending(callbacks: MutationCallbacks<LendingWithBook> =
       context?.snap.restore();
       callbacks.onError?.(error);
     },
-    onSettled: () => client.invalidateQueries({ queryKey: lendingKeys.all }),
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: lendingKeys.all }),
+        client.invalidateQueries({ queryKey: statsKey }),
+      ]),
   });
 }

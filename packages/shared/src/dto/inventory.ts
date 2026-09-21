@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { bookSchema, createBookInputSchema, readStatusSchema } from '../schemas/book';
-import { idSchema } from '../schemas/common';
+import { idSchema, isoDateSchema } from '../schemas/common';
 import { librarySchema } from '../schemas/library';
 import { shelfSchema } from '../schemas/shelf';
 import { paginationQuerySchema } from './common';
@@ -55,6 +55,18 @@ export const bookListQuerySchema = paginationQuerySchema.extend({
   /** Only books rated at least this many stars (1–5). */
   minRating: z.coerce.number().int().min(1).max(5).optional(),
   category: z.string().trim().min(1).max(120).optional(),
+  /** Exact language tag as stored ("en", "pt-BR"); case-insensitive. */
+  language: z.string().trim().min(1).max(16).optional(),
+  /** Exact author name (one of the book's authors); case-insensitive. */
+  author: z.string().trim().min(1).max(200).optional(),
+  /** Exact publisher; case-insensitive. */
+  publisher: z.string().trim().min(1).max(200).optional(),
+  /** Exactly this many stars (1–5). Combined with `minRating`, both apply. */
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+  /** Finished on or after this day (YYYY-MM-DD); implies a `read` status. */
+  readFrom: isoDateSchema.optional(),
+  /** Finished on or before this day (YYYY-MM-DD); implies a `read` status. */
+  readTo: isoDateSchema.optional(),
   sort: bookSortSchema.default('added'),
 });
 export type BookListQuery = z.infer<typeof bookListQuerySchema>;

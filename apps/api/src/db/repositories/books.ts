@@ -1,4 +1,4 @@
-import { asc, desc, eq, gte, inArray, isNotNull, isNull, or, type SQL } from 'drizzle-orm';
+import { asc, desc, eq, gte, inArray, isNotNull, isNull, lte, or, type SQL } from 'drizzle-orm';
 import {
   readStatusSchema,
   type Book,
@@ -7,7 +7,7 @@ import {
   type ReadStatus,
   type UpdateBookInput,
 } from '@bookguardian/shared';
-import type { DialectKit } from '../adapters/types';
+import type { DialectKit, GroupCount } from '../adapters/types';
 import type { Tables } from '../schema';
 import { allOf, newId, nowIso } from './base';
 
@@ -21,6 +21,16 @@ export interface BookSearch {
   minRating?: number;
   /** Exact category (matched against the stored JSON array). */
   category?: string;
+  /** Exact author (matched against the stored JSON array). */
+  author?: string;
+  /** Exact language tag / publisher as stored. */
+  language?: string;
+  publisher?: string;
+  /** Exactly this many stars. */
+  rating?: number;
+  /** Finished between these days (inclusive, `YYYY-MM-DD`); either bound alone works. */
+  readFrom?: string;
+  readTo?: string;
   sort?: BookSort;
   limit?: number;
   offset?: number;
@@ -64,6 +74,22 @@ export interface BookRepository {
   findMostRecent(ownerId: string): Promise<BookRecord | null>;
   /** Books per shelf id (shelves without books are absent from the map). */
   countByShelf(ownerId: string, shelfIds?: string[]): Promise<Map<string, number>>;
+  /** Books per read status (statuses with no book are absent). */
+  countByReadStatus(ownerId: string): Promise<Map<ReadStatus, number>>;
+  /** Books per star rating; unrated books are not counted. */
+  countByRating(ownerId: string): Promise<Map<number, number>>;
+  /** Books per language / publisher; books without one are not counted. */
+  countByLanguage(ownerId: string): Promise<GroupCount[]>;
+  countByPublisher(ownerId: string): Promise<GroupCount[]>;
+  /** Books per category / author (a book counts once towards each of its values). */
+  countByCategory(ownerId: string): Promise<GroupCount[]>;
+  countByAuthor(ownerId: string): Promise<GroupCount[]>;
+  /** Finished books per `YYYY-MM` from `fromMonth` on (months with none are absent). */
+  countReadByMonth(ownerId: string, fromMonth: string): Promise<GroupCount[]>;
+  /** Finished books per `YYYY` (years with none are absent). */
+  countReadByYear(ownerId: string): Promise<GroupCount[]>;
+  /** Pages summed over the books that record a page count. */
+  sumPages(ownerId: string): Promise<number>;
   /**
    * Books the cover cascade can still help: an ISBN, no cover, and no user
    * override. Every owner when `ownerId` is omitted (boot-time backfill).
@@ -153,6 +179,15 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
       if (search.category) {
         conditions.push(kit.contains(books.categories, JSON.stringify(search.category)));
       }
+      if (search.author) {
+        conditions.push(kit.contains(books.authors, JSON.stringify(search.author)));
+      }
+      if (search.language) conditions.push(eq(books.language, search.language));
+      if (search.publisher) conditions.push(eq(books.publisher, search.publisher));
+      if (search.rating) conditions.push(eq(books.rating, search.rating));
+      // A NULL read date never satisfies a bound, so only finished books match.
+      if (search.readFrom) conditions.push(gte(books.readAt, search.readFrom));
+      if (search.readTo) conditions.push(lte(books.readAt, search.readTo));
       if (search.q) {
         conditions.push(
           or(
@@ -190,6 +225,53 @@ export function createBookRepository(kit: DialectKit, tables: Tables): BookRepos
       const groups = await kit.countBy(books, books.shelfId, where);
       return new Map(groups.map((g) => [g.key, g.count]));
     },
+    async countByReadStatus(ownerId) {
+      const groups = await kit.countBy(books, books.readStatus, eq(books.ownerId, ownerId));
+      return new Map(groups.map((g) => [readStatusSchema.parse(g.key), g.count]));
+    },
+    async countByRating(ownerId) {
+      const groups = await kit.countBy(
+        books,
+        books.rating,
+        allOf(eq(books.ownerId, ownerId), isNotNull(books.rating)),
+      );
+      return new Map(groups.map((g) => [Number(g.key), g.count]));
+    },
+    countByLanguage: (ownerId) =>
+      kit.countBy(
+        books,
+        books.language,
+        allOf(eq(books.ownerId, ownerId), isNotNull(books.language)),
+      ),
+    countByPublisher: (ownerId) =>
+      kit.countBy(
+        books,
+        books.publisher,
+        allOf(eq(books.ownerId, ownerId), isNotNull(books.publisher)),
+      ),
+    countByCategory: (ownerId) =>
+      kit.countByJsonArray(books, books.categories, eq(books.ownerId, ownerId)),
+    countByAuthor: (ownerId) =>
+      kit.countByJsonArray(books, books.authors, eq(books.ownerId, ownerId)),
+    countReadByMonth: (ownerId, fromMonth) =>
+      kit.countByPrefix(
+        books,
+        books.readAt,
+        7,
+        allOf(
+          eq(books.ownerId, ownerId),
+          eq(books.readStatus, 'read'),
+          gte(books.readAt, fromMonth),
+        ),
+      ),
+    countReadByYear: (ownerId) =>
+      kit.countByPrefix(
+        books,
+        books.readAt,
+        4,
+        allOf(eq(books.ownerId, ownerId), eq(books.readStatus, 'read')),
+      ),
+    sumPages: (ownerId) => kit.sum(books, books.pages, eq(books.ownerId, ownerId)),
     async listMissingCovers(ownerId) {
       const conditions: SQL[] = [
         isNotNull(books.isbn13),

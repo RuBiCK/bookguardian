@@ -175,6 +175,16 @@
       "removed": "Back to the catalogue cover",
       "pending": "Looking for a cover…",
       "own": "Your photo"
+    },
+    "filtered": {
+      "category": "Category · {{value}}",
+      "language": "Language · {{value}}",
+      "author": "Author · {{value}}",
+      "publisher": "Publisher · {{value}}",
+      "rating": "Rated {{count}} ★",
+      "readIn": "Read in {{period}}",
+      "status": "{{value}}",
+      "clear": "Show all books"
     }
   },
   "scan": {
@@ -272,7 +282,41 @@
   },
   "stats": {
     "title": "Stats",
-    "placeholder": "Reading stats and charts will appear here."
+    "empty": {
+      "title": "Nothing to count yet",
+      "body": "Add a few books and your library takes shape here."
+    },
+    "hero": {
+      "books": "Books",
+      "read": "Read",
+      "toRead": "To read",
+      "lent": "Lent out"
+    },
+    "pages_one": "{{count}} page on your shelves",
+    "pages_other": "{{count}} pages on your shelves",
+    "section": {
+      "readStatus": "Reading status",
+      "libraries": "By library",
+      "shelves": "By shelf",
+      "categories": "Categories",
+      "languages": "Languages",
+      "ratings": "Ratings",
+      "timeline": "Read per month",
+      "years": "Read per year",
+      "authors": "Top authors",
+      "publishers": "Top publishers"
+    },
+    "lastMonths": "Last {{count}} months",
+    "other": "Other",
+    "unrated_one": "{{count}} book not rated yet",
+    "unrated_other": "{{count}} books not rated yet",
+    "noneYet": "None yet",
+    "noneRead": "No books finished in this period.",
+    "show": "Show {{what}}",
+    "chart": {
+      "bar": "{{label}}: {{count}} books",
+      "month": "{{month}}: {{count}} books"
+    }
   },
   "settings": {
     "title": "Settings",
