@@ -9,11 +9,26 @@ export interface ProviderContext {
   timeoutMs: number;
 }
 
+/**
+ * What a search asks for: free text (an OCR guess, "dune herbert") and/or
+ * the fields of a partially filled add-book form. Every field is optional
+ * but at least one is set; the ISBN is already normalised to 13 digits.
+ */
+export interface SearchQuery {
+  q?: string;
+  title?: string;
+  author?: string;
+  isbn13?: string;
+  publisher?: string;
+  year?: number;
+}
+
 export interface LookupProvider {
   readonly name: BookSource;
   /** `null` when the provider knows nothing about this ISBN-13. */
   byIsbn(isbn13: string, ctx: ProviderContext): Promise<BookDraft | null>;
-  search(query: string, limit: number, ctx: ProviderContext): Promise<BookDraft[]>;
+  /** Best matches, most relevant first; structured fields are used where the provider supports them. */
+  search(query: SearchQuery, limit: number, ctx: ProviderContext): Promise<BookDraft[]>;
 }
 
 /** Thrown by providers on network failure / non-2xx replies; the service degrades gracefully. */

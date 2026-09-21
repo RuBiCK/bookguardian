@@ -378,11 +378,31 @@ export function installFakeApi(): FakeApi {
         return draft ? json(draft) : error(404, 'isbn_not_found', { isbn: m[1] });
       }
       if (path === '/api/lookup/search') {
-        const needle = q.get('q')?.toLowerCase() ?? '';
         const limit = Number(q.get('limit') ?? 5);
+        // Word-wise, like a real provider: "F. Herbert" still finds Frank Herbert.
+        const has = (haystack: string, field: string) => {
+          const words = (q.get(field) ?? '')
+            .toLowerCase()
+            .split(/[^\p{L}\p{N}]+/u)
+            .filter(Boolean);
+          return words.every((word) => haystack.toLowerCase().includes(word));
+        };
+        if (!['q', 'title', 'author', 'isbn', 'publisher', 'year'].some((f) => q.get(f)?.trim()))
+          return error(422, 'validation_error');
+        // Like the real thing: structured fields narrow, exact ISBN first, stable ids.
+        const isbn = q.get('isbn')?.replace(/[^0-9X]/gi, '');
         const items = lookup.searchResults
-          .filter((d) => [d.title, ...d.authors].join(' ').toLowerCase().includes(needle))
-          .slice(0, limit);
+          .filter(
+            (d) =>
+              has([d.title, ...d.authors].join(' '), 'q') &&
+              has(`${d.title} ${d.subtitle ?? ''}`, 'title') &&
+              has(d.authors.join(' '), 'author') &&
+              has(d.publisher ?? '', 'publisher') &&
+              (!q.get('year') || (d.publishedDate ?? '').includes(q.get('year')!)),
+          )
+          .sort((a, b) => Number(b.isbn13 === isbn) - Number(a.isbn13 === isbn))
+          .slice(0, limit)
+          .map((d) => ({ ...d, resultId: `${d.source}:${d.sourceId ?? d.isbn13 ?? d.title}` }));
         return json({ items });
       }
     }

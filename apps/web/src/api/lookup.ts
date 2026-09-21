@@ -3,7 +3,13 @@
  * server caches per ISBN, and TanStack Query caches per key on the client so
  * re-opening the same result never refetches.
  */
-import { bookDraftSchema, lookupSearchResponseSchema, type BookDraft } from '@bookguardian/shared';
+import {
+  bookDraftSchema,
+  lookupSearchResponseSchema,
+  type BookDraft,
+  type LookupSearchInput,
+  type LookupSearchResult,
+} from '@bookguardian/shared';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { ApiClientError, apiRequest } from './client';
 
@@ -11,6 +17,17 @@ export const lookupKeys = {
   isbn: (isbn13: string) => ['lookup', 'isbn', isbn13] as const,
   search: (q: string, limit: number) => ['lookup', 'search', q, limit] as const,
 };
+
+/** Only fields with text travel on the query string (the API treats blanks as absent anyway). */
+export function searchParamsFor(query: string | LookupSearchInput, limit: number): URLSearchParams {
+  const params = new URLSearchParams();
+  const fields = typeof query === 'string' ? { q: query } : query;
+  for (const [field, value] of Object.entries(fields)) {
+    if (value?.trim()) params.set(field, value.trim());
+  }
+  params.set('limit', String(limit));
+  return params;
+}
 
 /** `null` means "no catalogue knows this ISBN" (a 404), which is not an error for the UI. */
 export async function lookupIsbn(isbn13: string): Promise<BookDraft | null> {
@@ -22,10 +39,21 @@ export async function lookupIsbn(isbn13: string): Promise<BookDraft | null> {
   }
 }
 
-export async function searchBooks(q: string, limit = 5): Promise<BookDraft[]> {
-  const params = new URLSearchParams({ q, limit: String(limit) });
-  return (await apiRequest(`/api/lookup/search?${params.toString()}`, lookupSearchResponseSchema))
-    .items;
+/**
+ * Free text (OCR guess) or the structured fields of a half-filled form.
+ * Pass a `signal` to drop the request when the user moves on.
+ */
+export async function searchBooks(
+  query: string | LookupSearchInput,
+  limit = 5,
+  signal?: AbortSignal,
+): Promise<LookupSearchResult[]> {
+  const params = searchParamsFor(query, limit);
+  return (
+    await apiRequest(`/api/lookup/search?${params.toString()}`, lookupSearchResponseSchema, {
+      signal,
+    })
+  ).items;
 }
 
 export const isbnLookupQueryOptions = (isbn13: string) =>

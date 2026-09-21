@@ -18,8 +18,9 @@ process.env.E2E_STORAGE_STATE = storageState;
  * CI needs no WebKit system deps; switch `browserName` to 'webkit' locally to
  * exercise Safari-specific behaviour.
  *
- * Three servers are started: a stand-in for Open Library (`providers-stub.mjs`,
- * so the cover cascade runs end to end without the network), the API (SQLite
+ * Three servers are started: a stand-in for Open Library and Google Books
+ * (`providers-stub.mjs`, so metadata search and the cover cascade run end to
+ * end without the network), the API (SQLite
  * and covers in a temp dir, migrated and seeded with the local user, providers
  * pointed at the stub, NODE_ENV=test for the sign-in seam) and the built web
  * app served by `vite preview`, which proxies /api to it. `global-setup.ts`
@@ -68,6 +69,7 @@ export default defineConfig({
         COVERS_DIR: join(tmp, 'covers'),
         OPEN_LIBRARY_URL: `http://localhost:${STUB_PORT}`,
         OPEN_LIBRARY_COVERS_URL: `http://localhost:${STUB_PORT}`,
+        GOOGLE_BOOKS_URL: `http://localhost:${STUB_PORT}`,
         // No pacing, and misses expire at once so the backfill re-checks them.
         COVERS_MIN_INTERVAL_MS: '0',
         COVERS_MISS_DAYS: '0',
