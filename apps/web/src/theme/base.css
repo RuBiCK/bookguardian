@@ -2004,3 +2004,296 @@ select.field__input {
   color: var(--accent-contrast);
   font-weight: 700;
 }
+
+/* ---- Stats tab -------------------------------------------------------- */
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stats__pages {
+  margin: calc(-1 * var(--space-1)) 0 0;
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* Hero row: four headline numbers. */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 359px) {
+  .stat-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 72px;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stat-tile:active {
+  background: var(--bg-sunken);
+}
+
+.stat-tile__value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.stat-tile__label {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+}
+
+.stats-card {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.stats-card__header {
+  margin-bottom: var(--space-3);
+}
+
+.stats-card__title {
+  font-size: var(--text-md);
+}
+
+.stats-card__meta {
+  margin: 2px 0 0;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+
+/* Horizontal bars: label · bar · value, each row a tap target. */
+.bar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 42%) 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a.bar-row:active {
+  background: var(--bg-sunken);
+}
+
+.bar-row__label {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-row--static .bar-row__label {
+  color: var(--fg-muted);
+}
+
+.bar-row__track {
+  display: block;
+  height: 10px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart-track);
+}
+
+.bar-row__fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart-1);
+  transition: width 300ms var(--ease);
+}
+
+.bar-row__value {
+  min-width: 2ch;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Columns over an ordered axis (months, stars). */
+.columns {
+  display: flex;
+  flex-direction: column;
+}
+
+.columns__plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+  border-bottom: 1px solid var(--border);
+}
+
+.column {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  height: 100%;
+  padding-top: 18px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a.column:active {
+  background: var(--bg-sunken);
+}
+
+.column__bar {
+  display: block;
+  width: 100%;
+  max-width: 24px;
+  border-radius: 4px 4px 0 0;
+  background: var(--chart-1);
+  transition: height 300ms var(--ease);
+}
+
+.column__value {
+  position: absolute;
+  top: 0;
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.columns__axis {
+  display: flex;
+  gap: 2px;
+  margin-top: var(--space-1);
+}
+
+.columns__tick {
+  display: flex;
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
+  color: var(--fg-subtle);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* Donut: part-to-whole with the total in the middle, legend as tap targets. */
+.donut {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.donut__svg {
+  width: 120px;
+  height: 120px;
+}
+
+.donut__track {
+  fill: none;
+  stroke: var(--chart-track);
+}
+
+.donut__segment {
+  fill: none;
+  cursor: pointer;
+}
+
+.donut__total {
+  fill: var(--fg);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.donut__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.legend-row:active {
+  background: var(--bg-sunken);
+}
+
+.legend-row__swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-row__label {
+  flex: 1;
+  font-size: var(--text-sm);
+}
+
+.legend-row__value {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filtered book list opened from a stats segment. */
+.filter-note {
+  margin: 0 0 var(--space-3);
+}

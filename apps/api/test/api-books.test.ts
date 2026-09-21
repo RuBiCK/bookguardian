@@ -344,6 +344,27 @@ describe('/api/books', () => {
       expect((await json(t.app, 'GET', '/api/books?limit=0')).status).toBe(422);
     });
 
+    it('filters by author, language, publisher, exact rating and read date range (stats drill-down)', async () => {
+      await add({ title: 'Dune Messiah', authors: ['Frank Herbert'], language: 'en' });
+      expect((await titles('?author=Frank%20Herbert')).titles).toEqual(['Dune Messiah', 'Dune']);
+      expect((await titles('?author=frank%20herbert')).titles).toEqual(['Dune Messiah', 'Dune']);
+      expect((await titles('?author=Herbert')).titles).toEqual([]);
+      expect((await titles('?language=en')).titles).toEqual(['Dune Messiah']);
+      expect((await titles('?publisher=Faber')).titles).toEqual(['Zorba']);
+      expect((await titles('?rating=5')).titles).toEqual(['Dune']);
+      expect((await titles('?rating=4&minRating=5')).titles).toEqual([]);
+      // Bounds are inclusive days; unread books (no read date) never match.
+      expect((await titles('?readFrom=2024-03-01&readTo=2024-03-31')).titles).toEqual(['Dune']);
+      expect((await titles('?readFrom=2024-04-01')).titles).toEqual(['Neuromancer']);
+      expect((await titles('?readTo=2024-06-14')).titles).toEqual(['Dune']);
+      expect((await titles('?readFrom=2024-01-01&readTo=2024-12-31')).titles).toEqual([
+        'Neuromancer',
+        'Dune',
+      ]);
+      expect((await json(t.app, 'GET', '/api/books?rating=6')).status).toBe(422);
+      expect((await json(t.app, 'GET', '/api/books?readFrom=2024-3-1')).status).toBe(422);
+    });
+
     it('filters by minimum rating and sorts by rating or recently read', async () => {
       expect((await titles('?minRating=4')).titles).toEqual(['Zorba', 'Dune']);
       expect((await titles('?minRating=5')).titles).toEqual(['Dune']);

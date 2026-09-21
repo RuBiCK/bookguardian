@@ -175,6 +175,16 @@
       "removed": "Vuelve la portada del catálogo",
       "pending": "Buscando portada…",
       "own": "Tu foto"
+    },
+    "filtered": {
+      "category": "Categoría · {{value}}",
+      "language": "Idioma · {{value}}",
+      "author": "Autor · {{value}}",
+      "publisher": "Editorial · {{value}}",
+      "rating": "Valorado con {{count}} ★",
+      "readIn": "Leído en {{period}}",
+      "status": "{{value}}",
+      "clear": "Ver todos los libros"
     }
   },
   "scan": {
@@ -272,7 +282,41 @@
   },
   "stats": {
     "title": "Estadísticas",
-    "placeholder": "Aquí aparecerán tus estadísticas y gráficas de lectura."
+    "empty": {
+      "title": "Aún no hay nada que contar",
+      "body": "Añade unos libros y tu biblioteca tomará forma aquí."
+    },
+    "hero": {
+      "books": "Libros",
+      "read": "Leídos",
+      "toRead": "Por leer",
+      "lent": "Prestados"
+    },
+    "pages_one": "{{count}} página en tus estanterías",
+    "pages_other": "{{count}} páginas en tus estanterías",
+    "section": {
+      "readStatus": "Estado de lectura",
+      "libraries": "Por biblioteca",
+      "shelves": "Por estantería",
+      "categories": "Categorías",
+      "languages": "Idiomas",
+      "ratings": "Valoraciones",
+      "timeline": "Leídos por mes",
+      "years": "Leídos por año",
+      "authors": "Autores más leídos",
+      "publishers": "Editoriales"
+    },
+    "lastMonths": "Últimos {{count}} meses",
+    "other": "Otros",
+    "unrated_one": "{{count}} libro sin valorar",
+    "unrated_other": "{{count}} libros sin valorar",
+    "noneYet": "Todavía ninguno",
+    "noneRead": "Ningún libro terminado en este periodo.",
+    "show": "Mostrar {{what}}",
+    "chart": {
+      "bar": "{{label}}: {{count}} libros",
+      "month": "{{month}}: {{count}} libros"
+    }
   },
   "settings": {
     "title": "Ajustes",

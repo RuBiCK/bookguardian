@@ -34,6 +34,20 @@ export interface DialectKit {
   /** `SELECT column, count(*) … GROUP BY column`; keys are stringified column values. */
   countBy(table: Table, column: Column, where?: SQL): Promise<GroupCount[]>;
   /**
+   * `countBy` over the first `length` characters of a text column — how the
+   * stats bucket `YYYY-MM-DD` dates per month (7) or year (4). Rows where the
+   * column is NULL are left out.
+   */
+  countByPrefix(table: Table, column: Column, length: number, where?: SQL): Promise<GroupCount[]>;
+  /**
+   * `countBy` over the elements of a JSON string-array column (`authors`,
+   * `categories`): one group per distinct element, counting the rows that
+   * contain it. A row with several elements counts once towards each.
+   */
+  countByJsonArray(table: Table, column: Column, where?: SQL): Promise<GroupCount[]>;
+  /** `SELECT sum(column)` over an integer column, `0` when nothing matches. */
+  sum(table: Table, column: Column, where?: SQL): Promise<number>;
+  /**
    * Case-insensitive substring match on a text column, safe to feed user
    * input (`%`, `_` and `\` in `needle` are matched literally).
    */

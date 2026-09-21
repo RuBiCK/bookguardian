@@ -312,12 +312,14 @@ apps/
       lookup/             Open Library / Google Books providers + catalogue-first service
       covers/             cover cascade, WebP store, queue + backfill + GC (ADR 0004)
       inventory.ts        library/shelf/book use-cases (defaults, cascade rules, book DTO)
+      stats.ts            GET /api/stats: grouped counts from the kit, shaped for the Stats tab
       auth/               Google OIDC client, account resolution, sessions, auth middleware (ADR 0005)
       db/migrate.ts       migration runner    db/seed.ts  seed
   web/
     src/routes/           TanStack file routes: login.tsx (bare) + _app/ (session guard, tab bar,
-                          libraries/$id, shelves/$id, books/$id…)
-    src/components/       app shell + inventory UI (Sheet, BookSheet, BookGrid, ShelfPicker…)
+                          libraries/$id, shelves/$id, books/$id, books/ (filtered list), stats…)
+    src/components/       app shell + inventory UI (Sheet, BookSheet, BookGrid, ShelfPicker…);
+                          stats/ holds the chart pieces (StatTiles, DonutChart, ColumnChart, BarRows)
     src/theme/            CSS variables (light/dark) + theme hook
     src/api/              typed fetch client (401 → /login) + TanStack Query hooks; auth.ts = session
     e2e/                  Playwright (iPhone 14); providers-stub.mjs stands in for Open Library;
@@ -369,7 +371,7 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 | `GET`    | `/api/shelves/:id`                       | One shelf with `bookCount`                                                                                                                                                                        |
 | `PATCH`  | `/api/shelves/:id`                       | Update `{ name?, sortOrder? }`                                                                                                                                                                    |
 | `DELETE` | `/api/shelves/:id[?moveBooksTo=shelf]`   | Delete shelf. 409 `shelf_not_empty` without a destination; 409 `last_shelf` for a library's only shelf → `{ movedBooks }`                                                                         |
-| `GET`    | `/api/books`                             | `{ items, total, limit, offset }`. Filters: `q` (title/subtitle/authors/publisher/ISBN), `libraryId`, `shelfId`, `readStatus`, `minRating` (1–5), `category`, `sort=added\|title\|read\|rating`   |
+| `GET`    | `/api/books`                             | `{ items, total, limit, offset }`; filters below: `q`, `libraryId`, `shelfId`, `readStatus`, `minRating`, `rating`, `category`, `author`, `language`, `publisher`, `readFrom`/`readTo`, `sort`    |
 | `POST`   | `/api/books`                             | Create; only `title` is required, `shelfId` defaults to `/api/defaults` → 201                                                                                                                     |
 | `GET`    | `/api/books/:id`                         | One book                                                                                                                                                                                          |
 | `PATCH`  | `/api/books/:id`                         | Partial update (any book field, including `shelfId`). Reading rules apply — see below                                                                                                             |
@@ -386,6 +388,7 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 | `GET`    | `/api/lendings/borrowers`                | `{ items: Borrower[] }` — everyone lent to before, most recent first, for the autocomplete                                                                                                        |
 | `GET`    | `/api/lendings/:id`                      | One lending with its book summary                                                                                                                                                                 |
 | `POST`   | `/api/lendings/:id/return`               | `{ returnedAt? }` (default now) → the closed lending. 409 `already_returned`; 422 `returned_before_lent`                                                                                          |
+| `GET`    | `/api/stats`                             | Library statistics for the caller — totals, books per library / shelf / status / category / language / rating, read per month (last 24) and year, top authors and publishers (see below)          |
 | `GET`    | `/api/lookup/isbn/:isbn`                 | Catalogue metadata for an ISBN-10/13 (hyphens allowed) as a `BookDraft`; 404 `isbn_not_found`, 503 `lookup_unavailable` when every provider is down                                               |
 | `GET`    | `/api/lookup/search?q=&limit=`           | `{ items: BookDraft[] }` — free-text title/author search (limit 1–10, default 5)                                                                                                                  |
 
@@ -395,6 +398,17 @@ it. Without a valid session, everything but `/api/health` and `/api/auth/*` is
 `401 unauthenticated`.
 
 Errors always use the shared envelope `{ error: { code, message, details? } }`.
+
+### Listing books
+
+`GET /api/books` filters compose (every one given must hold): `q` is a
+case-insensitive substring of title / subtitle / authors / publisher / ISBN;
+`libraryId` / `shelfId` scope the list; `readStatus`, `minRating` (at least
+this many stars) and `rating` (exactly this many) narrow by reading life;
+`category` and `author` match one stored value exactly (case-insensitive),
+`language` and `publisher` match as stored; `readFrom` / `readTo` keep books
+finished between those days (inclusive `YYYY-MM-DD`, so unread books never
+match). `sort` is `added` (default) | `title` | `read` | `rating`.
 
 ### Reading life
 
@@ -421,6 +435,32 @@ strictly before today — the due day itself is not overdue yet. The API stamps
 a `book` summary (`id`, `title`, `authors`, `coverUrl`, `shelfId`) so the
 Lending tab needs a single request; the web app derives "N days out"
 (`daysOut`) and the cover badges from the same list.
+
+### Statistics
+
+`GET /api/stats` answers "how big is my library and what is in it" in one
+request (`apps/api/src/stats.ts`, shape in `packages/shared/src/dto/stats.ts`).
+Every count is computed by the database through the adapter kit — grouped
+counts (`countBy`), grouped counts over the first characters of a date
+(`countByPrefix`, month / year) and over the elements of a JSON array column
+(`countByJsonArray`, authors / categories; `json_each` on SQLite,
+`jsonb_array_elements_text` on Postgres, `JSON_TABLE` on MySQL) — and only
+shaped in code: breakdowns are sorted largest first, the free-text ones
+(categories, languages, authors, publishers) keep the top 8 and fold the rest
+into `other`, and `readByMonth` is zero-filled over the last 24 months ending
+with the current one. A book counts once towards each of its categories and
+authors; books without a value for a dimension are simply absent from that
+breakdown, so only `byReadStatus` adds up to `totals.books`.
+
+The Stats tab renders it as a hero row (books / read / to read / lent out), a
+read-status donut, a read-per-month column chart and horizontal bars for the
+rest. Every tile, segment, column and row is a link: statuses, categories,
+languages, authors, publishers, ratings and periods open `/books?…` (the
+"All books" list with that filter, `apps/web/src/routes/_app/books.index.tsx`),
+libraries and shelves open their own screens, "Lent out" opens the Lending
+tab. Chart colours are design tokens (`--chart-*` in `tokens.css`): one hue
+for single-series bars and a three-step ordinal ramp of the same hue for the
+ordered read statuses, each mode's steps validated against its card surface.
 
 ### Book metadata lookup
 

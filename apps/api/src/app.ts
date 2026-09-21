@@ -21,6 +21,7 @@ import { lendingRoutes } from './routes/lendings';
 import { libraryRoutes } from './routes/libraries';
 import { lookupRoutes } from './routes/lookup';
 import { shelfRoutes } from './routes/shelves';
+import { statsRoutes } from './routes/stats';
 import { mountWebApp } from './web-app';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -104,6 +105,7 @@ export function createApp({
     .route('/books', bookRoutes)
     .route('/defaults', defaultsRoutes)
     .route('/lendings', lendingRoutes)
+    .route('/stats', statsRoutes)
     .route('/lookup', lookupRoutes)
     .route('/covers', coverRoutes);
 

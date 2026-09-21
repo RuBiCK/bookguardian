@@ -17,6 +17,7 @@ import { Route as AppLendingRouteImport } from './routes/_app/lending'
 import { Route as AppScanRouteImport } from './routes/_app/scan'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppStatsRouteImport } from './routes/_app/stats'
+import { Route as AppBooksIndexRouteImport } from './routes/_app/books.index'
 import { Route as AppBooksBookIdRouteImport } from './routes/_app/books.$bookId'
 import { Route as AppLibrariesLibraryIdRouteImport } from './routes/_app/libraries.$libraryId'
 import { Route as AppShelvesShelfIdRouteImport } from './routes/_app/shelves.$shelfId'
@@ -60,6 +61,11 @@ const AppStatsRoute = AppStatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBooksIndexRoute = AppBooksIndexRouteImport.update({
+  id: '/books/',
+  path: '/books/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppBooksBookIdRoute = AppBooksBookIdRouteImport.update({
   id: '/books/$bookId',
   path: '/books/$bookId',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/books/$bookId': typeof AppBooksBookIdRoute
   '/libraries/$libraryId': typeof AppLibrariesLibraryIdRoute
   '/shelves/$shelfId': typeof AppShelvesShelfIdRoute
+  '/books/': typeof AppBooksIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/books/$bookId': typeof AppBooksBookIdRoute
   '/libraries/$libraryId': typeof AppLibrariesLibraryIdRoute
   '/shelves/$shelfId': typeof AppShelvesShelfIdRoute
+  '/books': typeof AppBooksIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/_app/books/$bookId': typeof AppBooksBookIdRoute
   '/_app/libraries/$libraryId': typeof AppLibrariesLibraryIdRoute
   '/_app/shelves/$shelfId': typeof AppShelvesShelfIdRoute
+  '/_app/books/': typeof AppBooksIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/books/$bookId'
     | '/libraries/$libraryId'
     | '/shelves/$shelfId'
+    | '/books/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/books/$bookId'
     | '/libraries/$libraryId'
     | '/shelves/$shelfId'
+    | '/books'
   id:
     | '__root__'
     | '/_app'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/_app/books/$bookId'
     | '/_app/libraries/$libraryId'
     | '/_app/shelves/$shelfId'
+    | '/_app/books/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -217,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStatsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/books/': {
+      id: '/_app/books/'
+      path: '/books'
+      fullPath: '/books/'
+      preLoaderRoute: typeof AppBooksIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/books/$bookId': {
       id: '/_app/books/$bookId'
       path: '/books/$bookId'
@@ -251,6 +270,7 @@ interface AppRouteChildren {
   AppBooksBookIdRoute: typeof AppBooksBookIdRoute
   AppLibrariesLibraryIdRoute: typeof AppLibrariesLibraryIdRoute
   AppShelvesShelfIdRoute: typeof AppShelvesShelfIdRoute
+  AppBooksIndexRoute: typeof AppBooksIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -263,6 +283,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBooksBookIdRoute: AppBooksBookIdRoute,
   AppLibrariesLibraryIdRoute: AppLibrariesLibraryIdRoute,
   AppShelvesShelfIdRoute: AppShelvesShelfIdRoute,
+  AppBooksIndexRoute: AppBooksIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

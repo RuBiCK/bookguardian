@@ -28,6 +28,19 @@
   --warning: #b7791f;
   --danger: #b3261e;
 
+  /*
+   * Charts (Stats tab). One hue for every single-series bar; an ordinal
+   * ramp of the same hue for the ordered read statuses (to read → reading →
+   * read). Each mode's steps are validated against its card surface
+   * (--bg-elevated): monotone lightness, ≥ 0.06 L between steps, the step
+   * nearest the surface ≥ 2:1 — never an automatic flip of the other mode.
+   */
+  --chart-1: #b5542d;
+  --chart-ord-1: #e69a70;
+  --chart-ord-2: #c4673a;
+  --chart-ord-3: #8f3a17;
+  --chart-track: #ede8df;
+
   /* shape & motion */
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -78,6 +91,11 @@
   --success: #6cc08b;
   --warning: #e0a94a;
   --danger: #f2705f;
+  --chart-1: #e07a4f;
+  --chart-ord-1: #f5b08a;
+  --chart-ord-2: #e07a4f;
+  --chart-ord-3: #b04f24;
+  --chart-track: #2a2620;
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
   --shadow-md: 0 6px 20px rgb(0 0 0 / 45%);
 }
@@ -99,6 +117,11 @@
     --success: #6cc08b;
     --warning: #e0a94a;
     --danger: #f2705f;
+    --chart-1: #e07a4f;
+    --chart-ord-1: #f5b08a;
+    --chart-ord-2: #e07a4f;
+    --chart-ord-3: #b04f24;
+    --chart-track: #2a2620;
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
     --shadow-md: 0 6px 20px rgb(0 0 0 / 45%);
   }

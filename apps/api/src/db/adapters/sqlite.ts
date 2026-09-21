@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
-import { count, sql, type Column, type SQL, type Table } from 'drizzle-orm';
+import { and, count, isNotNull, sql, type Column, type SQL, type Table } from 'drizzle-orm';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { sqliteSchema } from '../schema/sqlite';
@@ -61,6 +61,31 @@ function createKit(
         .where(where)
         .groupBy(column as unknown as SQLiteColumn);
       return rows.map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    async countByPrefix(table: Table, column: Column, length: number, where?: SQL) {
+      const prefix = sql`substr(${column}, 1, ${length})`;
+      const rows = await db
+        .select({ key: prefix, count: count() })
+        .from(table)
+        .where(and(isNotNull(column), where))
+        .groupBy(prefix);
+      return rows.map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    async countByJsonArray(table: Table, column: Column, where?: SQL) {
+      // json_each() unnests the array; one output row per (book, element).
+      const rows = db.all<{ key: unknown; count: number }>(
+        sql`select je.value as key, count(*) as count from ${table}, json_each(${column}) as je ${
+          where ? sql`where ${where}` : sql``
+        } group by je.value`,
+      );
+      return rows.map((row) => ({ key: String(row.key), count: Number(row.count) }));
+    },
+    async sum(table: Table, column: Column, where?: SQL) {
+      const [row] = await db
+        .select({ value: sql<number | string | null>`sum(${column})` })
+        .from(table)
+        .where(where);
+      return Number(row?.value ?? 0);
     },
     contains(column: Column, needle: string) {
       // SQLite has no default LIKE escape character, so declare one.

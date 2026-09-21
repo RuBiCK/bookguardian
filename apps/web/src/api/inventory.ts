@@ -42,12 +42,28 @@ import {
 import { z } from 'zod';
 import { apiRequest } from './client';
 import { COVER_POLL_MS, hasPendingCover, pagesHavePendingCover } from './covers';
+import { statsKey } from './stats';
 
 export const PAGE_SIZE = 60;
 
 /** The filters a book list can be narrowed by (everything but paging). */
 export type BookFilter = Partial<
-  Pick<BookListQuery, 'q' | 'libraryId' | 'shelfId' | 'readStatus' | 'minRating' | 'sort'>
+  Pick<
+    BookListQuery,
+    | 'q'
+    | 'libraryId'
+    | 'shelfId'
+    | 'readStatus'
+    | 'minRating'
+    | 'category'
+    | 'language'
+    | 'author'
+    | 'publisher'
+    | 'rating'
+    | 'readFrom'
+    | 'readTo'
+    | 'sort'
+  >
 >;
 
 export const keys = {
@@ -136,6 +152,13 @@ function bookMatchesFilter(book: Book, filter: BookFilter, shelfLibrary: Map<str
   if (filter.libraryId && shelfLibrary.get(book.shelfId) !== filter.libraryId) return false;
   if (filter.readStatus && filter.readStatus !== book.readStatus) return false;
   if (filter.minRating && (book.rating ?? 0) < filter.minRating) return false;
+  if (filter.rating && book.rating !== filter.rating) return false;
+  if (filter.category && !book.categories.includes(filter.category)) return false;
+  if (filter.author && !book.authors.includes(filter.author)) return false;
+  if (filter.language && book.language !== filter.language) return false;
+  if (filter.publisher && book.publisher !== filter.publisher) return false;
+  if (filter.readFrom && (book.readAt === null || book.readAt < filter.readFrom)) return false;
+  if (filter.readTo && (book.readAt === null || book.readAt > filter.readTo)) return false;
   if (filter.q) {
     const q = filter.q.toLowerCase();
     const hay = [book.title, book.subtitle ?? '', ...book.authors].join(' ').toLowerCase();
@@ -213,6 +236,7 @@ async function settle(client: QueryClient) {
     client.invalidateQueries({ queryKey: keys.allShelves }),
     client.invalidateQueries({ queryKey: keys.libraries }),
     client.invalidateQueries({ queryKey: keys.defaults }),
+    client.invalidateQueries({ queryKey: statsKey }),
   ]);
 }
 
