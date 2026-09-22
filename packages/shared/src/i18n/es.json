@@ -55,6 +55,71 @@
       "generic": "Algo ha fallado al iniciar sesión. Vuelve a intentarlo."
     }
   },
+  "landing": {
+    "meta": {
+      "title": "Bookguardian — un hogar para los libros que tienes",
+      "description": "Bookguardian lleva la cuenta de los libros de tus estanterías: dónde vive cada uno, quién te lo pidió prestado, qué te pareció y cuándo lo terminaste. Pensado para el móvil, instalable y autoalojable."
+    },
+    "hero": {
+      "title": "Cada libro que tienes, en la estantería donde lo dejaste",
+      "body": "Escanea una portada, deja el libro en una estantería y Bookguardian recuerda el resto: qué has leído, qué estás leyendo y quién sigue teniendo tu ejemplar.",
+      "cta": "Entrar con Google",
+      "repo": "Monta tu propia copia",
+      "shot": "La pantalla de biblioteca de Bookguardian en un móvil: bibliotecas con su número de estanterías y libros."
+    },
+    "features": {
+      "title": "Todo lo que ya hace",
+      "shelves": {
+        "title": "Bibliotecas y estanterías",
+        "body": "Los libros viven en una biblioteca y en una estantería. Una instalación nueva ya trae una de cada, así que añadir un libro no te pregunta nada."
+      },
+      "scan": {
+        "title": "Escanea para añadir",
+        "body": "Apunta la cámara al código de barras, o lee la portada con OCR, y el formulario llega ya rellenado."
+      },
+      "search": {
+        "title": "Busca mientras escribes",
+        "body": "Rellena lo que recuerdes, busca en Open Library y Google Books desde el formulario y elige la edición correcta."
+      },
+      "covers": {
+        "title": "Portadas, automáticas",
+        "body": "Las portadas se buscan, se redimensionan y se guardan en tu propio servidor, con un marcador legible cuando no hay ninguna."
+      },
+      "reading": {
+        "title": "Tu lectura",
+        "body": "Por leer, leyendo o leído; de cero a cinco estrellas; y la fecha en que pasaste la última página."
+      },
+      "lending": {
+        "title": "Préstamos",
+        "body": "Quién tiene qué libro, desde cuándo, cuándo toca devolverlo y qué va con retraso."
+      },
+      "stats": {
+        "title": "Estadísticas",
+        "body": "Recuentos por biblioteca, estantería, categoría y estado, además de una línea de tiempo de lo que terminaste y cuándo."
+      },
+      "mobile": {
+        "title": "Hecho para un solo pulgar",
+        "body": "Una PWA pensada para el móvil que puedes instalar: a pantalla completa, legible sin conexión y con modo oscuro desde el primer día."
+      },
+      "ownership": {
+        "title": "Tu biblioteca es tuya",
+        "body": "Entra con Google, una cuenta por correo, tus datos separados de los de cualquier otra persona, y borrables cuando quieras."
+      },
+      "selfhost": {
+        "title": "Autoalojable",
+        "body": "Un solo contenedor Docker con SQLite en un volumen. Ejecútalo en tu propia máquina y nada sale de ahí."
+      }
+    },
+    "footer": {
+      "repo": "Código en GitHub",
+      "licence": "Licencia MIT",
+      "language": "Idioma",
+      "languages": {
+        "en": "English",
+        "es": "Español"
+      }
+    }
+  },
   "count": {
     "books_one": "{{count}} libro",
     "books_other": "{{count}} libros",

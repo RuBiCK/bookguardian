@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSession } from '../../api/auth';
 import { useCreateLibrary, useLibraries } from '../../api/inventory';
 import { BookList } from '../../components/BookList';
 import { BookSheet } from '../../components/BookSheet';
@@ -12,11 +13,31 @@ import { NameSheet } from '../../components/NameSheet';
 import { Screen } from '../../components/Screen';
 import { SearchBar } from '../../components/SearchBar';
 import { CardListSkeleton } from '../../components/Skeleton';
+import { Splash } from '../../components/Splash';
 import { showToast } from '../../lib/toast';
 
+// Its own chunk: the signed-in app never downloads the landing page.
+const Landing = lazy(() => import('../../landing/Landing'));
+
 export const Route = createFileRoute('/_app/')({
-  component: LibraryScreen,
+  component: Home,
 });
+
+/**
+ * `/` is the Library tab for a signed-in person and the public landing page
+ * for everyone else. The session is already resolved by the time this
+ * renders (`_app`'s guard awaits it behind the splash), so neither one ever
+ * flashes before the other.
+ */
+function Home() {
+  const session = useSession();
+  if (session.data) return <LibraryScreen />;
+  return (
+    <Suspense fallback={<Splash />}>
+      <Landing />
+    </Suspense>
+  );
+}
 
 /** Library tab: your libraries with counts, a global search, and the add-book FAB. */
 function LibraryScreen() {

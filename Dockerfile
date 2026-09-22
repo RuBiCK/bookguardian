@@ -30,7 +30,12 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 # No VITE_API_URL here on purpose: the SPA keeps relative /api URLs, so it works
-# behind whatever host/tunnel the container is reached through.
+# behind whatever host/tunnel the container is reached through. PUBLIC_ORIGIN is
+# the one exception: the landing page's Open Graph tags need absolute URLs, and
+# a crawler never runs our JS. Set it to the same value as AUTH_BASE_URL
+# (`docker build --build-arg PUBLIC_ORIGIN=https://books.example.com`).
+ARG PUBLIC_ORIGIN=""
+ENV PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
 RUN pnpm build
 # Standalone production node_modules for the API (shared package is bundled by tsup).
 RUN pnpm --filter @bookguardian/api --prod deploy --legacy /out/api

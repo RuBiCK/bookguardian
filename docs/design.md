@@ -209,6 +209,28 @@ Before a screen ships:
   the book page, pull-to-refresh → data refetches on focus anyway).
 - `<html lang>` follows the active locale.
 
+## Landing page
+
+`/` is two pages behind one URL: the Library tab for a signed-in person, the
+public landing page for everyone else (`apps/web/src/landing/`). The landing
+uses the same tokens as the app and adds no framework of its own — one column
+of feature cards at 390 px, two from 640 px, three from 960 px. It renders
+without the app shell (no tab bar, no pull-to-refresh) and calls no API but
+the session check, and it is lazy-loaded so the signed-in bundle never carries
+it. Its only motion is the same `rise-in` stagger the lists use.
+
+Its two static images are captured from the really running app and committed
+under `apps/web/public/`:
+
+| Asset                                 | What it is                             |
+| ------------------------------------- | -------------------------------------- |
+| `landing/app-light.png` / `-dark.png` | A shelf's cover grid, 390×620 at 1.5×  |
+| `og.png`                              | The 1200×630 Open Graph / Twitter card |
+
+```sh
+E2E_LANDING_ASSETS=1 pnpm --filter @bookguardian/web exec playwright test landing-assets
+```
+
 ## Reference screenshots
 
 `docs/design/screenshots/` holds the before/after pairs of the polish pass
@@ -221,4 +243,5 @@ compared against. Regenerate the "after" side with the screenshot tour below.
 pnpm --filter @bookguardian/web exec playwright test polish     # 44px audit, gestures, offline, reduced motion
 E2E_SCREENSHOTS=1 pnpm --filter @bookguardian/web exec playwright test screenshots
 # → apps/web/playwright-screenshots/{light,dark}/*.png for a visual diff
+pnpm --filter @bookguardian/web exec playwright test landing   # the public page at /, both themes
 ```

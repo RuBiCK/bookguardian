@@ -1,0 +1,11 @@
+# The landing page at / is public; everything behind the session guard is not.
+User-agent: *
+Disallow: /login
+Disallow: /books
+Disallow: /libraries
+Disallow: /shelves
+Disallow: /scan
+Disallow: /lending
+Disallow: /stats
+Disallow: /settings
+Disallow: /api/

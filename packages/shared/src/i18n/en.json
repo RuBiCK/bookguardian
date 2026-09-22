@@ -55,6 +55,71 @@
       "generic": "Something went wrong while signing in. Please try again."
     }
   },
+  "landing": {
+    "meta": {
+      "title": "Bookguardian — a home for the books you own",
+      "description": "Bookguardian keeps track of the books on your shelves: where each one lives, who borrowed it, what you made of it and when you finished it. Mobile-first, installable and self-hostable."
+    },
+    "hero": {
+      "title": "Every book you own, on the shelf where you left it",
+      "body": "Scan a cover, drop the book on a shelf, and Bookguardian remembers the rest: what you have read, what you are reading, and who still has your copy.",
+      "cta": "Log in with Google",
+      "repo": "Run your own copy",
+      "shot": "The Bookguardian library screen on a phone: libraries with their shelf and book counts."
+    },
+    "features": {
+      "title": "Everything it already does",
+      "shelves": {
+        "title": "Libraries and shelves",
+        "body": "Books live in a library and on a shelf. A new install already has one of each, so adding a book asks you nothing."
+      },
+      "scan": {
+        "title": "Scan to add",
+        "body": "Point the camera at a barcode, or read the cover with OCR, and the add form arrives already filled in."
+      },
+      "search": {
+        "title": "Search while you type",
+        "body": "Fill in what you remember, search Open Library and Google Books from the form, and pick the right edition."
+      },
+      "covers": {
+        "title": "Covers, automatically",
+        "body": "Covers are found, resized and cached on your own server, with a readable placeholder when there is nothing to find."
+      },
+      "reading": {
+        "title": "Reading life",
+        "body": "To read, reading or read; zero to five stars; and the date you turned the last page."
+      },
+      "lending": {
+        "title": "Lending",
+        "body": "Who has which book, since when, when it is due back, and what is already overdue."
+      },
+      "stats": {
+        "title": "Statistics",
+        "body": "Counts by library, shelf, category and status, plus a timeline of what you finished and when."
+      },
+      "mobile": {
+        "title": "Built for one thumb",
+        "body": "A mobile-first PWA you can install: full screen, readable offline, dark mode since day one."
+      },
+      "ownership": {
+        "title": "Your library is yours",
+        "body": "Sign in with Google, one account per email, your data kept apart from everyone else's, and deletable whenever you want."
+      },
+      "selfhost": {
+        "title": "Self-hostable",
+        "body": "A single Docker container with SQLite on a volume. Run it on your own box and nothing leaves it."
+      }
+    },
+    "footer": {
+      "repo": "Source on GitHub",
+      "licence": "MIT licence",
+      "language": "Language",
+      "languages": {
+        "en": "English",
+        "es": "Español"
+      }
+    }
+  },
   "count": {
     "books_one": "{{count}} book",
     "books_other": "{{count}} books",
