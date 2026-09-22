@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { bookSchema } from './book';
+import { httpUrlSchema } from './common';
 
 export const BOOK_SOURCES = ['open_library', 'google_books'] as const;
 export const bookSourceSchema = z.enum(BOOK_SOURCES);
@@ -26,7 +27,7 @@ export const bookDraftSchema = bookSchema
   })
   .extend({
     /** Provider cover image, for the result sheet only; the API fetches its own copy by ISBN. */
-    coverUrl: z.url().max(2048).nullable(),
+    coverUrl: httpUrlSchema.max(2048).nullable(),
     source: bookSourceSchema,
     /** Provider-specific identifier (Open Library key, Google volume id) for debugging. */
     sourceId: z.string().max(200).nullable(),

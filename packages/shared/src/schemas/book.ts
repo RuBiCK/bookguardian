@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { isFutureDate, localDate } from '../dates';
+import { hasBlockedHost } from '../lib/ip';
 import {
+  httpUrlSchema,
   idSchema,
   isoDateSchema,
   isoDateTimeSchema,
@@ -91,6 +93,17 @@ export const bookSchema = z
 export type Book = z.infer<typeof bookSchema>;
 
 /**
+ * A cover URL a client may paste. The server fetches it, so the scheme is
+ * `http`/`https` only and a literal address inside the deployment's own
+ * network is refused outright (BOOK-20). A *hostname* still passes here —
+ * what it resolves to is re-checked, after DNS and after every redirect, by
+ * the API's download guard.
+ */
+export const coverUrlInputSchema = httpUrlSchema
+  .max(2048)
+  .refine((value) => !hasBlockedHost(value), { message: 'Cover URL host is not allowed' });
+
+/**
  * What a client may send. `coverUrl` here is an instruction, not the stored
  * value: the API downloads that image and makes it the book's own cover
  * (`coverOverride`); `null` on an update drops a user cover and falls back to
@@ -108,7 +121,7 @@ export const createBookInputSchema = bookSchema
     coverUrl: true,
     coverPending: true,
   })
-  .extend({ coverUrl: z.url().max(2048).nullable() })
+  .extend({ coverUrl: coverUrlInputSchema.nullable() })
   .partial()
   .required({ title: true });
 

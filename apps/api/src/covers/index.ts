@@ -9,9 +9,18 @@ export {
   type CoverProvider,
 } from './providers';
 export { processCover, MIN_COVER_SIDE_PX, type ProcessedCover } from './image';
-export { downloadImage, TransientError } from './download';
+export { downloadImage, MAX_REDIRECTS } from './download';
+export { BlockedUrlError, TransientError } from './errors';
+export {
+  createUrlGuard,
+  defaultUrlGuard,
+  dnsAddressLookup,
+  type AddressLookup,
+  type UrlGuard,
+} from './guard';
 
 import type { Repositories } from '../db/repositories';
+import { createUrlGuard } from './guard';
 import { createCoverResolver } from './resolver';
 import { createCoverService, type CoverService } from './service';
 import { createCoverStore } from './store';
@@ -39,7 +48,17 @@ export function createDefaultCoverService(
   if (!config.googleBooksApiKey) {
     console.info('[covers] GOOGLE_BOOKS_API_KEY not set: Google Books covers are skipped');
   }
-  const fetch = (input: string, init?: { signal?: AbortSignal }) => globalThis.fetch(input, init);
+  const fetch = (
+    input: string,
+    init?: { signal?: AbortSignal; redirect?: 'follow' | 'manual' | 'error' },
+  ) => globalThis.fetch(input, init);
+  // Two guards, because the two paths differ in who chose the URL: candidate
+  // covers come from the hosts this deployment was configured with, pasted
+  // ones come from whoever is logged in and get the address policy with no
+  // exemptions (BOOK-20).
+  const providerGuard = createUrlGuard({
+    allow: [config.openLibraryUrl, config.openLibraryCoversUrl, config.googleBooksUrl],
+  });
   return createCoverService({
     repos,
     store: createCoverStore(config.dir),
@@ -52,6 +71,7 @@ export function createDefaultCoverService(
         googleBooksCovers({ baseUrl: config.googleBooksUrl, apiKey: config.googleBooksApiKey }),
       ],
       fetch,
+      guard: providerGuard,
       timeoutMs: config.timeoutMs,
       log,
     }),
