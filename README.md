@@ -10,6 +10,10 @@ Goodreads for your own physical shelves, optimised for one-handed phone use.
 - **`packages/shared`** — Zod schemas, inferred types, API DTOs and the `en`
   i18n dictionary, consumed by both apps.
 
+Looking for how to _use_ it rather than run it?
+[**Using Bookguardian**](docs/user-guide.md) covers libraries and shelves, the
+four ways to add a book, and lending.
+
 ## Quick start
 
 Requirements: Node 22 (`.nvmrc`) and pnpm 10 (`corepack enable` or
@@ -348,6 +352,7 @@ packages/shared/
   src/schemas/            Zod entities   src/dto/  API DTOs   src/i18n/  en.json, es.json
 docs/
   adr/                    architecture decision records
+  user-guide.md           the user guide: libraries/shelves, adding books, lending
   data-model.md           ER diagram and field notes
   design.md               visual language: tokens, motion, gestures, offline, a11y rules
 Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on /data)
