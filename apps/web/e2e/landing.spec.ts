@@ -123,9 +123,16 @@ test.describe('landing page', () => {
       'content',
       en.landing.meta.description,
     );
+    // Absolute, and pointing at the origin this build was given (PUBLIC_ORIGIN,
+    // set for the preview server in playwright.config.ts) — never a host baked
+    // into the repo.
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
       'content',
-      /^https?:\/\/.+\/og\.png$/,
+      `${new URL(page.url()).origin}/og.png`,
+    );
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      `${new URL(page.url()).origin}/`,
     );
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
       'content',

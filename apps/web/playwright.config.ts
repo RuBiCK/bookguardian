@@ -80,9 +80,17 @@ export default defineConfig({
       url: `http://localhost:${WEB_PORT}`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      // Proxy target only: the SPA keeps relative /api URLs, so the session
-      // cookie set through the proxy is sent back through it.
-      env: { API_PROXY_TARGET: `http://localhost:${API_PORT}` },
+      env: {
+        // Proxy target only: the SPA keeps relative /api URLs, so the session
+        // cookie set through the proxy is sent back through it.
+        API_PROXY_TARGET: `http://localhost:${API_PORT}`,
+        // Stands in for a real deployment, which sets its own origin: the
+        // landing page's canonical / Open Graph tags are then absolute, which
+        // is what `landing.spec.ts` asserts a crawler finds. There is no
+        // default host (apps/web/public-origin.ts), so without this the build
+        // would emit relative tags.
+        PUBLIC_ORIGIN: `http://localhost:${WEB_PORT}`,
+      },
     },
   ],
 });
