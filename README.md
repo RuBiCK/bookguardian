@@ -132,15 +132,16 @@ for `pnpm dev`, where Vite serves the app and proxies `/api`.
 
 Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 
-| Variable           | Default                  | Notes                                                                                                                                        |
-| ------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`             | `3000`                   | API port                                                                                                                                     |
-| `DB_DRIVER`        | `sqlite`                 | `sqlite` \| `postgres` \| `mysql`                                                                                                            |
-| `DATABASE_PATH`    | `./data/bookguardian.db` | SQLite file (relative to `apps/api`)                                                                                                         |
-| `DATABASE_URL`     | —                        | Required for `postgres` / `mysql`                                                                                                            |
-| `WEB_DIST`         | —                        | Built SPA dir to serve from the API (Docker)                                                                                                 |
-| `TZ`               | system                   | Timezone for "today" (read-date default + check)                                                                                             |
-| `API_PROXY_TARGET` | `http://localhost:3000`  | Where the Vite dev/preview server proxies `/api`. The SPA only ever uses relative `/api` URLs (one origin); nothing is baked into the bundle |
+| Variable           | Default                            | Notes                                                                                                                                                                                                                                          |
+| ------------------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`             | `3000`                             | API port                                                                                                                                                                                                                                       |
+| `DB_DRIVER`        | `sqlite`                           | `sqlite` \| `postgres` \| `mysql`                                                                                                                                                                                                              |
+| `DATABASE_PATH`    | `./data/bookguardian.db`           | SQLite file (relative to `apps/api`)                                                                                                                                                                                                           |
+| `DATABASE_URL`     | —                                  | Required for `postgres` / `mysql`                                                                                                                                                                                                              |
+| `WEB_DIST`         | —                                  | Built SPA dir to serve from the API (Docker)                                                                                                                                                                                                   |
+| `TZ`               | system                             | Timezone for "today" (read-date default + check)                                                                                                                                                                                               |
+| `API_PROXY_TARGET` | `http://localhost:3000`            | Where the Vite dev/preview server proxies `/api`. The SPA only ever uses relative `/api` URLs (one origin); nothing is baked into the bundle                                                                                                   |
+| `PUBLIC_ORIGIN`    | `https://bookguardian.marcote.net` | **Web build only.** Origin baked into the landing page's canonical / Open Graph / Twitter tags, which must be absolute because crawlers never run the SPA. Set it to the same value as `AUTH_BASE_URL` (Docker: `--build-arg PUBLIC_ORIGIN=…`) |
 
 Accounts (see [Google sign-in](#google-sign-in)):
 
@@ -316,8 +317,12 @@ apps/
       auth/               Google OIDC client, account resolution, sessions, auth middleware (ADR 0005)
       db/migrate.ts       migration runner    db/seed.ts  seed
   web/
+    index.html            app shell + the landing page's SEO / Open Graph tags (%PUBLIC_ORIGIN%)
+    public/               robots.txt, PWA icons, og.png and the landing screenshots
     src/routes/           TanStack file routes: login.tsx (bare) + _app/ (session guard, tab bar,
-                          libraries/$id, shelves/$id, books/$id, books/ (filtered list), stats…)
+                          libraries/$id, shelves/$id, books/$id, books/ (filtered list), stats…);
+                          _app/index.tsx is the Library tab signed in and the landing page signed out
+    src/landing/          the public landing page at / (lazy-loaded, its own chunk)
     src/components/       app shell + inventory UI (Sheet, BookSheet, BookGrid, ShelfPicker…);
                           stats/ holds the chart pieces (StatTiles, DonutChart, ColumnChart, BarRows)
     src/theme/            CSS variables (light/dark) + theme hook

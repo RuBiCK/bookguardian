@@ -8,8 +8,10 @@ import { E2E_USER, expect, test } from './fixtures';
  * covered by the API's integration tests against a fake Google.
  */
 test.describe('sign-in', () => {
-  test('opening the app without a session shows /login, one tap, no tab bar', async ({ page }) => {
-    await page.goto('/');
+  test('/login is one tap and nothing else, with no tab bar', async ({ page }) => {
+    // `/` is the public landing page (see landing.spec.ts); `/login` is the
+    // screen it — and every guarded route — hands over to.
+    await page.goto('/login');
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByTestId('login')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: en.app.name })).toBeVisible();

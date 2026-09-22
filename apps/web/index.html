@@ -17,7 +17,37 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <title>Bookguardian</title>
+    <!-- What a crawler or a chat unfurl sees: the landing page at `/`. The SPA
+         localises the title once it boots; these tags stay in the source
+         locale. `%PUBLIC_ORIGIN%` is filled in at build time (vite.config.ts). -->
+    <title>Bookguardian — a home for the books you own</title>
+    <meta
+      name="description"
+      content="Bookguardian keeps track of the books on your shelves: where each one lives, who borrowed it, what you made of it and when you finished it. Mobile-first, installable and self-hostable."
+    />
+    <link rel="canonical" href="%PUBLIC_ORIGIN%/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bookguardian" />
+    <meta property="og:title" content="Bookguardian — a home for the books you own" />
+    <meta
+      property="og:description"
+      content="Track the books you actually own: libraries and shelves, barcode scanning, lending, ratings, read dates and statistics."
+    />
+    <meta property="og:url" content="%PUBLIC_ORIGIN%/" />
+    <meta property="og:image" content="%PUBLIC_ORIGIN%/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Bookguardian: every book you own, on the shelf where you left it."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bookguardian — a home for the books you own" />
+    <meta
+      name="twitter:description"
+      content="Track the books you actually own: libraries and shelves, barcode scanning, lending, ratings, read dates and statistics."
+    />
+    <meta name="twitter:image" content="%PUBLIC_ORIGIN%/og.png" />
   </head>
   <body>
     <div id="root"></div>

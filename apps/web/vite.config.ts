@@ -11,12 +11,25 @@ export default defineConfig(({ mode }) => {
   // `/api` URLs (one origin, see docs/auth.md), so this moves the proxy and
   // nothing is baked into the bundle.
   const apiUrl = process.env.API_PROXY_TARGET ?? env.API_PROXY_TARGET ?? 'http://localhost:3000';
+  // Where this build will be served from. Only the landing page's SEO and
+  // sharing tags need it (Open Graph wants absolute URLs and a crawler never
+  // runs our JS); nothing in the app depends on the origin. Self-hosters set
+  // it to the same value as the API's AUTH_BASE_URL.
+  const configuredOrigin = process.env.PUBLIC_ORIGIN ?? env.PUBLIC_ORIGIN ?? '';
+  const publicOrigin = (configuredOrigin.trim() || 'https://bookguardian.marcote.net').replace(
+    /\/+$/,
+    '',
+  );
 
   return {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
     plugins: [
+      {
+        name: 'bookguardian-public-origin',
+        transformIndexHtml: (html) => html.replaceAll('%PUBLIC_ORIGIN%', publicOrigin),
+      },
       // Must run before the React plugin so generated routes are transformed.
       tanstackRouter({ target: 'react', autoCodeSplitting: true }),
       react(),
@@ -45,6 +58,9 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+          // The Open Graph card is only ever fetched by crawlers and chat
+          // unfurlers, never by the app: no reason to ship it to every device.
+          globIgnores: ['og.png'],
           // Never cache API responses in the app shell; server state belongs to
           // TanStack Query. Only the build output is precached and there is no
           // runtimeCaching, so `/api/*` — `/api/auth/me` and `/api/auth/logout`
