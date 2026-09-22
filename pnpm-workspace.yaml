@@ -12,3 +12,12 @@ minimumReleaseAge: 10080
 onlyBuiltDependencies:
   - better-sqlite3
   - esbuild
+
+# Security overrides. Each entry pins a transitive dependency past a published
+# advisory its direct parent has not yet released a fix for; drop the entry once
+# the parent's own range covers the fixed version.
+overrides:
+  # GHSA-g7r4-m6w7-qqqr (esbuild <0.28.1): tsup 8.5.1 still asks for ^0.27.0.
+  # Dev-only (the API bundler), but vite already resolves 0.28.x, so this just
+  # collapses the tree onto one fixed copy.
+  esbuild: ^0.28.1
