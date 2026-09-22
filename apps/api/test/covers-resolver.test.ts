@@ -11,6 +11,7 @@ import {
   ISBN_GOOGLE_ONLY,
   ISBN_NO_COVER,
   ISBN_WITH_COVER,
+  fixtureUrlGuard,
   OL_COVERS,
 } from './cover-fixtures';
 import { GOOGLE_BOOKS, OPEN_LIBRARY } from './lookup-fixtures';
@@ -24,6 +25,7 @@ function resolver(options: { apiKey?: string; fetch?: ReturnType<typeof coverFet
       googleBooksCovers({ baseUrl: GOOGLE_BOOKS, apiKey: options.apiKey }),
     ],
     fetch: fetch.fetch,
+    guard: fixtureUrlGuard,
     timeoutMs: 1000,
     log: (m) => log.push(m),
   });

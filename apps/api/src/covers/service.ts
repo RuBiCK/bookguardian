@@ -20,7 +20,8 @@
 import type { CoverBackfillStatus, CoverSource, CoverVariant } from '@bookguardian/shared';
 import type { BookRecord, Repositories } from '../db/repositories';
 import type { FetchLike } from '../lookup/types';
-import { TransientError } from './download';
+import { TransientError } from './errors';
+import type { UrlGuard } from './guard';
 import { InvalidImageError, processCover } from './image';
 import { fetchCandidate, type CoverResolver } from './resolver';
 import type { CoverStore } from './store';
@@ -34,6 +35,8 @@ export interface CoverServiceOptions {
   resolve: CoverResolver;
   /** Used for pasted cover URLs. */
   fetch?: FetchLike;
+  /** SSRF policy for pasted cover URLs; defaults to the real-DNS one. */
+  guard?: UrlGuard;
   timeoutMs?: number;
   /** How long "no provider has a cover" is remembered. */
   missMs?: number;
@@ -124,6 +127,7 @@ export function createCoverService({
   store,
   resolve,
   fetch = (input, init) => globalThis.fetch(input, init),
+  guard,
   timeoutMs = 8_000,
   missMs = 30 * DAY_MS,
   gcSharedAfterMs = 90 * DAY_MS,
@@ -261,7 +265,7 @@ export function createCoverService({
     const book = await repos.books.findById(job.ownerId, job.bookId);
     if (!book) return false;
     await throttle();
-    const cover = await fetchCandidate(job.url, { fetch, timeoutMs });
+    const cover = await fetchCandidate(job.url, { fetch, guard, timeoutMs });
     if (!cover) {
       log(`${job.url} is not a usable cover; book ${job.bookId} keeps its current one`);
       return false;

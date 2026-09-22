@@ -56,6 +56,23 @@ up and not rate limiting us. Two product constraints frame the fix:
   book references and shared assets neither a book nor `isbn_covers`
   references once they are older than `COVERS_GC_DAYS`.
 
+- **A pasted cover URL is an untrusted destination** (added for BOOK-20). The
+  server fetches whatever `coverUrl` names, so the address policy in
+  `packages/shared/src/lib/ip.ts` is applied twice: the input schema rejects
+  every scheme but `http`/`https` and every literal address outside the public
+  internet, and `covers/guard.ts` re-applies it at download time to what the
+  hostname _resolves_ to and to every redirect target (redirects are walked in
+  `downloadImage` rather than followed by `fetch`). A deny-list, not an
+  allow-list of the two providers, because pasting an arbitrary cover URL is a
+  real flow in the add-book form. The origins an operator configured are
+  exempt — where a self-hosted mirror lives is a deployment decision — and
+  that exemption is wired only into the cascade's guard, never the pasted-URL
+  one. A blocked URL is a `BlockedUrlError`, deliberately not a
+  `TransientError`: retrying cannot make an address allowed, and four attempts
+  with backoff would hand the caller a timing oracle. Residual risk: `fetch`
+  resolves the name again on its own, so DNS rebinding is not closed by this;
+  doing that needs the checked address pinned into the connection.
+
 ## Consequences
 
 - `sharp` becomes an API dependency (prebuilt binaries, no install script;

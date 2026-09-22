@@ -11,7 +11,10 @@ import {
   ISBN_GOOGLE_ONLY,
   ISBN_NO_COVER,
   ISBN_WITH_COVER,
+  METADATA_URL,
   photoJpeg,
+  PRIVATE_HOST,
+  REDIRECT_TO_METADATA,
 } from './cover-fixtures';
 
 describe('/api/covers and book covers', () => {
@@ -211,6 +214,45 @@ describe('/api/covers and book covers', () => {
     });
     expect(moved.body).toMatchObject({ coverAssetId: null, coverPending: true });
     expect((await settled(book.id)).coverAssetId).not.toBe(resolved.coverAssetId);
+  });
+
+  it('refuses a coverUrl that points at the server’s own network (BOOK-20)', async () => {
+    const existing = await add({ title: 'Plain' });
+    expect(existing.status).toBe(201);
+    for (const coverUrl of [
+      METADATA_URL,
+      'http://127.0.0.1:6379/',
+      'http://[::1]:8080/x.png',
+      'http://192.168.1.1/admin',
+      'file:///etc/passwd',
+      'gopher://127.0.0.1:11211/_x',
+    ]) {
+      expect((await add({ title: 'SSRF', coverUrl })).status, coverUrl).toBe(422);
+      const patched = await json(t.app, 'PATCH', `/api/books/${existing.body.id}`, { coverUrl });
+      expect(patched.status, coverUrl).toBe(422);
+    }
+    await t.covers.service.idle();
+    expect(t.covers.fetch.calls).toEqual([]);
+  });
+
+  it('fails a blocked host once, without retrying or following a redirect into it', async () => {
+    // The literal cases never reach the queue; a *hostname* resolving to
+    // loopback, and a public host redirecting to the metadata endpoint, do.
+    const viaDns = await add({ title: 'Rebind', coverUrl: `https://${PRIVATE_HOST}/cover.jpg` });
+    expect(viaDns.status).toBe(201);
+    const viaRedirect = await add({ title: 'Redirect', coverUrl: REDIRECT_TO_METADATA });
+    expect(viaRedirect.status).toBe(201);
+
+    const settledDns = await settled(viaDns.body.id);
+    const settledRedirect = await settled(viaRedirect.body.id);
+    for (const result of [settledDns, settledRedirect]) {
+      expect(result).toMatchObject({ coverAssetId: null, coverUrl: null, coverPending: false });
+    }
+
+    // One attempt each: a blocked address is not a transient failure.
+    expect(t.covers.log.filter((line) => line.includes('retrying'))).toEqual([]);
+    expect(t.covers.log.filter((line) => line.includes('not a public address'))).toHaveLength(2);
+    expect(t.covers.fetch.calls).toEqual([REDIRECT_TO_METADATA]);
   });
 
   it('backfills the caller’s coverless books and reports progress', async () => {

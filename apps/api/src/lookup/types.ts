@@ -1,7 +1,10 @@
 import type { BookDraft, BookSource } from '@bookguardian/shared';
 
 /** Minimal fetch signature so providers can be tested with recorded fixtures. */
-export type FetchLike = (input: string, init?: { signal?: AbortSignal }) => Promise<Response>;
+export type FetchLike = (
+  input: string,
+  init?: { signal?: AbortSignal; redirect?: 'follow' | 'manual' | 'error' },
+) => Promise<Response>;
 
 export interface ProviderContext {
   fetch: FetchLike;

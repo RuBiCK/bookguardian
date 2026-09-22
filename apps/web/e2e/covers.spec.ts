@@ -146,6 +146,38 @@ test.describe('covers', () => {
     };
     expect(after.coverUrl).toMatch(/^\/api\/covers\/[a-f0-9]{64}\.webp$/);
   });
+
+  test('refuses a pasted cover URL aimed at the server’s own network (BOOK-20)', async ({
+    page,
+  }) => {
+    const run = `${test.info().workerIndex}-${Date.now()}`;
+    // The live API, with the real guard: the provider stub on localhost is
+    // reachable for the cascade, but nothing a user pastes may go there.
+    for (const coverUrl of [
+      'http://169.254.169.254/latest/meta-data/',
+      'http://127.0.0.1:6379/',
+      'http://[::1]:8080/x.png',
+      'file:///etc/passwd',
+      'gopher://127.0.0.1:11211/_x',
+    ]) {
+      const res = await page.request.post('/api/books', {
+        data: { title: `SSRF ${run}`, coverUrl },
+      });
+      expect(res.status(), coverUrl).toBe(422);
+    }
+
+    // And the form says so before any request is made.
+    await page.goto('/');
+    await page.getByTestId('fab').tap();
+    const sheet = page.getByRole('dialog', { name: en.books.add });
+    await expect(sheet).toBeVisible();
+    await sheet.getByLabel(en.books.field.title).fill(`Typed ${run}`);
+    await sheet.getByRole('button', { name: en.books.more }).tap();
+    await sheet.getByLabel(en.books.field.coverUrl).fill('http://192.168.1.1/cover.jpg');
+    await sheet.getByRole('button', { name: en.common.save }).tap();
+    await expect(sheet.getByText(en.books.coverUrlInvalid)).toBeVisible();
+    await expect(sheet).toBeVisible();
+  });
 });
 
 /** Append the EAN-13 check digit to 12 digits. */

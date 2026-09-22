@@ -539,6 +539,16 @@ an external link: the API keeps its own WebP copy
   typed in the form become a private asset only you (and people your library
   is shared with) can load, and `cover_override = true` keeps the cascade away.
   "Use the catalogue cover" undoes that.
+- **Where the server may fetch from.** A pasted `coverUrl` makes the API issue
+  a GET, so it is `http`/`https` only and never an address inside the
+  deployment's own network: loopback, link-local (including the cloud metadata
+  endpoint `169.254.169.254`), RFC1918 and the other reserved ranges are
+  refused with a 422 when they are written literally, and again at download
+  time against what DNS actually answered and against every redirect hop. The
+  hosts configured in `OPEN_LIBRARY_URL`, `OPEN_LIBRARY_COVERS_URL` and
+  `GOOGLE_BOOKS_URL` are exempt, so a self-hosted Open Library mirror on the
+  LAN still works for the cascade — that exemption never applies to a URL a
+  user pastes.
 - **Placeholder.** Without an image the web app draws a 2:3 card coloured
   from the title, with title and author (`BookCover`, white text on a dark
   palette at ≥ 4.5:1, the same in light and dark mode), and polls every 2 s

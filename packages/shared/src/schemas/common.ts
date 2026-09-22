@@ -14,6 +14,13 @@ export const timestampsSchema = z.object({
   updatedAt: isoDateTimeSchema,
 });
 
+/**
+ * A URL the app may load or hand to the server: `http`/`https` only. Every
+ * other scheme is either meaningless here (`ftp:`) or a way to make something
+ * fetch a local file or a `javascript:` payload.
+ */
+export const httpUrlSchema = z.url({ protocol: /^https?$/ });
+
 /** Every aggregate carries the id of the user that owns it. */
 export const ownedSchema = z.object({
   ownerId: idSchema,

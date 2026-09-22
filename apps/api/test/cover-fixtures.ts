@@ -11,8 +11,10 @@ import {
   createCoverResolver,
   createCoverService,
   createCoverStore,
+  createUrlGuard,
   googleBooksCovers,
   openLibraryCovers,
+  type AddressLookup,
   type CoverService,
 } from '../src/covers';
 import type { CoverServiceOptions } from '../src/covers/service';
@@ -33,6 +35,28 @@ export const ISBN_FLAKY = '9780000000019';
 
 export const COVER_ID = 15166231;
 export const GOOGLE_VOLUME = 'B1hSG45JCX4C';
+
+/** A host that resolves to loopback — the shape of the attack a literal cannot express. */
+export const PRIVATE_HOST = 'internal.test';
+/** A public host whose redirect aims at the cloud metadata endpoint. */
+export const REDIRECT_TO_METADATA = 'https://pictures.test/to-metadata.jpg';
+/** A public host that redirects (twice) to a real cover. */
+export const REDIRECT_TO_COVER = 'https://pictures.test/to-cover.jpg';
+export const METADATA_URL = 'http://169.254.169.254/latest/meta-data/';
+
+/** What the fixture hosts "resolve" to: public, unless named here. */
+const ADDRESSES: Record<string, string[]> = {
+  [PRIVATE_HOST]: ['127.0.0.1'],
+  'mixed.test': ['93.184.216.34', '10.0.0.7'],
+  'nxdomain.test': [],
+  localhost: ['127.0.0.1'],
+};
+
+export const fixtureAddressLookup: AddressLookup = async (hostname) =>
+  ADDRESSES[hostname] ?? ['93.184.216.34'];
+
+/** The SSRF guard over fixture DNS, so tests never touch a real resolver. */
+export const fixtureUrlGuard = createUrlGuard({ lookup: fixtureAddressLookup });
 
 const images = new Map<string, Promise<Buffer>>();
 function memo(key: string, make: () => Promise<Buffer>): Promise<Buffer> {
@@ -83,7 +107,9 @@ export const tinyPng = () =>
 
 export type CoverRoute = (
   url: URL,
-) => Promise<{ status: number; body?: unknown; type?: string } | undefined>;
+) => Promise<
+  { status: number; body?: unknown; type?: string; headers?: Record<string, string> } | undefined
+>;
 
 export interface CoverFetch {
   fetch: FetchLike;
@@ -169,23 +195,39 @@ export function coverFetch(): CoverFetch {
       return { status: 200, body: '<html>nope</html>', type: 'text/html' };
     if (at === 'https://pictures.test/tiny.png')
       return { status: 200, body: await tinyPng(), type: 'image/png' };
+    // Redirect chains: one that walks to a cover, one that aims at the
+    // metadata endpoint and must be stopped at the hop, not followed.
+    if (at === REDIRECT_TO_COVER) return { status: 302, headers: { location: '/hop-2.jpg' } };
+    if (at === 'https://pictures.test/hop-2.jpg')
+      return { status: 301, headers: { location: 'https://covers.test/b/id/15166231-L.jpg' } };
+    if (at === REDIRECT_TO_METADATA) return { status: 302, headers: { location: METADATA_URL } };
+    if (at === `https://${PRIVATE_HOST}/cover.jpg`)
+      return { status: 200, body: await coverJpeg(9), type: 'image/jpeg' };
     return undefined;
   };
 
-  const respond = (hit: { status: number; body?: unknown; type?: string }) => {
-    const { status, body, type } = hit;
+  const respond = (hit: {
+    status: number;
+    body?: unknown;
+    type?: string;
+    headers?: Record<string, string>;
+  }) => {
+    const { status, body, type, headers = {} } = hit;
     if (Buffer.isBuffer(body)) {
       return new Response(new Uint8Array(body), {
         status,
-        headers: { 'content-type': type ?? 'application/octet-stream' },
+        headers: { 'content-type': type ?? 'application/octet-stream', ...headers },
       });
     }
     if (typeof body === 'string') {
-      return new Response(body, { status, headers: { 'content-type': type ?? 'text/plain' } });
+      return new Response(body, {
+        status,
+        headers: { 'content-type': type ?? 'text/plain', ...headers },
+      });
     }
     return new Response(body === undefined ? null : JSON.stringify(body), {
       status,
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...headers },
     });
   };
 
@@ -241,10 +283,12 @@ export function fixtureCovers(
         googleBooksCovers({ baseUrl: GOOGLE_BOOKS, apiKey: overrides.apiKey }),
       ],
       fetch: fetch.fetch,
+      guard: fixtureUrlGuard,
       timeoutMs,
       log: (m) => log.push(m),
     }),
     fetch: fetch.fetch,
+    guard: fixtureUrlGuard,
     timeoutMs,
     minIntervalMs: overrides.minIntervalMs ?? 0,
     retry: overrides.retry ?? { attempts: 3, baseDelayMs: 1 },

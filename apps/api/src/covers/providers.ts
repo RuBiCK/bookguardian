@@ -5,7 +5,7 @@
  * an HTML page costs one request and nothing else.
  */
 import type { CoverSource } from '@bookguardian/shared';
-import { TransientError } from './download';
+import { TransientError } from './errors';
 import type { FetchLike } from '../lookup/types';
 
 export interface CoverProviderContext {

@@ -9,7 +9,8 @@
  * the job retries instead of caching "no cover" for a month.
  */
 import type { CoverSource } from '@bookguardian/shared';
-import { downloadImage, TransientError, type DownloadContext } from './download';
+import { downloadImage, type DownloadContext } from './download';
+import { TransientError } from './errors';
 import { InvalidImageError, processCover, type ProcessedCover } from './image';
 import type { CoverProvider } from './providers';
 
