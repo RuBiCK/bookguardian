@@ -8,11 +8,15 @@
 # Stages: deps (install, release-age rule enforced by pnpm) → build (tsup +
 # vite) → runtime (slim Node 22, production deps only, non-root).
 
-# Pinned Node 22 LTS on Debian bookworm; Renovate/Dependabot bump the digest.
-ARG NODE_IMAGE=node:22.23.2-bookworm-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9
+# ---- base ------------------------------------------------------------------
+# Pinned Node 22 LTS on Debian bookworm, by digest. Dependabot bumps this line
+# (.github/dependabot.yml, "docker" ecosystem) — it only sees image references
+# written directly on a FROM, so the digest lives here and not behind an ARG.
+# Both the build and the runtime stage derive from it: one pin to review.
+FROM node:22.23.2-bookworm-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9 AS base
 
 # ---- deps ------------------------------------------------------------------
-FROM ${NODE_IMAGE} AS deps
+FROM base AS deps
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 # pnpm version comes from "packageManager" in package.json (single source of truth).
 RUN corepack enable pnpm
@@ -31,9 +35,12 @@ FROM deps AS build
 COPY . .
 # No VITE_API_URL here on purpose: the SPA keeps relative /api URLs, so it works
 # behind whatever host/tunnel the container is reached through. PUBLIC_ORIGIN is
-# the one exception: the landing page's Open Graph tags need absolute URLs, and
-# a crawler never runs our JS. Set it to the same value as AUTH_BASE_URL
-# (`docker build --build-arg PUBLIC_ORIGIN=https://books.example.com`).
+# the one exception: the landing page's Open Graph tags want absolute URLs, and
+# a crawler never runs our JS. Unset (the default) leaves those tags relative —
+# correct anywhere, no absolute image URL for a chat unfurl — so a real
+# deployment sets it to the same value as AUTH_BASE_URL
+# (`docker build --build-arg PUBLIC_ORIGIN=https://books.example.com`, or
+# PUBLIC_ORIGIN in the compose .env).
 ARG PUBLIC_ORIGIN=""
 ENV PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
 RUN pnpm build
@@ -41,7 +48,7 @@ RUN pnpm build
 RUN pnpm --filter @bookguardian/api --prod deploy --legacy /out/api
 
 # ---- runtime ---------------------------------------------------------------
-FROM ${NODE_IMAGE} AS runtime
+FROM base AS runtime
 ENV NODE_ENV=production \
     PORT=3000 \
     DB_DRIVER=sqlite \

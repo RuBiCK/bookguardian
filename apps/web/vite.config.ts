@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import pkg from './package.json' with { type: 'json' };
+import { publicOriginPlugin } from './public-origin';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -14,22 +15,17 @@ export default defineConfig(({ mode }) => {
   // Where this build will be served from. Only the landing page's SEO and
   // sharing tags need it (Open Graph wants absolute URLs and a crawler never
   // runs our JS); nothing in the app depends on the origin. Self-hosters set
-  // it to the same value as the API's AUTH_BASE_URL.
-  const configuredOrigin = process.env.PUBLIC_ORIGIN ?? env.PUBLIC_ORIGIN ?? '';
-  const publicOrigin = (configuredOrigin.trim() || 'https://bookguardian.marcote.net').replace(
-    /\/+$/,
-    '',
-  );
+  // it to the same value as the API's AUTH_BASE_URL. No default host on
+  // purpose — unset means relative URLs, never someone else's domain (see
+  // public-origin.ts).
+  const publicOriginTags = publicOriginPlugin(process.env.PUBLIC_ORIGIN ?? env.PUBLIC_ORIGIN);
 
   return {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
     plugins: [
-      {
-        name: 'bookguardian-public-origin',
-        transformIndexHtml: (html) => html.replaceAll('%PUBLIC_ORIGIN%', publicOrigin),
-      },
+      publicOriginTags,
       // Must run before the React plugin so generated routes are transformed.
       tanstackRouter({ target: 'react', autoCodeSplitting: true }),
       react(),

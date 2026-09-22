@@ -108,6 +108,14 @@ installed as a PWA. Only `:8443` is exposed to the LAN; `:3000` stays on
 `127.0.0.1`. Stop with `docker compose -f docker-compose.yaml -f docker-compose.lan.yaml down`
 (`-v` also drops Caddy's local CA; the database stays in `./data`).
 
+**Set `PUBLIC_ORIGIN` when you deploy for real.** It is a _build_ argument, not
+a runtime one: it is substituted into the landing page's canonical and Open
+Graph tags while the web app is bundled. Put `PUBLIC_ORIGIN=https://books.example.com`
+in the compose `.env` (`docker-compose.yaml` forwards it as a build arg) or pass
+`docker build --build-arg PUBLIC_ORIGIN=…`; in Coolify it is a build-time
+variable. Left unset the tags are relative, which renders fine but gives a chat
+unfurl no absolute image URL. It is the same value as `AUTH_BASE_URL`.
+
 The image is built in CI on every PR (`docker build` + a health/SPA smoke run,
 no push). `WEB_DIST` is what makes the API serve the SPA (static files plus
 `index.html` fallback for client routes; `/api/*` is untouched) — leave it unset
@@ -127,21 +135,28 @@ for `pnpm dev`, where Vite serves the app and proxies `/api`.
   `onlyBuiltDependencies` may run lifecycle scripts.
 - **GitHub Actions are pinned to commit SHAs**, not mutable tags.
 - Playwright browsers and Docker images used by tests are pinned by version.
+- **Dependabot watches everything** (`.github/dependabot.yml`): the pnpm
+  workspace, the GitHub Actions in `.github/workflows`, the Dockerfile base
+  image and the images in the compose files, weekly. Every ecosystem sets
+  `cooldown` so the bot ignores releases younger than 8 days — one day of slack
+  over the 7-day rule above, so its PRs pass the release-age job instead of
+  fighting it. Non-breaking npm updates arrive as one grouped PR; majors come
+  one at a time and wait 14 days.
 
 ## Configuration
 
 Copy `.env.example` to `.env` (repo root or `apps/api/`) and adjust:
 
-| Variable           | Default                            | Notes                                                                                                                                                                                                                                          |
-| ------------------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`             | `3000`                             | API port                                                                                                                                                                                                                                       |
-| `DB_DRIVER`        | `sqlite`                           | `sqlite` \| `postgres` \| `mysql`                                                                                                                                                                                                              |
-| `DATABASE_PATH`    | `./data/bookguardian.db`           | SQLite file (relative to `apps/api`)                                                                                                                                                                                                           |
-| `DATABASE_URL`     | —                                  | Required for `postgres` / `mysql`                                                                                                                                                                                                              |
-| `WEB_DIST`         | —                                  | Built SPA dir to serve from the API (Docker)                                                                                                                                                                                                   |
-| `TZ`               | system                             | Timezone for "today" (read-date default + check)                                                                                                                                                                                               |
-| `API_PROXY_TARGET` | `http://localhost:3000`            | Where the Vite dev/preview server proxies `/api`. The SPA only ever uses relative `/api` URLs (one origin); nothing is baked into the bundle                                                                                                   |
-| `PUBLIC_ORIGIN`    | `https://bookguardian.marcote.net` | **Web build only.** Origin baked into the landing page's canonical / Open Graph / Twitter tags, which must be absolute because crawlers never run the SPA. Set it to the same value as `AUTH_BASE_URL` (Docker: `--build-arg PUBLIC_ORIGIN=…`) |
+| Variable           | Default                  | Notes                                                                                                                                                                                                                                                                                        |
+| ------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`             | `3000`                   | API port                                                                                                                                                                                                                                                                                     |
+| `DB_DRIVER`        | `sqlite`                 | `sqlite` \| `postgres` \| `mysql`                                                                                                                                                                                                                                                            |
+| `DATABASE_PATH`    | `./data/bookguardian.db` | SQLite file (relative to `apps/api`)                                                                                                                                                                                                                                                         |
+| `DATABASE_URL`     | —                        | Required for `postgres` / `mysql`                                                                                                                                                                                                                                                            |
+| `WEB_DIST`         | —                        | Built SPA dir to serve from the API (Docker)                                                                                                                                                                                                                                                 |
+| `TZ`               | system                   | Timezone for "today" (read-date default + check)                                                                                                                                                                                                                                             |
+| `API_PROXY_TARGET` | `http://localhost:3000`  | Where the Vite dev/preview server proxies `/api`. The SPA only ever uses relative `/api` URLs (one origin); nothing is baked into the bundle                                                                                                                                                 |
+| `PUBLIC_ORIGIN`    | — (relative URLs)        | **Web build only.** Origin baked into the landing page's canonical / Open Graph / Twitter tags (crawlers never run the SPA). No default host: unset ⇒ relative `/` and `/og.png`. A real deployment sets its own origin, same value as `AUTH_BASE_URL` ([Run with Docker](#run-with-docker)) |
 
 Accounts (see [Google sign-in](#google-sign-in)):
 
@@ -590,3 +605,14 @@ use and caches them in the browser, so cover OCR needs the network the first
 time (and the app is offline-tolerant otherwise). The e2e suite exercises real
 barcode decoding from a rendered image; the real OCR test only runs with
 `E2E_NETWORK=1`.
+
+## Security
+
+Found something? Do not open a public issue — use GitHub's private
+[**Report a vulnerability**](https://github.com/RuBiCK/bookguardian/security/advisories/new)
+form. [`SECURITY.md`](SECURITY.md) has the scope, what to expect and the safe
+harbour.
+
+## License
+
+[MIT](LICENSE) © Rubén Fernández.

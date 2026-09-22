@@ -1,0 +1,100 @@
+# What actually watches our dependencies.
+#
+# Reconciling the bot with the supply-chain rule: pnpm-workspace.yaml sets
+# minimumReleaseAge: 10080 (no package younger than 7 days) and the "Supply
+# chain · lockfile release age" CI job re-verifies the committed lockfile with
+# scripts/check-release-age.mjs. A bot that opened PRs for releases published
+# hours ago would fail that job on every PR, so every ecosystem below carries
+# `cooldown`, which makes Dependabot ignore releases younger than the given
+# number of days. It is set to 8 — one day of slack over the 7-day rule, so a
+# release that is borderline when the PR is opened is comfortably old enough
+# when CI re-checks it (age only grows between the two). If the 7-day rule ever
+# changes, change these numbers with it.
+#
+# Majors wait 14 days: a new major is where a compromised or half-baked release
+# does the most damage, and nothing here needs one in a hurry.
+version: 2
+updates:
+  # ---- pnpm workspace: root + apps/* + packages/* ---------------------------
+  # One entry at the root covers the whole workspace; Dependabot reads
+  # pnpm-workspace.yaml and updates the root pnpm-lock.yaml together with the
+  # package.json of each member it touches.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Madrid
+    cooldown:
+      default-days: 8
+      semver-major-days: 14
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+      prefix-development: deps(dev)
+      include: scope
+    groups:
+      # Everything non-breaking in one reviewable PR per week; majors stay on
+      # their own so each can be read (and reverted) by itself.
+      npm-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # ---- GitHub Actions used by .github/workflows -----------------------------
+  # Actions are pinned to full commit SHAs; Dependabot bumps the SHA and the
+  # `# vX.Y.Z` comment next to it, which is the point of pinning that way.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Madrid
+    cooldown:
+      default-days: 8
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  # ---- Docker base image (Dockerfile) --------------------------------------
+  # The pinned `node:22.x-bookworm-slim@sha256:…` in the base stage. Dependabot
+  # only reads image references written directly on a FROM line, which is why
+  # the Dockerfile keeps the digest there instead of behind an ARG.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Madrid
+    cooldown:
+      default-days: 8
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: docker
+      include: scope
+
+  # ---- Images referenced from the compose files ----------------------------
+  # Currently the Caddy front used for LAN testing (docker-compose.lan.yaml).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Madrid
+    cooldown:
+      default-days: 8
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: docker
+      include: scope
