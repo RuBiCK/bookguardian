@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   BlockedUrlError,
   createUrlGuard,
+  dnsAddressLookup,
   downloadImage,
   TransientError,
   type AddressLookup,
@@ -87,6 +88,15 @@ describe('cover URL guard', () => {
     }
   });
 
+  it('resolves through the real resolver by default', async () => {
+    // `localhost` comes from the hosts file, so this needs no network — and
+    // it is what production would have blocked.
+    await expect(dnsAddressLookup('localhost')).resolves.not.toHaveLength(0);
+    await expect(createUrlGuard()('http://localhost/cover.jpg')).rejects.toBeInstanceOf(
+      BlockedUrlError,
+    );
+  });
+
   it('asks DNS only for names, never for a literal address', async () => {
     const lookup = vi.fn(fixtureAddressLookup);
     const guard = createUrlGuard({ lookup });
@@ -103,6 +113,17 @@ describe('downloadImage', () => {
       downloadImage(`https://${PRIVATE_HOST}/cover.jpg`, ctx(fetch)),
     ).rejects.toBeInstanceOf(BlockedUrlError);
     expect(fetch.calls).toEqual([]);
+  });
+
+  it('reports a refused connection as transient, once the guard has allowed the URL', async () => {
+    const fetch = coverFetch();
+    fetch.route(async (url) => {
+      if (url.pathname === '/down.jpg') throw new Error('ECONNREFUSED');
+      return undefined;
+    });
+    await expect(
+      downloadImage('https://pictures.test/down.jpg', ctx(fetch)),
+    ).rejects.toBeInstanceOf(TransientError);
   });
 
   it('stops a redirect chain that turns towards a blocked address', async () => {

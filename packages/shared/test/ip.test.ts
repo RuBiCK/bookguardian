@@ -19,8 +19,22 @@ describe('IP classification', () => {
     expect(parseIpAddress('::ffff:127.0.0.1')?.bytes.slice(12)).toEqual([127, 0, 0, 1]);
     expect(isIpLiteral('covers.openlibrary.org')).toBe(false);
     expect(isIpLiteral('fe80::1')).toBe(true);
-    for (const bad of ['256.0.0.1', '1.2.3', '12345::', 'g::1', '::1::2', 'fe80::1%eth0', '']) {
-      expect(parseIpAddress(bad)).toBeNull();
+    // Written out in full, with no `::` to expand.
+    expect(parseIpAddress('2001:0db8:0000:0000:0000:0000:0000:0001')?.bytes.at(-1)).toBe(1);
+    for (const bad of [
+      '256.0.0.1',
+      '1.2.3',
+      '1.2.3.x',
+      '1:2:3',
+      '1:2:3:4:5:6:7:8::',
+      '::ffff:1.2.3.999',
+      '12345::',
+      'g::1',
+      '::1::2',
+      'fe80::1%eth0',
+      '',
+    ]) {
+      expect(parseIpAddress(bad), bad).toBeNull();
     }
   });
 
@@ -67,6 +81,7 @@ describe('IP classification', () => {
       '198.17.255.255',
       '223.255.255.255',
       '2606:4700:4700::1111',
+      '2001:0db8:0000:0000:0000:0000:0000:0001',
       '2002:0101:0101::1',
     ]) {
       expect(isBlockedAddress(allowed), allowed).toBe(false);

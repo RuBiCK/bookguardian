@@ -152,8 +152,10 @@ export function isBlockedAddress(value: string): boolean {
 }
 
 /**
- * An `http`/`https` URL with a host: `null` for anything else, which is the
- * one answer both callers want for `file:`, `gopher:` and plain nonsense.
+ * An `http`/`https` URL: `null` for anything else, which is the one answer
+ * both callers want for `file:`, `gopher:` and plain nonsense. A parsed
+ * http(s) URL always has a host — the URL parser refuses the ones that would
+ * not (`http://`, `http://?q=1`) — so callers may read `hostname` directly.
  */
 export function parseHttpUrl(value: string): URL | null {
   let url: URL;
@@ -162,8 +164,7 @@ export function parseHttpUrl(value: string): URL | null {
   } catch {
     return null;
   }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
-  return url.hostname === '' ? null : url;
+  return url.protocol === 'http:' || url.protocol === 'https:' ? url : null;
 }
 
 /** The host of an `http`/`https` URL, without the brackets an IPv6 one carries. */
