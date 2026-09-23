@@ -22,7 +22,7 @@ Deviations are recorded as an ADR in `docs/adr/`, never applied silently.
   Router. Server state: TanStack Query. i18n: `i18next` + `react-i18next`;
   English is the source locale and every user-facing string goes through a
   translation key.
-- Backend: Node 22 + TypeScript + Hono, REST JSON API, Zod validation shared
+- Backend: Node 26 + TypeScript + Hono, REST JSON API, Zod validation shared
   with the frontend.
 - Data: Drizzle ORM behind a repository layer (`apps/api/src/db/adapters/*`).
   SQLite (better-sqlite3) is the only supported and tested driver for now.
@@ -84,7 +84,7 @@ schema rewrite. Use these names in code, schemas, routes and translation keys.
 ## Commands
 
 These are the real scripts from `package.json` and the steps in
-`.github/workflows/ci.yml`. Requirements: Node 22 (`.nvmrc`) and pnpm 10
+`.github/workflows/ci.yml`. Requirements: Node 26 (`.nvmrc`) and pnpm 10
 (`packageManager` field).
 
 ```bash
