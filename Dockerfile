@@ -6,10 +6,11 @@
 #   docker compose up --build        # http://localhost:3000, DB in ./data
 #
 # Stages: deps (install, release-age rule enforced by pnpm) → build (tsup +
-# vite) → runtime (slim Node 22, production deps only, non-root).
+# vite) → runtime (slim Node 26, production deps only, non-root).
 
 # ---- base ------------------------------------------------------------------
-# Pinned Node 22 LTS on Debian bookworm, by digest. Dependabot bumps this line
+# Pinned Node 26 on Debian bookworm, by digest (see ADR 0006 for why 26 and not
+# 22 or 24; the line becomes LTS on 2026-10-28). Dependabot bumps this line
 # (.github/dependabot.yml, "docker" ecosystem) — it only sees image references
 # written directly on a FROM, so the digest lives here and not behind an ARG.
 # Both the build and the runtime stage derive from it: one pin to review.
@@ -17,14 +18,20 @@ FROM node:26.8.2-bookworm-slim@sha256:cd9f682fa2885cd1056e830424764158570061c597
 
 # ---- deps ------------------------------------------------------------------
 FROM base AS deps
-ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-# pnpm version comes from "packageManager" in package.json (single source of truth).
-RUN corepack enable pnpm
 WORKDIR /app
 
-# Manifests only, so the install layer is cached until a dependency changes.
+# Node 26 no longer ships Corepack, so pnpm is installed from npm directly. The
+# version is still read from "packageManager" in package.json (single source of
+# truth, never a second copy here), which is why that one manifest is copied
+# ahead of the others.
+COPY package.json ./
+RUN PNPM_VERSION="$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")" \
+    && npm install --global --no-fund "pnpm@${PNPM_VERSION}" \
+    && pnpm --version
+
+# Remaining manifests, so the install layer is cached until a dependency changes.
 # pnpm-workspace.yaml carries minimumReleaseAge: 10080 (no package < 7 days old).
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/

@@ -1,6 +1,6 @@
 # ADR 0001 — Application stack
 
-- Status: accepted
+- Status: accepted; the Runtime row is superseded by [ADR 0006](0006-node-26-runtime.md) (Node 26)
 - Date: 2026-09-19
 
 ## Context
@@ -15,7 +15,7 @@ and the reasoning, so later deviations are made consciously (as new ADRs).
 | Concern          | Choice                                                                             |
 | ---------------- | ---------------------------------------------------------------------------------- |
 | Repository       | pnpm workspaces monorepo: `apps/web`, `apps/api`, `packages/shared`                |
-| Runtime          | Node 22 (`.nvmrc`, `engines`), TypeScript strict everywhere                        |
+| Runtime          | Node 22 (`.nvmrc`, `engines`), TypeScript strict everywhere — see ADR 0006         |
 | Frontend         | React 19 + Vite 7, TanStack Router (file-based), TanStack Query, `vite-plugin-pwa` |
 | i18n             | `i18next` + `react-i18next`; `en` is the source locale; strings live in `shared`   |
 | Backend          | Hono on `@hono/node-server`, REST JSON, Zod validation via `@hono/zod-validator`   |

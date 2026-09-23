@@ -66,7 +66,7 @@ updates:
           - '*'
 
   # ---- Docker base image (Dockerfile) --------------------------------------
-  # The pinned `node:22.x-bookworm-slim@sha256:…` in the base stage. Dependabot
+  # The pinned `node:26.x-bookworm-slim@sha256:…` in the base stage. Dependabot
   # only reads image references written directly on a FROM line, which is why
   # the Dockerfile keeps the digest there instead of behind an ARG.
   - package-ecosystem: docker

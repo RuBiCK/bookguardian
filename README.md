@@ -5,7 +5,7 @@ Mobile-first personal library manager: track your books, where they live
 Goodreads for your own physical shelves, optimised for one-handed phone use.
 
 - **`apps/web`** — React 19 + Vite PWA (TanStack Router/Query, i18next).
-- **`apps/api`** — Hono REST API on Node 22, Drizzle ORM behind a database
+- **`apps/api`** — Hono REST API on Node 26, Drizzle ORM behind a database
   adapter layer (SQLite by default; Postgres/MySQL selectable).
 - **`packages/shared`** — Zod schemas, inferred types, API DTOs and the `en`
   i18n dictionary, consumed by both apps.
@@ -16,8 +16,8 @@ four ways to add a book, and lending.
 
 ## Quick start
 
-Requirements: Node 22 (`.nvmrc`) and pnpm 10 (`corepack enable` or
-`npm i -g pnpm`).
+Requirements: Node 26 (`.nvmrc`) and pnpm 10 (`npm i -g pnpm`; Node 26 no
+longer ships Corepack).
 
 ```bash
 pnpm install
