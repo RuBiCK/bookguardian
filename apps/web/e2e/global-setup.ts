@@ -20,6 +20,13 @@ export default async function globalSetup(config: FullConfig) {
   if (!res.ok()) {
     throw new Error(`test-login failed: ${res.status()} ${await res.text()}`);
   }
+  // The shared account has been through the first-session tour (BOOK-35);
+  // otherwise its sheet would cover every screen the other specs assert on.
+  // `onboarding.spec.ts` signs its own pending accounts in instead.
+  const seen = await api.patch('/api/auth/me', { data: { onboardingCompleted: true } });
+  if (!seen.ok()) {
+    throw new Error(`onboarding patch failed: ${seen.status()} ${await seen.text()}`);
+  }
   await api.storageState({ path: storageState });
   await api.dispose();
 }

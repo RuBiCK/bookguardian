@@ -25,9 +25,17 @@ const PERSISTED = new Set([
 /** Only successful data, only the families that make the library readable offline. */
 export function shouldPersistQuery(query: {
   queryKey: readonly unknown[];
-  state: { status: string };
+  state: { status: string; data?: unknown };
 }): boolean {
-  return query.state.status === 'success' && PERSISTED.has(String(query.queryKey[0]));
+  if (query.state.status !== 'success') return false;
+  const family = String(query.queryKey[0]);
+  // "No session" is the one answer never worth saving. It is a valid cached
+  // value the route guard reads without a request, so a copy restored from
+  // disk keeps `/login` on screen after a sign-in that really happened — the
+  // Google callback is a document navigation, and the SPA that boots from it
+  // would start by believing the saved `null`.
+  if (family === 'session' && query.state.data === null) return false;
+  return PERSISTED.has(family);
 }
 
 export function createPersister(

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   apiErrorSchema,
+  authMeResponseSchema,
   DB_DRIVERS,
   dbDriverSchema,
   healthResponseSchema,
   idParamSchema,
   paginationQuerySchema,
+  updateMeInputSchema,
 } from '../src';
 
 describe('API DTOs', () => {
@@ -49,5 +51,32 @@ describe('API DTOs', () => {
     expect(healthResponseSchema.safeParse(base).success).toBe(true);
     expect(healthResponseSchema.safeParse({ ...base, status: 'down' }).success).toBe(false);
     expect(healthResponseSchema.safeParse({ ...base, uptimeSeconds: -1 }).success).toBe(false);
+  });
+
+  it('authMe carries the onboarding state, null while the tour is pending', () => {
+    const base = {
+      id: '0f3e2b8a-7d3c-4b2f-9a11-6f5e4d3c2b1a',
+      displayName: 'Ana',
+      email: 'ana@example.com',
+      avatarUrl: null,
+    };
+    expect(authMeResponseSchema.parse({ ...base, onboardingCompletedAt: null })).toMatchObject({
+      onboardingCompletedAt: null,
+    });
+    const done = '2026-09-19T08:00:00.000Z';
+    expect(authMeResponseSchema.parse({ ...base, onboardingCompletedAt: done })).toMatchObject({
+      onboardingCompletedAt: done,
+    });
+    // Absent or not a timestamp is a contract break, not "pending".
+    expect(authMeResponseSchema.safeParse(base).success).toBe(false);
+    expect(
+      authMeResponseSchema.safeParse({ ...base, onboardingCompletedAt: 'yesterday' }).success,
+    ).toBe(false);
+  });
+
+  it('updateMe only accepts the one-way onboarding flag', () => {
+    expect(updateMeInputSchema.safeParse({ onboardingCompleted: true }).success).toBe(true);
+    expect(updateMeInputSchema.safeParse({ onboardingCompleted: false }).success).toBe(false);
+    expect(updateMeInputSchema.safeParse({}).success).toBe(false);
   });
 });

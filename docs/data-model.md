@@ -38,6 +38,7 @@ erDiagram
         int email_verified "0/1"
         varchar(2048) avatar_url "nullable"
         varchar(32) last_login_at "nullable"
+        varchar(32) onboarding_completed_at "nullable: NULL = first-session tour still pending"
         varchar(32) created_at "ISO-8601"
         varchar(32) updated_at "ISO-8601"
     }
@@ -168,6 +169,14 @@ erDiagram
   is `NULL` only on the local user of a database seeded before accounts,
   until the first sign-in claims it. `sessions` stores the SHA-256 of the
   cookie token, never the token; rows expire (sliding) and are purged daily.
+- **Onboarding.** `users.onboarding_completed_at` is the moment the in-app
+  first-session tour was finished or skipped — the two count the same — and
+  `NULL` while it is still pending, which is what makes the SPA open it. It
+  lives on the account rather than in the browser so "do not show me this
+  again" travels from the phone to the laptop. `GET /api/auth/me` reports it
+  and `PATCH /api/auth/me { onboardingCompleted: true }` sets it, idempotently:
+  a repeat keeps the first timestamp, and nothing ever clears it (replaying the
+  tour from Settings is a local action).
 - **Ownership.** `owner_id` on libraries, shelves, books and lendings is
   denormalised on purpose: every repository query filters by owner without a
   join — reads by id included — so a foreign id is indistinguishable from a

@@ -13,6 +13,10 @@ export const TEST_USER: AuthMeResponse = {
   displayName: 'Ana Lector',
   email: 'ana@example.com',
   avatarUrl: null,
+  // Screen tests are about the screens, not the first-session tour: this
+  // account has already been through it. `onboarding.test.tsx` uses a pending
+  // one on purpose.
+  onboardingCompletedAt: '2026-09-01T10:00:00.000Z',
 };
 
 export interface RenderAppOptions {

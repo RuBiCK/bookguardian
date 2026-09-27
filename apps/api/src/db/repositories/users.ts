@@ -12,10 +12,20 @@ export interface CreateUserData {
   emailVerified?: boolean;
   avatarUrl?: string | null;
   lastLoginAt?: string | null;
+  /** Only set by a test or a fixture; a real account starts with the tour pending. */
+  onboardingCompletedAt?: string | null;
 }
 
 export type UserPatch = Partial<
-  Pick<User, 'displayName' | 'email' | 'emailVerified' | 'avatarUrl' | 'lastLoginAt'>
+  Pick<
+    User,
+    | 'displayName'
+    | 'email'
+    | 'emailVerified'
+    | 'avatarUrl'
+    | 'lastLoginAt'
+    | 'onboardingCompletedAt'
+  >
 >;
 
 export interface UserRepository {
@@ -58,6 +68,8 @@ export function createUserRepository(kit: DialectKit, tables: Tables): UserRepos
         emailVerified: data.emailVerified ?? false,
         avatarUrl: data.avatarUrl ?? null,
         lastLoginAt: data.lastLoginAt ?? null,
+        // A new account has not seen the first-session tour yet.
+        onboardingCompletedAt: data.onboardingCompletedAt ?? null,
         createdAt: now,
         updatedAt: now,
       };

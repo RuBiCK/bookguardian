@@ -10,6 +10,7 @@ import {
   authMeResponseSchema,
   type AuthMeResponse,
   type DeleteAccountInput,
+  type UpdateMeInput,
 } from '@bookguardian/shared';
 import {
   queryOptions,
@@ -70,6 +71,33 @@ export function dropSession(queryClient: QueryClient) {
 export function googleSignInUrl(returnTo?: string): string {
   if (!returnTo || returnTo === '/') return GOOGLE_SIGN_IN_PATH;
   return `${GOOGLE_SIGN_IN_PATH}?return_to=${encodeURIComponent(returnTo)}`;
+}
+
+/**
+ * Remember, on the account, that the first-session tour has been seen —
+ * finishing it and skipping it both come here. Written optimistically because
+ * the sheet closes at once and must not spring back up; the API is idempotent,
+ * so a retry cannot move the timestamp, and a failed write is left alone
+ * rather than rolled back (re-opening a sheet the person just dismissed would
+ * be worse than showing the tour again on the next launch, which the next
+ * `/api/auth/me` decides anyway).
+ */
+export function useCompleteOnboarding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiRequest('/api/auth/me', authMeResponseSchema, {
+        method: 'PATCH',
+        body: { onboardingCompleted: true } satisfies UpdateMeInput,
+      }),
+    onMutate: () => {
+      const current = queryClient.getQueryData<Session>(SESSION_KEY);
+      if (!current) return;
+      const seen: Session = { ...current, onboardingCompletedAt: new Date().toISOString() };
+      queryClient.setQueryData(SESSION_KEY, seen);
+    },
+    onSuccess: (user: Session) => queryClient.setQueryData(SESSION_KEY, user),
+  });
 }
 
 /** Only relative SPA paths are safe to go back to (mirrors the API's `safeReturnTo`). */

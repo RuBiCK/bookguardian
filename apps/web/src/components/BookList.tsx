@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBooks, type BookFilter } from '../api/inventory';
 import { BOOK_VIEW_KEY, BOOK_VIEWS, type BookView } from '../lib/book-view';
+import { openTour } from '../lib/intents';
 import { useStoredValue } from '../lib/stored-value';
 import { BookActionsProvider } from './BookActions';
 import { BookGrid } from './BookGrid';
@@ -146,10 +147,24 @@ export function BookList({ base, searchable = false, initialStatus, onAdd }: Boo
           body={filtering ? undefined : t('books.empty.body')}
           illustration={filtering ? 'search' : 'books'}
           action={
-            filtering || !onAdd ? undefined : (
-              <button type="button" className="button button--primary" onClick={onAdd}>
-                {t('books.add')}
-              </button>
+            filtering ? undefined : (
+              <>
+                {onAdd ? (
+                  <button type="button" className="button button--primary" onClick={onAdd}>
+                    {t('books.add')}
+                  </button>
+                ) : null}
+                {/* The shelf a new account lands on: the tour it may have
+                    skipped is one tap away, without a banner of its own. */}
+                <button
+                  type="button"
+                  className="button button--ghost button--small"
+                  onClick={openTour}
+                  data-testid="empty-tour"
+                >
+                  {t('onboarding.empty')}
+                </button>
+              </>
             )
           }
         />

@@ -1,11 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect, useRouter } from '@tanstack/react-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ensureSession, useSession } from '../api/auth';
+import { ensureSession, useCompleteOnboarding, useSession } from '../api/auth';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { TabBar } from '../components/TabBar';
+import { clearTourRequest, useTourRequest } from '../lib/intents';
+
+// Its own chunk: somebody who has been through the tour never downloads it.
+const OnboardingTour = lazy(() => import('../onboarding/OnboardingTour'));
 
 /**
  * Paths under this layout that a visitor without a session may see: `/` is
@@ -75,6 +79,39 @@ function AppShell() {
         <Outlet />
       </main>
       <TabBar />
+      {session.data ? <Onboarding completedAt={session.data.onboardingCompletedAt} /> : null}
     </div>
+  );
+}
+
+/**
+ * The first-session tour, hosted by the shell so it covers whichever tab the
+ * person landed on. It opens when the account has never been through it —
+ * having books or not is beside the point — and when Settings or an empty
+ * state asks for it again. The guard above already awaited `/api/auth/me`
+ * behind the splash, so it cannot flash for somebody who has seen it.
+ */
+function Onboarding({ completedAt }: { completedAt: string | null }) {
+  const requested = useTourRequest() > 0;
+  const pending = completedAt === null;
+  const open = pending || requested;
+  const complete = useCompleteOnboarding();
+  // Stay mounted once it has been open, so the sheet slides back down instead
+  // of vanishing; until then there is nothing to load and nothing to render.
+  const [mounted, setMounted] = useState(open);
+  if (open && !mounted) setMounted(true);
+  if (!mounted) return null;
+  return (
+    <Suspense fallback={null}>
+      <OnboardingTour
+        open={open}
+        onClose={() => {
+          clearTourRequest();
+          // Re-opening it on purpose never un-remembers anything; only a tour
+          // that was still pending is marked seen, skip and finish alike.
+          if (pending && !complete.isPending) complete.mutate();
+        }}
+      />
+    </Suspense>
   );
 }

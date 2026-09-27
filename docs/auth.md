@@ -104,8 +104,16 @@ sequenceDiagram
 
 Also on the API:
 
-- `GET /api/auth/me` → `{ id, displayName, email, avatarUrl }` or
-  `401 unauthenticated`.
+- `GET /api/auth/me` → `{ id, displayName, email, avatarUrl,
+onboardingCompletedAt }` or `401 unauthenticated`.
+- `PATCH /api/auth/me { onboardingCompleted: true }` → marks the in-app
+  first-session tour as seen and answers with the same payload as `GET`. The
+  only field the SPA ever writes about the user, and a one-way flag: finishing
+  and skipping the tour both send it, a repeat keeps the first timestamp, and
+  no request clears it. Any other body is `422 validation_error`; without a
+  session, `401`. Why the account and not `localStorage`: the same person signs
+  in from a phone and a laptop, and "do not show me this again" has to travel
+  with them.
 - `POST /api/auth/logout` → deletes the `sessions` row and clears the cookie,
   `204`.
 - `DELETE /api/auth/me { confirmEmail }` → deletes the account and everything

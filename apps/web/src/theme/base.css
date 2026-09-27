@@ -2175,6 +2175,120 @@ select.field__input {
   font-size: var(--text-sm);
 }
 
+/* ---- Onboarding tour (first session) ---------------------------------- */
+
+/*
+ * A card inside the ordinary bottom sheet: one illustration, one line of
+ * introduction, the points as a short list, and the step counter last so the
+ * thumb never has to reach past it. No second visual system — every value
+ * below is a token from docs/design.md.
+ */
+.tour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+  color: var(--fg-muted);
+  /* Subtle: the card fades up as the step changes. */
+  animation: tour-step var(--duration-base) var(--ease-out);
+}
+
+.tour__illustration {
+  width: 116px;
+  height: auto;
+  color: var(--accent);
+}
+
+.tour__body {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--fg);
+}
+
+.tour__points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: start;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+
+.tour__points li {
+  position: relative;
+  padding-inline-start: var(--space-5);
+}
+
+.tour__points li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: var(--space-2);
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.tour__guide {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.tour__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--fg-subtle);
+  font-size: var(--text-xs);
+}
+
+.tour__dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.tour__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.tour__dot[data-current] {
+  background: var(--accent);
+}
+
+/* Secondary to the pair above it, but still a full-width thumb target. */
+.tour__skip {
+  margin-top: var(--space-1);
+}
+
+@keyframes tour-step {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour {
+    animation: none;
+  }
+}
+
 /* ---- Splash (session check on launch) --------------------------------- */
 
 .splash {

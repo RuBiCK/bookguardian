@@ -13,6 +13,13 @@ export const userSchema = z
     emailVerified: z.boolean(),
     avatarUrl: z.url().max(2048).nullable(),
     lastLoginAt: isoDateTimeSchema.nullable(),
+    /**
+     * When the in-app first-session tour was finished or skipped (the two
+     * count the same). `null` means it is still pending, so the tour opens
+     * on the next sign-in — on every device, since this travels with the
+     * account instead of `localStorage`.
+     */
+    onboardingCompletedAt: isoDateTimeSchema.nullable(),
   })
   .extend(timestampsSchema.shape);
 

@@ -504,6 +504,58 @@
     "installed": "Installed",
     "unavailable": "Open this site in your phone's browser to install it."
   },
+  "onboarding": {
+    "progress": "Step {{current}} of {{total}}",
+    "skip": "Skip",
+    "next": "Next",
+    "cta": "Add your first book",
+    "guide": "Read the full user guide",
+    "empty": "New here? Take the quick tour",
+    "replay": {
+      "label": "First-session tour",
+      "button": "Show it again"
+    },
+    "steps": {
+      "welcome": {
+        "title": "Welcome to Bookguardian",
+        "body": "Your books live in a library, on a shelf — that is the whole structure.",
+        "items": {
+          "hierarchy": "Library → shelf → book. A library is a place you keep books, a shelf is a spot inside it.",
+          "ready": "You already have “My Library” with a “Default” shelf, so nothing needs setting up first.",
+          "rename": "Both are ordinary rows: rename them, add more, whenever you feel like it."
+        }
+      },
+      "adding": {
+        "title": "Four ways to add a book",
+        "body": "Pick the one that matches what you have in your hands. Whichever you use, the shelf is chosen for you.",
+        "items": {
+          "manual": "By hand — the title alone is enough.",
+          "scan": "Scan the ISBN barcode from the Scan tab.",
+          "ocr": "Photograph the cover and let the text be read on your device.",
+          "search": "Search Open Library and Google Books from a half-filled form.",
+          "camera": "The two camera ways need a secure origin: https, or localhost while developing."
+        }
+      },
+      "lending": {
+        "title": "Lending",
+        "body": "Bookguardian remembers who walked off with your copy.",
+        "items": {
+          "lend": "Lend from the book page: a borrower name, and a way to reach them if you like.",
+          "one": "A book is out to one borrower at a time; lend it again once it is back.",
+          "due": "A return date is optional.",
+          "overdue": "The Lending tab lists everything that is out and flags what is overdue."
+        }
+      },
+      "done": {
+        "title": "That is the whole app",
+        "body": "The five tabs along the bottom are everything there is: your libraries, the camera, what is lent out, statistics and settings.",
+        "items": {
+          "install": "Install it to your home screen from the Library tab or Settings.",
+          "theme": "Light and dark mode both live in Settings, next to this tour."
+        }
+      }
+    }
+  },
   "a11y": {
     "skipToContent": "Skip to content"
   }

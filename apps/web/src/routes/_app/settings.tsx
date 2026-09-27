@@ -8,6 +8,7 @@ import { Avatar } from '../../components/Avatar';
 import { DeleteAccountSheet } from '../../components/DeleteAccountSheet';
 import { Screen } from '../../components/Screen';
 import { useInstallPrompt } from '../../lib/install';
+import { openTour } from '../../lib/intents';
 import { showToast } from '../../lib/toast';
 import { THEMES, useTheme } from '../../theme/useTheme';
 
@@ -94,6 +95,19 @@ function SettingsScreen() {
               {coversText()}
             </span>
           ) : null}
+        </li>
+        <li className="list__row">
+          <span className="list__label">{t('onboarding.replay.label')}</span>
+          <span className="list__value">
+            <button
+              type="button"
+              className="button button--small"
+              onClick={openTour}
+              data-testid="replay-tour"
+            >
+              {t('onboarding.replay.button')}
+            </button>
+          </span>
         </li>
         <InstallRow />
         <li className="list__row">

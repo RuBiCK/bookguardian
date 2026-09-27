@@ -287,6 +287,15 @@ everything it owns. Details in [docs/auth.md](docs/auth.md).
   `auth_not_configured`, or a generic one for `invalid_state` / `oauth_error`)
   and the screen explains it, with the same button as the retry. Fetch
   clients still get the JSON error envelope.
+- **The first session** opens a four-step welcome sheet over whatever tab the
+  person landed on — libraries and shelves, the four ways to add a book,
+  lending, and a CTA into the first book — with the full
+  [user guide](docs/user-guide.md) one link away. It shows while
+  `onboarding_completed_at` is `NULL` on the account (not "has no books"),
+  behind the same splash as the session check so it never flashes for somebody
+  who has seen it; finishing and skipping both `PATCH /api/auth/me`. **Settings
+  → First-session tour** and the empty states replay it without changing it.
+  Its bundle is code-split: an account that is done never downloads it.
 - **Settings → Account** shows the avatar (or initial), name and email, and
   **Sign out** (`POST /api/auth/logout`), which empties the query cache and
   lands on `/login`.
@@ -344,6 +353,7 @@ apps/
     src/landing/          the public landing page at / (lazy-loaded, its own chunk)
     src/components/       app shell + inventory UI (Sheet, BookSheet, BookGrid, ShelfPicker…);
                           stats/ holds the chart pieces (StatTiles, DonutChart, ColumnChart, BarRows)
+    src/onboarding/       the first-session tour (lazy chunk) + its step catalogue
     src/theme/            CSS variables (light/dark) + theme hook
     src/api/              typed fetch client (401 → /login) + TanStack Query hooks; auth.ts = session
     e2e/                  Playwright (iPhone 14); providers-stub.mjs stands in for Open Library;
@@ -385,7 +395,8 @@ Dockerfile / docker-compose.yaml   single-container build (API + SPA, SQLite on 
 | `GET`    | `/api/health`                                                        | `{ status, version, uptimeSeconds, database: { driver, reachable } }` (`?shallow=true` skips the DB ping)                                                                                                                                                                        |
 | `GET`    | `/api/auth/google[?return_to=/path]`                                 | 302 to Google (OIDC code + PKCE). `return_to` must be a relative SPA path. 503 `auth_not_configured` without `GOOGLE_CLIENT_ID`/`SECRET`                                                                                                                                         |
 | `GET`    | `/api/auth/google/callback`                                          | Google's redirect target. Verifies state + `id_token`, resolves the account, sets `bg_session`, 302 to `return_to`. 400 `invalid_state` / `oauth_error`, 403 `email_not_verified` / `not_allowed`                                                                                |
-| `GET`    | `/api/auth/me`                                                       | `{ id, displayName, email, avatarUrl }` of the signed-in user, or 401                                                                                                                                                                                                            |
+| `GET`    | `/api/auth/me`                                                       | `{ id, displayName, email, avatarUrl, onboardingCompletedAt }` of the signed-in user, or 401                                                                                                                                                                                     |
+| `PATCH`  | `/api/auth/me`                                                       | `{ onboardingCompleted: true }` — marks the in-app first-session tour as seen (finish and skip alike). Idempotent: a repeat keeps the first timestamp. 422 `validation_error` for any other body                                                                                 |
 | `POST`   | `/api/auth/logout`                                                   | Deletes the session row and clears the cookie → 204                                                                                                                                                                                                                              |
 | `POST`   | `/api/auth/test-login`                                               | `{ email, name? }` → signs in without Google. **Only registered when `NODE_ENV=test`** (Playwright); 404 otherwise                                                                                                                                                               |
 | `GET`    | `/api/defaults`                                                      | `{ libraryId, shelfId }` — where a new book lands when no shelf is given (most recently used shelf, else the first one)                                                                                                                                                          |

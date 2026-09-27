@@ -167,6 +167,8 @@ describe('Google sign-in', () => {
       displayName: 'Ana Lector',
       email: 'ana.lector@example.com',
       avatarUrl: 'https://lh3.googleusercontent.com/ana.png',
+      // A new account has not seen the first-session tour yet (BOOK-35).
+      onboardingCompletedAt: null,
     });
 
     const libraries = await t.app.request('/api/libraries', { headers: { cookie } });
@@ -632,5 +634,93 @@ describe('POST /api/auth/test-login', () => {
     } finally {
       await t.cleanup();
     }
+  });
+});
+
+/**
+ * The first-session tour's state (BOOK-35). It lives on the account, not in
+ * the browser, so "do not show me this again" travels between devices.
+ */
+describe('onboarding state on /api/auth/me', () => {
+  let t: TestApp;
+  let clock: number;
+
+  beforeEach(async () => {
+    clock = Date.parse('2026-09-27T09:00:00.000Z');
+    t = await createTestApp({
+      sessionAuth: true,
+      auth: { env: 'test', now: () => new Date(clock), log: () => undefined },
+    });
+  });
+  afterEach(async () => {
+    await t.cleanup();
+  });
+
+  const markSeen = (cookie: string) =>
+    json<AuthMeResponse>(t.app, 'PATCH', '/api/auth/me', { onboardingCompleted: true }, cookie);
+
+  it('is pending by default and completed by one write, keeping the first timestamp', async () => {
+    const { cookie } = await t.loginAs(t.base.userId);
+    const before = await json<AuthMeResponse>(t.app, 'GET', '/api/auth/me', undefined, cookie);
+    expect(before.status).toBe(200);
+    expect(before.body.onboardingCompletedAt).toBeNull();
+
+    const marked = await markSeen(cookie);
+    expect(marked.status).toBe(200);
+    expect(marked.body.onboardingCompletedAt).toBe('2026-09-27T09:00:00.000Z');
+    // Survives a re-read: the state is the row, not the response.
+    const after = await json<AuthMeResponse>(t.app, 'GET', '/api/auth/me', undefined, cookie);
+    expect(after.body.onboardingCompletedAt).toBe('2026-09-27T09:00:00.000Z');
+
+    // Idempotent: a retry an hour later does not move the timestamp.
+    clock += 3_600_000;
+    const again = await markSeen(cookie);
+    expect(again.status).toBe(200);
+    expect(again.body.onboardingCompletedAt).toBe('2026-09-27T09:00:00.000Z');
+  });
+
+  it('is per account: completing it for one user leaves the other pending', async () => {
+    const other = await t.repos.users.create({
+      displayName: 'Someone else',
+      email: 'someone.else@example.com',
+      emailVerified: true,
+    });
+    expect(other.onboardingCompletedAt).toBeNull();
+
+    const mine = await t.loginAs(t.base.userId);
+    const theirs = await t.loginAs(other.id);
+    await markSeen(mine.cookie);
+
+    const me = await json<AuthMeResponse>(t.app, 'GET', '/api/auth/me', undefined, mine.cookie);
+    const them = await json<AuthMeResponse>(t.app, 'GET', '/api/auth/me', undefined, theirs.cookie);
+    expect(me.body.onboardingCompletedAt).toBe('2026-09-27T09:00:00.000Z');
+    expect(them.body.onboardingCompletedAt).toBeNull();
+  });
+
+  it('needs a session, and only accepts the one-way flag', async () => {
+    const anonymous = await json<ErrorBody>(t.app, 'PATCH', '/api/auth/me', {
+      onboardingCompleted: true,
+    });
+    expect(anonymous.status).toBe(401);
+    expect(anonymous.body.error.code).toBe('unauthenticated');
+
+    const { cookie } = await t.loginAs(t.base.userId);
+    for (const body of [{ onboardingCompleted: false }, {}, { onboardingCompletedAt: null }]) {
+      const res = await json<ErrorBody>(t.app, 'PATCH', '/api/auth/me', body, cookie);
+      expect(res.status, JSON.stringify(body)).toBe(422);
+      expect(res.body.error.code).toBe('validation_error');
+    }
+    const me = await json<AuthMeResponse>(t.app, 'GET', '/api/auth/me', undefined, cookie);
+    expect(me.body.onboardingCompletedAt).toBeNull();
+  });
+
+  it('a brand-new Google account starts with the tour pending', async () => {
+    const res = await t.app.request('/api/auth/test-login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'newcomer@example.com', name: 'Newcomer' }),
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()) as AuthMeResponse).toMatchObject({ onboardingCompletedAt: null });
   });
 });

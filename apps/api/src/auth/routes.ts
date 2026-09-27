@@ -10,6 +10,7 @@ import { z } from 'zod';
 import {
   deleteAccountInputSchema,
   testLoginInputSchema,
+  updateMeInputSchema,
   type AuthMeResponse,
   type User,
 } from '@bookguardian/shared';
@@ -42,6 +43,8 @@ export interface AuthRoutesOptions {
   /** `undefined` until `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are configured. */
   oidc?: OidcClient;
   account: ResolveAccountOptions;
+  /** Clock for the timestamps this router writes (only `onboarding_completed_at`). */
+  now?: () => Date;
   log?: (message: string) => void;
 }
 
@@ -96,6 +99,7 @@ function present(user: User): AuthMeResponse {
     displayName: user.displayName,
     email: user.email,
     avatarUrl: user.avatarUrl,
+    onboardingCompletedAt: user.onboardingCompletedAt,
   };
 }
 
@@ -128,6 +132,7 @@ export function loginErrorPath(code: string, returnTo: string): string {
 
 export function createAuthRoutes(options: AuthRoutesOptions) {
   const { sessions, cookieSecret, secureCookies, oidc, account } = options;
+  const now = options.now ?? (() => new Date());
   const log = options.log ?? ((message: string) => console.warn(`[auth] ${message}`));
   const sessionCookie = () =>
     sessionCookieOptions({
@@ -263,6 +268,23 @@ export function createAuthRoutes(options: AuthRoutesOptions) {
       const { user, renewed, token } = await requireSession(c);
       if (renewed) setCookie(c, SESSION_COOKIE, token, sessionCookie());
       return c.json(present(user));
+    })
+
+    /**
+     * The one thing the SPA writes about the signed-in user: that the
+     * first-session tour has been seen. Idempotent — the first completion's
+     * timestamp is the one that stays, so a repeated request (a retry, the
+     * same account on a second device) changes nothing and still answers with
+     * the current user.
+     */
+    .patch('/me', validate('json', updateMeInputSchema), async (c) => {
+      const { user } = await requireSession(c);
+      if (user.onboardingCompletedAt) return c.json(present(user));
+      const { repos } = c.get('services');
+      const updated = await repos.users.update(user.id, {
+        onboardingCompletedAt: now().toISOString(),
+      });
+      return c.json(present(updated ?? user));
     })
 
     /**
