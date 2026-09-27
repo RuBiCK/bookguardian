@@ -504,6 +504,58 @@
     "installed": "Instalada",
     "unavailable": "Abre este sitio en el navegador de tu móvil para instalarlo."
   },
+  "onboarding": {
+    "progress": "Paso {{current}} de {{total}}",
+    "skip": "Saltar",
+    "next": "Siguiente",
+    "cta": "Añadir tu primer libro",
+    "guide": "Leer la guía completa",
+    "empty": "¿Es tu primera vez? Haz el tour rápido",
+    "replay": {
+      "label": "Tour de bienvenida",
+      "button": "Verlo otra vez"
+    },
+    "steps": {
+      "welcome": {
+        "title": "Bienvenido a Bookguardian",
+        "body": "Tus libros viven en una biblioteca, en una estantería: esa es toda la estructura.",
+        "items": {
+          "hierarchy": "Biblioteca → estantería → libro. La biblioteca es un sitio donde guardas libros; la estantería, un hueco dentro de ella.",
+          "ready": "Ya tienes «My Library» con una estantería «Default», así que no hay que configurar nada antes.",
+          "rename": "Las dos son filas normales: renómbralas o añade más cuando te apetezca."
+        }
+      },
+      "adding": {
+        "title": "Cuatro formas de añadir un libro",
+        "body": "Elige la que encaje con lo que tienes en la mano. Uses la que uses, la estantería se decide por ti.",
+        "items": {
+          "manual": "A mano: basta con el título.",
+          "scan": "Escanea el código de barras del ISBN desde la pestaña Escanear.",
+          "ocr": "Fotografía la portada y deja que el texto se lea en tu dispositivo.",
+          "search": "Busca en Open Library y Google Books desde el formulario a medio rellenar.",
+          "camera": "Las dos vías con cámara necesitan un origen seguro: https, o localhost mientras desarrollas."
+        }
+      },
+      "lending": {
+        "title": "Préstamos",
+        "body": "Bookguardian recuerda quién se llevó tu ejemplar.",
+        "items": {
+          "lend": "Presta desde la ficha del libro: un nombre y, si quieres, cómo localizar a esa persona.",
+          "one": "Un libro está prestado a una sola persona a la vez; vuelve a prestarlo cuando regrese.",
+          "due": "La fecha de devolución es opcional.",
+          "overdue": "La pestaña Préstamos lista todo lo que está fuera y marca lo vencido."
+        }
+      },
+      "done": {
+        "title": "Esto es toda la app",
+        "body": "Las cinco pestañas de abajo son todo lo que hay: tus bibliotecas, la cámara, lo que está prestado, las estadísticas y los ajustes.",
+        "items": {
+          "install": "Instálala en la pantalla de inicio desde la pestaña Biblioteca o desde Ajustes.",
+          "theme": "El modo claro y el oscuro están en Ajustes, junto a este tour."
+        }
+      }
+    }
+  },
   "a11y": {
     "skipToContent": "Ir al contenido"
   }

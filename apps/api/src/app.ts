@@ -93,6 +93,7 @@ export function createApp({
     secureCookies,
     oidc: auth.oidc,
     account: auth.account ?? {},
+    now: auth.now,
     log: auth.log,
   });
 

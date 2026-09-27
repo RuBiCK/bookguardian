@@ -52,6 +52,7 @@ export const users = pgTable('users', {
   emailVerified: intBoolean('email_verified').notNull().default(false),
   avatarUrl: varchar('avatar_url', { length: 2048 }),
   lastLoginAt: ts('last_login_at'),
+  onboardingCompletedAt: ts('onboarding_completed_at'),
   ...timestamps,
 });
 

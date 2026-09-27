@@ -32,6 +32,10 @@ describe('query persistence', () => {
     expect(ok(['libraries'])).toBe(true);
     expect(ok(['books', { shelfId: 'x' }])).toBe(true);
     expect(ok(['session'])).toBe(true);
+    // A session that is known to be absent must be re-checked, never restored.
+    expect(
+      shouldPersistQuery({ queryKey: ['session'], state: { status: 'success', data: null } }),
+    ).toBe(false);
     expect(ok(['health'])).toBe(false);
     expect(ok(['covers-backfill'])).toBe(false);
     expect(shouldPersistQuery({ queryKey: ['books'], state: { status: 'error' } })).toBe(false);

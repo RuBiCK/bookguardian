@@ -53,6 +53,7 @@ export const users = sqliteTable('users', {
   emailVerified: intBoolean('email_verified').notNull().default(false),
   avatarUrl: text('avatar_url'),
   lastLoginAt: text('last_login_at'),
+  onboardingCompletedAt: text('onboarding_completed_at'),
   ...timestamps,
 });
 

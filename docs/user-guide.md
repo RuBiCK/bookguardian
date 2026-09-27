@@ -17,6 +17,14 @@ email address is one account — signing in again from another phone or browser
 always lands in the same library. The details of the flow, and what a
 self-hoster can restrict, are in [Authentication](auth.md).
 
+**A short tour opens the first time.** Four cards over whatever screen you
+landed on: how your books are organised, the four ways to add one, how lending
+works, and a button that takes you straight to your first book. It is the
+pocket version of this guide. **Skip** is on every card and counts the same as
+finishing — either way it is remembered on your account, so it does not come
+back on your laptop. To see it again, **Settings → First-session tour → Show
+it again**; an empty shelf offers the same link. Replaying it changes nothing.
+
 **You already have somewhere to put a book.** Every new account is created
 with a library called **My Library** holding one shelf called **Default**, so
 you never have to set anything up before adding your first book. Both are

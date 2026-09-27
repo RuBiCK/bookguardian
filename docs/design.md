@@ -132,6 +132,14 @@ step by 1.25 from 16 px: `--text-xs` 12 · `--text-sm` 14 · `--text-md` 16 ·
   assistive tech.
 - **Banner** — offline notice (warning tint) and the install invitation
   (dismissable, once). At most one banner per screen, above the content.
+- **Onboarding tour** — the ordinary sheet, four cards, one per screen of the
+  app: an empty-state illustration, one line of introduction, the points as a
+  short list, then the step dots and counter. Deliberately not coach marks —
+  nothing is anchored to a widget, so it opens over whichever tab the person
+  is on and outlives any redesign of those screens. **Skip** is on every card
+  and counts the same as finishing; the last card's primary button leads into
+  adding the first book. The card cross-fades between steps, and reduced
+  motion turns that off.
 
 ## Iconography
 
@@ -235,7 +243,8 @@ E2E_LANDING_ASSETS=1 pnpm --filter @bookguardian/web exec playwright test landin
 
 `docs/design/screenshots/` holds the before/after pairs of the polish pass
 (BOOK-7) at 390 px in both themes — the visual baseline later work is
-compared against. Regenerate the "after" side with the screenshot tour below.
+compared against, plus `09-onboarding-*` for the first-session tour (BOOK-35).
+Regenerate the "after" side with the screenshot tour below.
 
 ## Checking your work
 

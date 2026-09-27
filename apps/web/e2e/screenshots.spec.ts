@@ -180,6 +180,18 @@ test.describe('screenshots', () => {
       await expect(page.getByRole('dialog', { name: en.books.add })).toBeVisible();
       await shot(page, '08-add-sheet');
 
+      // The first-session tour, replayed from Settings (the shared account has
+      // already been through it, and replaying changes nothing).
+      await page.goto('/settings');
+      await page.getByTestId('replay-tour').tap();
+      await expect(page.getByTestId('tour')).toBeVisible();
+      await shot(page, '09-onboarding-welcome');
+      await page.getByTestId('tour-next').tap();
+      await expect(
+        page.getByRole('dialog', { name: en.onboarding.steps.adding.title }),
+      ).toBeVisible();
+      await shot(page, '09b-onboarding-adding');
+
       await context.close();
     });
   }

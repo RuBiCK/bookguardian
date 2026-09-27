@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { lazy, Suspense, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../api/auth';
 import { useCreateLibrary, useLibraries } from '../../api/inventory';
@@ -14,6 +14,7 @@ import { Screen } from '../../components/Screen';
 import { SearchBar } from '../../components/SearchBar';
 import { CardListSkeleton } from '../../components/Skeleton';
 import { Splash } from '../../components/Splash';
+import { clearAddBookRequest, openTour, useAddBookRequest } from '../../lib/intents';
 import { showToast } from '../../lib/toast';
 
 // Its own chunk: the signed-in app never downloads the landing page.
@@ -49,6 +50,15 @@ function LibraryScreen() {
   const createLibrary = useCreateLibrary({
     onError: () => showToast(t('errors.saveFailed'), 'error'),
   });
+
+  // The onboarding tour's closing CTA lands here: it navigates to this tab
+  // and asks for the add sheet, which is this screen's own state.
+  const addBookAsked = useAddBookRequest();
+  useEffect(() => {
+    if (addBookAsked === 0) return;
+    clearAddBookRequest();
+    setAdding(true);
+  }, [addBookAsked]);
 
   return (
     <Screen
@@ -87,13 +97,23 @@ function LibraryScreen() {
           body={t('library.empty.body')}
           illustration="shelves"
           action={
-            <button
-              type="button"
-              className="button button--primary"
-              onClick={() => setNewLibrary(true)}
-            >
-              {t('library.addLibrary')}
-            </button>
+            <>
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={() => setNewLibrary(true)}
+              >
+                {t('library.addLibrary')}
+              </button>
+              <button
+                type="button"
+                className="button button--ghost button--small"
+                onClick={openTour}
+                data-testid="empty-tour"
+              >
+                {t('onboarding.empty')}
+              </button>
+            </>
           }
         />
       ) : (

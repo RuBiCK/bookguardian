@@ -20,6 +20,7 @@ describe('shared schemas', () => {
       id: uuid,
       displayName: 'Ana',
       emailVerified: true,
+      onboardingCompletedAt: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -29,6 +30,7 @@ describe('shared schemas', () => {
         email: 'ana@example.com',
         avatarUrl: 'https://lh3.googleusercontent.com/ana.png',
         lastLoginAt: now,
+        onboardingCompletedAt: now,
       }).success,
     ).toBe(true);
     // The unclaimed local user of a pre-accounts database.
@@ -40,6 +42,7 @@ describe('shared schemas', () => {
         email: null,
         avatarUrl: null,
         lastLoginAt: null,
+        onboardingCompletedAt: null,
       }).success,
     ).toBe(true);
     expect(userSchema.safeParse({ ...base, email: 'not-an-email' }).success).toBe(false);

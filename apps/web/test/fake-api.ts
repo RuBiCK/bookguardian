@@ -100,6 +100,7 @@ export function installFakeApi(): FakeApi {
       displayName: 'Ana Lector',
       email: 'ana@example.com',
       avatarUrl: null,
+      onboardingCompletedAt: '2026-09-01T10:00:00.000Z',
     },
   };
   let assetCounter = 0;
@@ -320,6 +321,16 @@ export function installFakeApi(): FakeApi {
         books.length = 0;
         lendings.length = 0;
         return new Response(null, { status: 204 });
+      }
+      if (method === 'PATCH') {
+        const { onboardingCompleted } = body as { onboardingCompleted?: unknown };
+        if (onboardingCompleted !== true) return error(422, 'validation_error');
+        // Idempotent, like the API: the first completion's timestamp stays.
+        auth.user = {
+          ...auth.user,
+          onboardingCompletedAt: auth.user.onboardingCompletedAt ?? now(),
+        };
+        return json(auth.user);
       }
       return json(auth.user);
     }
