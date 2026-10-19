@@ -16,7 +16,7 @@ services:
     # over https). Set AUTH_BASE_URL=https://<LAN_IP>:8443 in .env.
 
   https:
-    image: caddy:2.10-alpine
+    image: caddy:2.11-alpine
     restart: unless-stopped
     ports:
       - '8443:8443'
