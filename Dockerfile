@@ -14,7 +14,7 @@
 # (.github/dependabot.yml, "docker" ecosystem) — it only sees image references
 # written directly on a FROM, so the digest lives here and not behind an ARG.
 # Both the build and the runtime stage derive from it: one pin to review.
-FROM node:26.8.2-bookworm-slim@sha256:cd9f682fa2885cd1056e830424764158570061c59736a1da836bc3d73df095ae AS base
+FROM node:26.13.0-bookworm-slim@sha256:add5c17c14752c54d2f3d519ec46a3815684d41c33f198bcb09fb998f7dcbf68 AS base
 
 # ---- deps ------------------------------------------------------------------
 FROM base AS deps
