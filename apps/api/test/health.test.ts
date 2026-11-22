@@ -7,10 +7,10 @@ import { createTestDb, type TestDb } from './adapters';
 import { fixtureCovers } from './cover-fixtures';
 import { fixtureLookup } from './lookup-fixtures';
 
-function appFor(adapter: DatabaseAdapter): App {
+function appFor(adapter: DatabaseAdapter, quiet = true): App {
   const repos = createRepositories(adapter);
   return createApp({
-    quiet: true,
+    quiet,
     services: {
       adapter,
       repos,
@@ -87,6 +87,20 @@ describe('GET /api/health', () => {
     });
     expect(res.status).toBe(204);
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
+  });
+
+  it('keeps health probes out of the access log but logs other requests', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      const loud = appFor(db.adapter, false);
+      await loud.request('/api/health');
+      await loud.request('/api/health?shallow=true');
+      expect(log).not.toHaveBeenCalled();
+      await loud.request('/api/nope');
+      expect(log.mock.calls.some(([line]) => String(line).includes('/api/nope'))).toBe(true);
+    } finally {
+      log.mockRestore();
+    }
   });
 
   it('sets security headers', async () => {
