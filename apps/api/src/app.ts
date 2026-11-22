@@ -63,7 +63,12 @@ export function createApp({
 }: CreateAppOptions) {
   const app = new Hono<AppEnv>();
 
-  if (!quiet) app.use(logger());
+  // Health probes (load balancer / uptime checks) fire every few seconds and
+  // would drown the real request lines, so they skip the access log.
+  if (!quiet) {
+    const accessLog = logger();
+    app.use((c, next) => (c.req.path === '/api/health' ? next() : accessLog(c, next)));
+  }
   // Cover images are loaded by <img> from wherever the SPA lives (a
   // different origin in dev / VITE_API_URL setups), which the default
   // `same-origin` Cross-Origin-Resource-Policy would block.
